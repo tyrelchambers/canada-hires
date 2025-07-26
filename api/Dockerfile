@@ -18,8 +18,8 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o main ./
 # Use Alpine for runtime with non-root user
 FROM alpine:3.19 AS prod
 
-# Install CA certificates and create non-root user
-RUN apk --no-cache add ca-certificates && \
+# Install CA certificates, Node.js, npm and create non-root user
+RUN apk --no-cache add ca-certificates nodejs npm && \
     addgroup -g 1001 -S appgroup && \
     adduser -S appuser -u 1001 -G appgroup
 
