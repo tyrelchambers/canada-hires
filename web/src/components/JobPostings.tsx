@@ -61,13 +61,19 @@ export function JobPostings() {
     }
 
     return f;
-  }, [searchQuery, employer, city, province, title, salaryMin, sortBy, sortOrder, currentPage]);
+  }, [
+    searchQuery,
+    employer,
+    city,
+    province,
+    title,
+    salaryMin,
+    sortBy,
+    sortOrder,
+    currentPage,
+  ]);
 
-  const {
-    data: jobData,
-    isLoading,
-    error,
-  } = useJobPostings(filters);
+  const { data: jobData, isLoading, error } = useJobPostings(filters);
 
   const { data: statsData } = useJobStats();
 
@@ -76,7 +82,16 @@ export function JobPostings() {
   // Reset to first page when search parameters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, employer, city, province, title, salaryMin, sortBy, sortOrder]);
+  }, [
+    searchQuery,
+    employer,
+    city,
+    province,
+    title,
+    salaryMin,
+    sortBy,
+    sortOrder,
+  ]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,11 +116,11 @@ export function JobPostings() {
 
   const formatSalary = (min?: number, max?: number, type?: string) => {
     if (!min && !max) return null;
-    
+
     const formatAmount = (amount: number) => {
-      return new Intl.NumberFormat('en-CA', {
-        style: 'currency',
-        currency: 'CAD',
+      return new Intl.NumberFormat("en-CA", {
+        style: "currency",
+        currency: "CAD",
         minimumFractionDigits: 0,
         maximumFractionDigits: 2,
       }).format(amount);
@@ -129,11 +144,23 @@ export function JobPostings() {
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString('en-CA');
+    return new Date(dateString).toLocaleDateString("en-CA");
   };
 
   const canadianProvinces = [
-    "AB", "BC", "MB", "NB", "NL", "NT", "NS", "NU", "ON", "PE", "QC", "SK", "YT"
+    "AB",
+    "BC",
+    "MB",
+    "NB",
+    "NL",
+    "NT",
+    "NS",
+    "NU",
+    "ON",
+    "PE",
+    "QC",
+    "SK",
+    "YT",
   ];
 
   return (
@@ -149,13 +176,33 @@ export function JobPostings() {
         <CardContent className="space-y-4">
           <div className="bg-yellow-50 p-4 rounded-lg">
             <p className="text-sm text-yellow-800 mb-3">
-              <strong>What is LMIA?</strong> A Labour Market Impact Assessment (LMIA) is a document that an employer in Canada may need to get before hiring a foreign worker. It shows that there is a need for a foreign worker to fill the job and that no Canadian worker or permanent resident is available to do the job.
+              <strong>What is LMIA?</strong> A Labour Market Impact Assessment
+              (LMIA) is a document that an employer in Canada may need to get
+              before hiring a foreign worker. It shows that there is a need for
+              a foreign worker to fill the job and that no Canadian worker or
+              permanent resident is available to do the job.
             </p>
             <p className="text-sm text-yellow-800 mb-3">
-              <strong>Canadian workers are encouraged to apply!</strong> Before hiring through the Temporary Foreign Worker (TFW) Program, employers must demonstrate they couldn't find qualified Canadian workers. If you're qualified for these positions, you should still apply even if they show LMIA approval.
+              <strong>Canadian workers are encouraged to apply!</strong> Before
+              hiring through the Temporary Foreign Worker (TFW) Program,
+              employers must demonstrate they couldn't find qualified Canadian
+              workers. If you're qualified for these positions, you should still
+              apply even if they show LMIA approval.
             </p>
             <p className="text-sm text-yellow-800">
-              <strong>No response from employers?</strong> If you apply for these jobs but don't receive interviews or responses despite being qualified, this could indicate potential misuse of the TFW program. Report such cases to <a href="https://www.canada.ca/en/employment-social-development/programs/temporary-foreign-worker/report-fraud.html" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">the TFW program tip line</a>.
+              <strong>No response from employers?</strong> If you apply for
+              these jobs but don't receive interviews or responses despite being
+              qualified, this could indicate potential misuse of the TFW
+              program. Report such cases to{" "}
+              <a
+                href="https://www.canada.ca/en/employment-social-development/programs/temporary-foreign-worker/report-fraud.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 underline"
+              >
+                the TFW program tip line
+              </a>
+              .
             </p>
           </div>
         </CardContent>
@@ -167,15 +214,23 @@ export function JobPostings() {
           <CardContent className="pt-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{statsData.total_jobs.toLocaleString()}</div>
-                <div className="text-sm text-gray-600">Total LMIA Job Postings</div>
+                <div className="text-2xl font-bold text-blue-600">
+                  {statsData.total_jobs.toLocaleString()}
+                </div>
+                <div className="text-sm text-gray-600">
+                  Total LMIA Job Postings
+                </div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{statsData.total_employers.toLocaleString()}</div>
+                <div className="text-2xl font-bold text-green-600">
+                  {statsData.total_employers.toLocaleString()}
+                </div>
                 <div className="text-sm text-gray-600">Unique Employers</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">Last 30 Days</div>
+                <div className="text-2xl font-bold text-purple-600">
+                  Last 30 Days
+                </div>
                 <div className="text-sm text-gray-600">Default View Period</div>
               </div>
             </div>
@@ -252,7 +307,7 @@ export function JobPostings() {
                 <select
                   value={`${sortBy}-${sortOrder}`}
                   onChange={(e) => {
-                    const [field, order] = e.target.value.split('-');
+                    const [field, order] = e.target.value.split("-");
                     setSortBy(field);
                     setSortOrder(order as "asc" | "desc");
                   }}
@@ -273,7 +328,11 @@ export function JobPostings() {
                 <FontAwesomeIcon icon={faSearch} className="w-4 h-4 mr-2" />
                 Search
               </Button>
-              <Button type="button" variant="outline" onClick={handleClearFilters}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleClearFilters}
+              >
                 Clear Filters
               </Button>
             </div>
@@ -314,7 +373,9 @@ export function JobPostings() {
               Job Postings ({jobData.total.toLocaleString()} found)
             </h3>
             <div className="text-sm text-gray-600">
-              Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, jobData.total)} of {jobData.total.toLocaleString()}
+              Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+              {Math.min(currentPage * itemsPerPage, jobData.total)} of{" "}
+              {jobData.total.toLocaleString()}
             </div>
           </div>
 
@@ -336,7 +397,10 @@ export function JobPostings() {
                   <TableRow key={job.id}>
                     <TableCell className="font-medium">
                       <div className="max-w-xs">
-                        <div className="font-semibold text-gray-900 truncate" title={job.title}>
+                        <div
+                          className="font-semibold text-gray-900 truncate"
+                          title={job.title}
+                        >
                           {job.title}
                         </div>
                       </div>
@@ -360,20 +424,31 @@ export function JobPostings() {
                           icon={faMapMarkerAlt}
                           className="mr-2 text-gray-400 w-3 h-3"
                         />
-                        <span className="text-sm truncate max-w-32" title={job.location}>
+                        <span
+                          className="text-sm truncate max-w-32"
+                          title={job.location}
+                        >
                           {job.location}
                         </span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      {formatSalary(job.salary_min, job.salary_max, job.salary_type) ? (
+                      {formatSalary(
+                        job.salary_min,
+                        job.salary_max,
+                        job.salary_type,
+                      ) ? (
                         <div className="flex items-center">
                           <FontAwesomeIcon
                             icon={faDollarSign}
                             className="mr-1 text-gray-400 w-3 h-3"
                           />
                           <span className="text-sm font-medium">
-                            {formatSalary(job.salary_min, job.salary_max, job.salary_type)}
+                            {formatSalary(
+                              job.salary_min,
+                              job.salary_max,
+                              job.salary_type,
+                            )}
                           </span>
                         </div>
                       ) : (
@@ -393,31 +468,42 @@ export function JobPostings() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
-                          <FontAwesomeIcon icon={faFlag} className="w-3 h-3 mr-1" />
+                        <Badge
+                          variant="outline"
+                          className="bg-yellow-50 text-yellow-700 border-yellow-200"
+                        >
+                          <FontAwesomeIcon
+                            icon={faFlag}
+                            className="w-3 h-3 mr-1"
+                          />
                           LMIA
                         </Badge>
                         {job.is_tfw && (
-                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                            <FontAwesomeIcon icon={faUsers} className="w-3 h-3 mr-1" />
+                          <Badge
+                            variant="outline"
+                            className="bg-blue-50 text-blue-700 border-blue-200"
+                          >
+                            <FontAwesomeIcon
+                              icon={faUsers}
+                              className="w-3 h-3 mr-1"
+                            />
                             TFW
                           </Badge>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        asChild
-                      >
+                      <Button variant="outline" size="sm" asChild>
                         <a
                           href={job.url}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-1"
                         >
-                          <FontAwesomeIcon icon={faExternalLinkAlt} className="w-3 h-3" />
+                          <FontAwesomeIcon
+                            icon={faExternalLinkAlt}
+                            className="w-3 h-3"
+                          />
                           Apply
                         </a>
                       </Button>
@@ -442,7 +528,7 @@ export function JobPostings() {
         </div>
       )}
 
-      {jobData && jobData.jobs.length === 0 && !isLoading && (
+      {jobData && jobData.jobs && jobData.jobs.length === 0 && !isLoading && (
         <Card>
           <CardContent className="py-8 text-center">
             <FontAwesomeIcon
@@ -453,7 +539,8 @@ export function JobPostings() {
               No job postings found matching your criteria.
             </p>
             <p className="text-sm text-gray-500 mt-1">
-              Try adjusting your search filters or check back later for new postings.
+              Try adjusting your search filters or check back later for new
+              postings.
             </p>
           </CardContent>
         </Card>
