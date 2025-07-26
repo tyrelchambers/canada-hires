@@ -39,7 +39,7 @@ func main() {
 
 	// Setup router with CORS
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:5173"},
+		AllowedOrigins:   []string{"http://localhost:5173", "https://canadahires.info"},
 		AllowedMethods:   []string{http.MethodGet, http.MethodHead, http.MethodPut, http.MethodPatch, http.MethodPost, http.MethodDelete, http.MethodOptions},
 		AllowedHeaders:   []string{"Origin", "Content-Type", "file-type", "Authorization", "X-Request-ID"},
 		ExposedHeaders:   []string{"Link", "X-Request-ID"},
@@ -93,7 +93,7 @@ func main() {
 	// Shutdown server gracefully
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer shutdownCancel()
-	
+
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		log.Error("Server forced to shutdown", "error", err)
 	} else {
