@@ -1,11 +1,16 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AuthNav } from "@/components/AuthNav";
 import { LMIASearch } from "@/components/LMIASearch";
 import { LMIAStats } from "@/components/LMIAStats";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faFileAlt, faSearch, faChartBar, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import {
+  faFileAlt,
+  faSearch,
+  faChartBar,
+  faInfoCircle,
+} from "@fortawesome/free-solid-svg-icons";
 
 type LMIASearchParams = {
   tab?: "search" | "stats" | "about";
@@ -22,10 +27,10 @@ export const Route = createFileRoute("/lmia")({
 
 function RouteComponent() {
   const { tab } = Route.useSearch();
-  const navigate = Route.useNavigate();
+  const navigate = useNavigate();
 
   const handleTabChange = (value: string) => {
-    navigate({
+    void navigate({
       search: { tab: value as "search" | "stats" | "about" },
     });
   };
@@ -35,12 +40,13 @@ function RouteComponent() {
 
       <div className="max-w-7xl mx-auto py-8 px-4">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="lg:text-3xl font-bold text-gray-900 mb-2">
             LMIA Employer Directory
           </h1>
-          <p className="text-lg text-gray-600">
-            Search and explore employers who have received positive Labour Market Impact Assessments (LMIA) 
-            in Canada's Temporary Foreign Worker Program.
+          <p className="lg:text-lg text-gray-600">
+            Search and explore employers who have received positive Labour
+            Market Impact Assessments (LMIA) in Canada's Temporary Foreign
+            Worker Program.
           </p>
         </div>
 
@@ -79,16 +85,18 @@ function RouteComponent() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <p className="text-sm text-gray-600">
-                    A positive Labour Market Impact Assessment (LMIA) is issued by Service Canada 
-                    when an assessment indicates that hiring a temporary foreign worker (TFW) will 
-                    have a positive or neutral impact on the Canadian labour market.
+                    A positive Labour Market Impact Assessment (LMIA) is issued
+                    by Service Canada when an assessment indicates that hiring a
+                    temporary foreign worker (TFW) will have a positive or
+                    neutral impact on the Canadian labour market.
                   </p>
-                  
+
                   <div className="space-y-2">
                     <h4 className="font-medium text-sm">Data Source</h4>
                     <p className="text-sm text-gray-600">
-                      This data is sourced from Employment and Social Development Canada (ESDC) 
-                      through Canada's Open Data portal. The data is updated quarterly and excludes 
+                      This data is sourced from Employment and Social
+                      Development Canada (ESDC) through Canada's Open Data
+                      portal. The data is updated quarterly and excludes
                       personal names and businesses that use personal names.
                     </p>
                   </div>
@@ -96,10 +104,18 @@ function RouteComponent() {
                   <div className="space-y-2">
                     <h4 className="font-medium text-sm">Important Notes</h4>
                     <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
-                      <li>This data tracks LMIA positions only, not actual work permits issued</li>
-                      <li>Not all approved positions result in a TFW entering Canada</li>
+                      <li>
+                        This data tracks LMIA positions only, not actual work
+                        permits issued
+                      </li>
+                      <li>
+                        Not all approved positions result in a TFW entering
+                        Canada
+                      </li>
                       <li>Some positions may be cancelled after approval</li>
-                      <li>The list is not complete due to privacy exclusions</li>
+                      <li>
+                        The list is not complete due to privacy exclusions
+                      </li>
                     </ul>
                   </div>
                 </CardContent>
@@ -117,23 +133,27 @@ function RouteComponent() {
                         The legal name of the company that received the LMIA
                       </p>
                     </div>
-                    
+
                     <div>
                       <h4 className="font-medium text-sm">NOC Code & Title</h4>
                       <p className="text-sm text-gray-600">
-                        National Occupational Classification - describes the job role
+                        National Occupational Classification - describes the job
+                        role
                       </p>
                     </div>
-                    
+
                     <div>
                       <h4 className="font-medium text-sm">Program Stream</h4>
                       <p className="text-sm text-gray-600">
-                        The specific TFW program stream (e.g., High-wage, Low-wage, Caregiver)
+                        The specific TFW program stream (e.g., High-wage,
+                        Low-wage, Caregiver)
                       </p>
                     </div>
-                    
+
                     <div>
-                      <h4 className="font-medium text-sm">Positions Approved</h4>
+                      <h4 className="font-medium text-sm">
+                        Positions Approved
+                      </h4>
                       <p className="text-sm text-gray-600">
                         Number of TFW positions approved for this employer
                       </p>
@@ -149,7 +169,9 @@ function RouteComponent() {
                 <CardContent>
                   <div className="grid gap-4 md:grid-cols-2">
                     <div>
-                      <h4 className="font-medium text-sm mb-2">Excluded from Data</h4>
+                      <h4 className="font-medium text-sm mb-2">
+                        Excluded from Data
+                      </h4>
                       <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
                         <li>Employers of caregivers (personal names)</li>
                         <li>Business names that include personal names</li>
@@ -157,9 +179,11 @@ function RouteComponent() {
                         <li>Some seasonal/temporary employers</li>
                       </ul>
                     </div>
-                    
+
                     <div>
-                      <h4 className="font-medium text-sm mb-2">Data Accuracy</h4>
+                      <h4 className="font-medium text-sm mb-2">
+                        Data Accuracy
+                      </h4>
                       <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
                         <li>Data is updated quarterly by ESDC</li>
                         <li>Historical data may not reflect current status</li>
@@ -168,12 +192,13 @@ function RouteComponent() {
                       </ul>
                     </div>
                   </div>
-                  
+
                   <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
                     <p className="text-sm text-blue-800">
-                      <strong>Disclaimer:</strong> This data is provided for informational purposes only. 
-                      For official LMIA information or to verify current status, please contact Employment 
-                      and Social Development Canada directly.
+                      <strong>Disclaimer:</strong> This data is provided for
+                      informational purposes only. For official LMIA information
+                      or to verify current status, please contact Employment and
+                      Social Development Canada directly.
                     </p>
                   </div>
                 </CardContent>
