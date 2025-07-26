@@ -27,7 +27,9 @@ export const Route = createFileRoute("/lmia")({
 
 function RouteComponent() {
   const { tab } = Route.useSearch();
-  const navigate = useNavigate();
+  const navigate = useNavigate({
+    from: Route.fullPath,
+  });
 
   const handleTabChange = (value: string) => {
     void navigate({
