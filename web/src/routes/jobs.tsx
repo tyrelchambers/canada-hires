@@ -1,15 +1,18 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { JobPostings } from '@/components/JobPostings'
+import { createFileRoute } from "@tanstack/react-router";
+import { JobPostings } from "@/components/JobPostings";
 
-export const Route = createFileRoute('/jobs')({
+export const Route = createFileRoute("/jobs")({
   component: JobsPage,
-  meta: () => [
-    {
-      title: 'LMIA Job Postings - Canada Hires',
-      description: 'Browse current LMIA job postings from Canadian employers. Find opportunities and apply for positions that require Labour Market Impact Assessment approval.',
-    },
-  ],
-})
+  head: () => ({
+    meta: [
+      {
+        title: "LMIA Job Postings - Canada Hires",
+        description:
+          "Browse current LMIA job postings from Canadian employers. Find opportunities and apply for positions that require Labour Market Impact Assessment approval.",
+      },
+    ],
+  }),
+});
 
 function JobsPage() {
   return (
@@ -20,11 +23,14 @@ function JobsPage() {
             LMIA Job Postings
           </h1>
           <p className="mt-2 text-lg text-gray-600">
-            Current job postings from Canadian employers that have received Labour Market Impact Assessment (LMIA) approval for hiring foreign workers. Canadian citizens and permanent residents are encouraged to apply.
+            Current job postings from Canadian employers that have received
+            Labour Market Impact Assessment (LMIA) approval for hiring foreign
+            workers. Canadian citizens and permanent residents are encouraged to
+            apply.
           </p>
         </div>
         <JobPostings />
       </div>
     </div>
-  )
+  );
 }

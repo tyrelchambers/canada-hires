@@ -1,11 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  useLMIAStats,
-  useLMIAStatus,
-  useTriggerLMIAUpdate,
-} from "@/hooks/useLMIA";
+import { useLMIAStats } from "@/hooks/useLMIA";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faDatabase,
@@ -19,9 +14,6 @@ import {
 
 export function LMIAStats() {
   const { data: stats, isLoading: statsLoading } = useLMIAStats();
-  const { data: status, isLoading: statusLoading } = useLMIAStatus();
-  const { mutate: triggerUpdate, isPending: isUpdating } =
-    useTriggerLMIAUpdate();
 
   const getStatusIcon = (statusStr?: string) => {
     switch (statusStr) {
@@ -74,10 +66,10 @@ export function LMIAStats() {
     return new Date(dateString).toLocaleString();
   };
 
-  if (statsLoading || statusLoading) {
+  if (statsLoading) {
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {[...Array(4)].map((_, i) => (
+        {Array.from({ length: 4 }, (_, i) => (
           <Card key={i}>
             <CardContent className="p-6">
               <div className="animate-pulse">

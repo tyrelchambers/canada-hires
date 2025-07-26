@@ -109,6 +109,7 @@ JWT_SECRET=your_jwt_secret_key
 - Go backend follows repository pattern with dependency injection
 - Database operations use sqlx with prepared statements
 - Error handling with structured logging using charmbracelet/log
+- **API Calls**: Always use TanStack Query (useQuery) hooks for API calls instead of manual fetch/useEffect patterns
 
 ## Current Implementation Status
 

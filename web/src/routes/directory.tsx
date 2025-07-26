@@ -1,153 +1,108 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faSearch, faMapMarkerAlt, faFilter, faExternalLinkAlt } from '@fortawesome/free-solid-svg-icons'
-import { API_BASE_URL } from '@/constants'
-
-interface BusinessRating {
-  business_id: string
-  current_rating: string
-  confidence_score: number
-  report_count: number
-  avg_tfw_percentage?: number
-  last_updated: string
-  is_disputed: boolean
-}
-
-interface Business {
-  id: string
-  name: string
-  address?: string
-  city?: string
-  province?: string
-  postal_code?: string
-  industry_code?: string
-  phone?: string
-  website?: string
-  size_category?: string
-  created_at: string
-  updated_at: string
-  rating?: BusinessRating
-}
-
-interface DirectoryResponse {
-  businesses: Business[]
-  total: number
-  limit: number
-  offset: number
-}
+import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faSearch,
+  faMapMarkerAlt,
+  faFilter,
+  faExternalLinkAlt,
+} from "@fortawesome/free-solid-svg-icons";
+import { useBusinesses } from "@/hooks/useBusinesses";
 
 const getRatingColor = (rating: string) => {
   switch (rating) {
-    case 'green':
-      return 'bg-green-100 text-green-800 border-green-200'
-    case 'yellow':
-      return 'bg-yellow-100 text-yellow-800 border-yellow-200'
-    case 'red':
-      return 'bg-red-100 text-red-800 border-red-200'
+    case "green":
+      return "bg-green-100 text-green-800 border-green-200";
+    case "yellow":
+      return "bg-yellow-100 text-yellow-800 border-yellow-200";
+    case "red":
+      return "bg-red-100 text-red-800 border-red-200";
     default:
-      return 'bg-gray-100 text-gray-800 border-gray-200'
+      return "bg-gray-100 text-gray-800 border-gray-200";
   }
-}
+};
 
 const getRatingLabel = (rating: string) => {
   switch (rating) {
-    case 'green':
-      return '🟢 Canadian-First'
-    case 'yellow':
-      return '🟡 Mixed'
-    case 'red':
-      return '🔴 TFW-Heavy'
+    case "green":
+      return "🟢 Canadian-First";
+    case "yellow":
+      return "🟡 Mixed";
+    case "red":
+      return "🔴 TFW-Heavy";
     default:
-      return '⚪ Unverified'
+      return "⚪ Unverified";
   }
-}
+};
 
 function DirectoryPage() {
-  const [businesses, setBusinesses] = useState<Business[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [total, setTotal] = useState(0)
-  
   // Search and filter state
-  const [searchQuery, setSearchQuery] = useState('')
-  const [cityFilter, setCityFilter] = useState('')
-  const [provinceFilter, setProvinceFilter] = useState('')
-  const [ratingFilter, setRatingFilter] = useState('')
-  const [yearFilter, setYearFilter] = useState('')
-  const [currentPage, setCurrentPage] = useState(1)
-  const [limit] = useState(20)
+  const [searchQuery, setSearchQuery] = useState("");
+  const [cityFilter, setCityFilter] = useState("");
+  const [provinceFilter, setProvinceFilter] = useState("");
+  const [ratingFilter, setRatingFilter] = useState("");
+  const [yearFilter, setYearFilter] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [limit] = useState(20);
+
+  // Use the businesses hook
+  const {
+    data: directoryData,
+    isLoading: loading,
+    error,
+  } = useBusinesses({
+    query: searchQuery,
+    city: cityFilter,
+    province: provinceFilter,
+    rating: ratingFilter,
+    year: yearFilter,
+    limit,
+    offset: (currentPage - 1) * limit,
+  });
+
+  const businesses = directoryData?.businesses || [];
+  const total = directoryData?.total || 0;
 
   // Generate year options (current year back to 2015)
-  const currentYear = new Date().getFullYear()
-  const yearOptions = Array.from({length: currentYear - 2014}, (_, i) => currentYear - i)
-
-  const fetchBusinesses = async () => {
-    setLoading(true)
-    setError(null)
-    
-    try {
-      const params = new URLSearchParams()
-      if (searchQuery) params.append('query', searchQuery)
-      if (cityFilter) params.append('city', cityFilter)
-      if (provinceFilter) params.append('province', provinceFilter)
-      if (ratingFilter) params.append('rating', ratingFilter)
-      if (yearFilter) params.append('year', yearFilter)
-      
-      // If no search criteria, default to latest year
-      if (!searchQuery && !cityFilter && !provinceFilter && !ratingFilter && !yearFilter) {
-        params.append('year', currentYear.toString())
-      }
-      
-      params.append('limit', limit.toString())
-      params.append('offset', ((currentPage - 1) * limit).toString())
-      
-      const response = await fetch(`${API_BASE_URL}/directory?${params}`)
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch businesses')
-      }
-      
-      const data: DirectoryResponse = await response.json()
-      setBusinesses(data.businesses || [])
-      setTotal(data.total || 0)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchBusinesses()
-  }, [searchQuery, cityFilter, provinceFilter, ratingFilter, yearFilter, currentPage])
+  const currentYear = new Date().getFullYear();
+  const yearOptions = Array.from(
+    { length: currentYear - 2014 },
+    (_, i) => currentYear - i,
+  );
 
   const handleSearch = () => {
-    setCurrentPage(1)
-    fetchBusinesses()
-  }
+    setCurrentPage(1);
+  };
 
   const clearFilters = () => {
-    setSearchQuery('')
-    setCityFilter('')
-    setProvinceFilter('')
-    setRatingFilter('')
-    setYearFilter('')
-    setCurrentPage(1)
-  }
+    setSearchQuery("");
+    setCityFilter("");
+    setProvinceFilter("");
+    setRatingFilter("");
+    setYearFilter("");
+    setCurrentPage(1);
+  };
 
-  const totalPages = Math.ceil(total / limit)
+  const totalPages = Math.ceil(total / limit);
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Business Directory</h1>
         <p className="text-gray-600">
-          Community-verified information about business hiring practices in Canada
+          Community-verified information about business hiring practices in
+          Canada
         </p>
       </div>
 
@@ -155,9 +110,9 @@ function DirectoryPage() {
       <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
           <div className="relative">
-            <FontAwesomeIcon 
-              icon={faSearch} 
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" 
+            <FontAwesomeIcon
+              icon={faSearch}
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
             />
             <Input
               placeholder="Search businesses..."
@@ -166,19 +121,19 @@ function DirectoryPage() {
               className="pl-10"
             />
           </div>
-          
+
           <Input
             placeholder="City"
             value={cityFilter}
             onChange={(e) => setCityFilter(e.target.value)}
           />
-          
+
           <Input
             placeholder="Province"
             value={provinceFilter}
             onChange={(e) => setProvinceFilter(e.target.value)}
           />
-          
+
           <select
             value={ratingFilter}
             onChange={(e) => setRatingFilter(e.target.value)}
@@ -190,7 +145,7 @@ function DirectoryPage() {
             <option value="red">🔴 TFW-Heavy</option>
             <option value="unverified">⚪ Unverified</option>
           </select>
-          
+
           <select
             value={yearFilter}
             onChange={(e) => setYearFilter(e.target.value)}
@@ -204,7 +159,7 @@ function DirectoryPage() {
             ))}
           </select>
         </div>
-        
+
         <div className="flex gap-2">
           <Button onClick={handleSearch} size="sm">
             <FontAwesomeIcon icon={faSearch} className="mr-2" />
@@ -227,7 +182,10 @@ function DirectoryPage() {
 
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-          <p className="text-red-800">Error: {error}</p>
+          <p className="text-red-800">
+            Error:{" "}
+            {error instanceof Error ? error.message : "An error occurred"}
+          </p>
         </div>
       )}
 
@@ -259,7 +217,10 @@ function DirectoryPage() {
                     <TableCell>
                       {business.address ? (
                         <div className="flex items-center text-sm">
-                          <FontAwesomeIcon icon={faMapMarkerAlt} className="mr-1 text-gray-400" />
+                          <FontAwesomeIcon
+                            icon={faMapMarkerAlt}
+                            className="mr-1 text-gray-400"
+                          />
                           <span>
                             {business.city && `${business.city}`}
                             {business.province && `, ${business.province}`}
@@ -272,20 +233,27 @@ function DirectoryPage() {
                     <TableCell>
                       {business.rating ? (
                         <Badge
-                          className={getRatingColor(business.rating.current_rating)}
+                          className={getRatingColor(
+                            business.rating.current_rating,
+                          )}
                           variant="outline"
                         >
                           {getRatingLabel(business.rating.current_rating)}
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-200">
+                        <Badge
+                          variant="outline"
+                          className="bg-gray-100 text-gray-800 border-gray-200"
+                        >
                           ⚪ Unverified
                         </Badge>
                       )}
                     </TableCell>
                     <TableCell>
                       {business.rating ? (
-                        <span className="font-medium">{business.rating.confidence_score.toFixed(1)}</span>
+                        <span className="font-medium">
+                          {business.rating.confidence_score.toFixed(1)}
+                        </span>
                       ) : (
                         <span className="text-gray-400">-</span>
                       )}
@@ -298,8 +266,11 @@ function DirectoryPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      {business.rating && business.rating.avg_tfw_percentage !== null ? (
-                        <span>{business.rating.avg_tfw_percentage.toFixed(1)}%</span>
+                      {business.rating &&
+                      business.rating.avg_tfw_percentage !== undefined ? (
+                        <span>
+                          {business.rating.avg_tfw_percentage.toFixed(1)}%
+                        </span>
                       ) : (
                         <span className="text-gray-400">-</span>
                       )}
@@ -312,7 +283,10 @@ function DirectoryPage() {
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:text-blue-800 inline-flex items-center"
                         >
-                          <FontAwesomeIcon icon={faExternalLinkAlt} className="w-3 h-3" />
+                          <FontAwesomeIcon
+                            icon={faExternalLinkAlt}
+                            className="w-3 h-3"
+                          />
                         </a>
                       ) : (
                         <span className="text-gray-400">-</span>
@@ -335,13 +309,15 @@ function DirectoryPage() {
               >
                 Previous
               </Button>
-              
+
               <span className="text-sm text-gray-600">
                 Page {currentPage} of {totalPages}
               </span>
-              
+
               <Button
-                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                onClick={() =>
+                  setCurrentPage(Math.min(totalPages, currentPage + 1))
+                }
                 disabled={currentPage === totalPages}
                 variant="outline"
                 size="sm"
@@ -355,16 +331,18 @@ function DirectoryPage() {
 
       {!loading && !error && businesses.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">No businesses found matching your criteria.</p>
+          <p className="text-gray-500 text-lg">
+            No businesses found matching your criteria.
+          </p>
           <Button onClick={clearFilters} className="mt-4" variant="outline">
             Clear filters to see all businesses
           </Button>
         </div>
       )}
     </div>
-  )
+  );
 }
 
-export const Route = createFileRoute('/directory')({
+export const Route = createFileRoute("/directory")({
   component: DirectoryPage,
-})
+});
