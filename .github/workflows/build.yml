@@ -8,12 +8,12 @@ on:
   workflow_dispatch:
     inputs:
       build_frontend:
-        description: 'Build frontend'
+        description: "Build frontend"
         required: false
         default: true
         type: boolean
       build_backend:
-        description: 'Build backend'
+        description: "Build backend"
         required: false
         default: true
         type: boolean
@@ -108,3 +108,13 @@ jobs:
             exit 1
           fi
           echo "All applicable Docker builds completed successfully"
+      - name: Deploy docker images to server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            kubectl rollout restart deployment canada-hires-web
+            kubectl rollout restart deployment canadahires-api
