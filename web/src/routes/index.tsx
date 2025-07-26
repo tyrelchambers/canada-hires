@@ -33,7 +33,7 @@ function RouteComponent() {
             <Link
               to="/lmia"
               className={clsx(
-                buttonVariants({ variant: "default", size: "lg" }),
+                buttonVariants({ variant: "outline", size: "lg" }),
               )}
             >
               Search LMIA records
@@ -41,7 +41,7 @@ function RouteComponent() {
             <Link
               to="/jobs"
               className={clsx(
-                buttonVariants({ variant: "outline", size: "lg" }),
+                buttonVariants({ variant: "default", size: "lg" }),
               )}
             >
               Browse Job Postings
