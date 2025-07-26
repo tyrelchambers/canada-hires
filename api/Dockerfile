@@ -26,6 +26,7 @@ RUN apk --no-cache add ca-certificates && \
 # Copy the built binary and directories
 COPY --from=builder --chown=appuser:appgroup /app/main /app/main
 COPY --from=builder --chown=appuser:appgroup /app/migrations /app/migrations
+COPY --from=builder --chown=appuser:appgroup /app/scraper /app/scraper
 
 # Switch to non-root user
 USER appuser

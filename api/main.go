@@ -54,7 +54,7 @@ func main() {
 
 	router.InitRoutes(cn, r)
 
-	// Start cron service
+	// Start cron services
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -63,6 +63,17 @@ func main() {
 	})
 	if err != nil {
 		log.Fatal("Failed to start cron service", "error", err)
+	}
+
+	err = cn.Invoke(func(scraperCronService *services.ScraperCronService) {
+		go func() {
+			if err := scraperCronService.Start(ctx); err != nil {
+				log.Error("Scraper cron service error", "error", err)
+			}
+		}()
+	})
+	if err != nil {
+		log.Fatal("Failed to start scraper cron service", "error", err)
 	}
 
 	// Setup graceful shutdown

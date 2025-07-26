@@ -8,6 +8,7 @@ import (
 	"canada-hires/services"
 	"net/http"
 
+	"github.com/charmbracelet/log"
 	"go.uber.org/dig"
 )
 
@@ -86,6 +87,10 @@ func registerProviders(c *dig.Container) error {
 	}
 
 	if err := c.Provide(NewJobService); err != nil {
+		return err
+	}
+
+	if err := c.Provide(NewScraperCronService); err != nil {
 		return err
 	}
 
@@ -251,4 +256,11 @@ func NewJobService(repo repos.JobBankRepository) services.JobService {
 // NewJobController creates a new Job controller
 func NewJobController(repo repos.JobBankRepository, jobService services.JobService) *controllers.JobController {
 	return controllers.NewJobController(repo, jobService)
+}
+
+// NewScraperCronService creates a new scraper cron service
+func NewScraperCronService() *services.ScraperCronService {
+	logger := log.Default()
+	scraperPath := "/Users/tyrelchambers/home/canada-business/api/scraper/src/index.ts"
+	return services.NewScraperCronService(logger, scraperPath)
 }
