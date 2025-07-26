@@ -13,7 +13,7 @@ RUN go mod download
 COPY . .
 
 # Build the Go application
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o main ./apps/server/.
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o main ./
 
 # Use Alpine for runtime with non-root user
 FROM alpine:3.19 AS prod
