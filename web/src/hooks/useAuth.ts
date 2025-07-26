@@ -1,13 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useApiClient } from "./useApiClient";
+import { User } from "@/types";
 
 // React Query hooks
 export const useCurrentUser = () => {
   const api = useApiClient();
   return useQuery({
     queryKey: ["profile"],
-    queryFn: async () => {
-      const response = await api.get("/user/profile");
+    queryFn: async (): Promise<User> => {
+      const response = await api.get<User>("/user/profile");
       return response.data;
     },
     retry: false,

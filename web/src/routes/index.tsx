@@ -19,17 +19,17 @@ function RouteComponent() {
       <section className="bg-secondary border-b border-border relative h-[550px]">
         <StripedBackground />
 
-        <div className="max-w-5xl mx-auto border-x border-border bg-gray-50 z-10 relative p-20 h-full flex flex-col items-center justify-center">
-          <h1 className="text-5xl -tracking-[0.015em] font-medium mb-6 text-center">
+        <div className="max-w-5xl mx-auto border-x border-border bg-gray-50 z-10 relative p-4 lg:p-20 h-full flex flex-col items-center justify-center">
+          <h1 className="text-3xl lg:text-5xl -tracking-[0.015em] font-medium mb-6 text-center">
             Make informed decisions about where you spend your money
           </h1>
-          <p className="text-xl text-gray-500 font-light  text-center mb-10">
+          <p className="md:text-xl text-gray-500 font-light  text-center mb-10">
             Canada Hires provides transparent reporting on Canadian businesses'
             use of the Temporary Foreign Worker program, helping you support
             companies that prioritize hiring Canadians.
           </p>
 
-          <div className="flex gap-6 justify-center">
+          <div className="flex md:flex-row flex-col gap-6 justify-center">
             <Link
               to="/lmia"
               className={clsx(
@@ -51,8 +51,8 @@ function RouteComponent() {
       </section>
 
       <section className="min-h-[300px] items-center flex">
-        <div className="max-w-5xl mx-auto flex gap-10 w-full justify-between">
-          <div className="flex items-center flex-col p-10">
+        <div className="max-w-5xl mx-auto flex flex-col md:flex-row py-10 gap-10 w-full justify-between">
+          <div className="flex items-center flex-col md:p-10">
             <p className="font-mono text-5xl mb-2">
               {stats?.distinct_employers.toLocaleString()}
             </p>
@@ -61,7 +61,7 @@ function RouteComponent() {
             </p>
           </div>
 
-          <div className="flex items-center flex-col p-10">
+          <div className="flex items-center flex-col md:p-10">
             <p className="font-mono text-5xl mb-2">
               {stats?.year_range.min_year}-{stats?.year_range.max_year}
             </p>
@@ -70,7 +70,7 @@ function RouteComponent() {
             </p>
           </div>
 
-          <div className="flex items-center flex-col p-10">
+          <div className="flex items-center flex-col md:p-10">
             <p className="font-mono text-5xl mb-2">
               {stats?.total_records.toLocaleString()}
             </p>
@@ -81,8 +81,8 @@ function RouteComponent() {
         </div>
       </section>
 
-      <section className="grid grid-cols-2 border-y border-border">
-        <div className="flex flex-col gap-2 p-20 max-w-3xl ml-auto border-r border-border">
+      <section className="grid grid-cols-1 lg:grid-cols-2 border-y border-border">
+        <div className="flex flex-col gap-2 p-6 lg:p-20 max-w-3xl ml-auto border-r border-border">
           <h2 className="font-bold text-3xl mb-4 -tracking-wide">
             How Companies Exploit the LMIA Program
           </h2>
@@ -102,13 +102,13 @@ function RouteComponent() {
             Canadians will apply.
           </p>
         </div>
-        <div className="relative">
+        <div className="relative hidden lg:block">
           <StripedBackground />
         </div>
       </section>
 
       <section className="max-w-5xl mx-auto w-full my-20">
-        <p className="text-2xl font-light leading-relaxed text-center">
+        <p className="lg:text-2xl p-4 font-light leading-relaxed text-center">
           Some employers use the LMIA process as a pathway to secure cheaper
           labor, posting positions they never intend to fill with Canadian
           workers. Others exploit the system's bureaucratic delays, using the
@@ -117,11 +117,11 @@ function RouteComponent() {
         </p>
       </section>
 
-      <section className="grid grid-cols-2 border-y border-border">
-        <div className="relative">
+      <section className="grid grid-cols-1 lg:grid-cols-2 border-y border-border">
+        <div className="relative hidden lg:block">
           <StripedBackground />
         </div>
-        <div className="flex flex-col gap-2 p-20 max-w-3xl mr-auto border-l border-border">
+        <div className="flex flex-col gap-2 p-6 lg:p-20 max-w-3xl mr-auto border-l border-border">
           <h2 className="font-bold text-3xl mb-4 -tracking-wide">
             LMIA exploitation is harming Canadians
           </h2>
@@ -135,11 +135,11 @@ function RouteComponent() {
         </div>
       </section>
 
-      <section className="max-w-5xl mx-auto w-full my-20">
-        <h2 className="text-4xl -tracking-wide text-center mb-6 font-medium">
+      <section className="max-w-5xl mx-auto w-full my-20 p-4">
+        <h2 className="text-3xl lg:text-4xl -tracking-wide text-center mb-6 font-medium">
           The goal of Canada Hires
         </h2>
-        <p className="text-2xl font-light leading-relaxed text-center">
+        <p className="lg:text-2xl font-light leading-relaxed text-center">
           Canada Hires aims to bring transparency to these practices by tracking
           which employers frequently rely on the TFW program and providing
           Canadians with the information needed to make informed decisions about
