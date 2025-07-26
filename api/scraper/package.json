@@ -1,0 +1,26 @@
+{
+  "name": "scrapper",
+  "version": "1.0.0",
+  "description": "web scraper",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "npm run build && node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "test": "jest"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cheerio": "^1.1.2",
+    "puppeteer": "^24.15.0",
+    "axios": "^1.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "jest": "^30.0.5",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}

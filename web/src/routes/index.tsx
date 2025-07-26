@@ -1,0 +1,151 @@
+import { buttonVariants } from "@/components/ui/button";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { AuthNav } from "@/components/AuthNav";
+import { StripedBackground } from "@/components/StripedBackground";
+import clsx from "clsx";
+import { useLMIAStats } from "@/hooks/useLMIA";
+
+export const Route = createFileRoute("/")({
+  component: RouteComponent,
+});
+
+function RouteComponent() {
+  const { data: stats } = useLMIAStats();
+
+  return (
+    <div className="min-h-screen">
+      <AuthNav />
+
+      <section className="bg-secondary border-b border-border relative h-[550px]">
+        <StripedBackground />
+
+        <div className="max-w-5xl mx-auto border-x border-border bg-gray-50 z-10 relative p-20 h-full flex flex-col items-center justify-center">
+          <h1 className="text-5xl -tracking-[0.015em] font-medium mb-6 text-center">
+            Make informed decisions about where you spend your money
+          </h1>
+          <p className="text-xl text-gray-500 font-light  text-center mb-10">
+            Canada Hires provides transparent reporting on Canadian businesses'
+            use of the Temporary Foreign Worker program, helping you support
+            companies that prioritize hiring Canadians.
+          </p>
+
+          <div className="flex gap-6 justify-center">
+            <Link
+              to="/lmia"
+              className={clsx(
+                buttonVariants({ variant: "default", size: "lg" }),
+              )}
+            >
+              Search LMIA records
+            </Link>
+            <Link
+              to="/jobs"
+              className={clsx(
+                buttonVariants({ variant: "outline", size: "lg" }),
+              )}
+            >
+              Browse Job Postings
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="min-h-[300px] items-center flex">
+        <div className="max-w-5xl mx-auto flex gap-10 w-full justify-between">
+          <div className="flex items-center flex-col p-10">
+            <p className="font-mono text-5xl mb-2">
+              {stats?.distinct_employers.toLocaleString()}
+            </p>
+            <p className="uppercase font-medium text-xs text-muted-foreground">
+              Distinct employers
+            </p>
+          </div>
+
+          <div className="flex items-center flex-col p-10">
+            <p className="font-mono text-5xl mb-2">
+              {stats?.year_range.min_year}-{stats?.year_range.max_year}
+            </p>
+            <p className="uppercase font-medium text-xs text-muted-foreground">
+              Years
+            </p>
+          </div>
+
+          <div className="flex items-center flex-col p-10">
+            <p className="font-mono text-5xl mb-2">
+              {stats?.total_records.toLocaleString()}
+            </p>
+            <p className="uppercase font-medium text-xs text-muted-foreground">
+              Total records
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid grid-cols-2 border-y border-border">
+        <div className="flex flex-col gap-2 p-20 max-w-3xl ml-auto border-r border-border">
+          <h2 className="font-bold text-3xl mb-4 -tracking-wide">
+            How Companies Exploit the LMIA Program
+          </h2>
+          <p className=" text-lg text-muted-foreground">
+            The Labour Market Impact Assessment (LMIA) program was designed to
+            protect Canadian jobs by requiring employers to prove no qualified
+            Canadian workers are available before hiring temporary foreign
+            workers. However, many companies have found ways to circumvent this
+            system's intent.
+          </p>
+          <p className=" text-lg text-muted-foreground">
+            Common exploitation tactics include posting job requirements with
+            unrealistic qualifications, offering below-market wages that
+            discourage Canadian applicants, advertising positions in obscure
+            locations or with minimal visibility, and timing job postings
+            strategically to fulfill technical requirements while ensuring few
+            Canadians will apply.
+          </p>
+        </div>
+        <div className="relative">
+          <StripedBackground />
+        </div>
+      </section>
+
+      <section className="max-w-5xl mx-auto w-full my-20">
+        <p className="text-2xl font-light leading-relaxed text-center">
+          Some employers use the LMIA process as a pathway to secure cheaper
+          labor, posting positions they never intend to fill with Canadian
+          workers. Others exploit the system's bureaucratic delays, using the
+          application period to justify their "inability" to find local talent
+          while their preferred temporary foreign worker waits in the wings.
+        </p>
+      </section>
+
+      <section className="grid grid-cols-2 border-y border-border">
+        <div className="relative">
+          <StripedBackground />
+        </div>
+        <div className="flex flex-col gap-2 p-20 max-w-3xl mr-auto border-l border-border">
+          <h2 className="font-bold text-3xl mb-4 -tracking-wide">
+            LMIA exploitation is harming Canadians
+          </h2>
+          <p className=" text-lg text-muted-foreground">
+            This exploitation undermines wage standards for all workers,
+            displaces qualified Canadians from employment opportunities, and
+            defeats the program's core purpose of protecting the domestic labor
+            market. The result is a system that often serves corporate interests
+            rather than Canadian workers or genuine labor market needs.
+          </p>
+        </div>
+      </section>
+
+      <section className="max-w-5xl mx-auto w-full my-20">
+        <h2 className="text-4xl -tracking-wide text-center mb-6 font-medium">
+          The goal of Canada Hires
+        </h2>
+        <p className="text-2xl font-light leading-relaxed text-center">
+          Canada Hires aims to bring transparency to these practices by tracking
+          which employers frequently rely on the TFW program and providing
+          Canadians with the information needed to make informed decisions about
+          where to spend their money.
+        </p>
+      </section>
+    </div>
+  );
+}
