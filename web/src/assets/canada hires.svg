@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg width="100%" height="100%" viewBox="0 0 1047 311" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
-    <g transform="matrix(1,0,0,1,-5.32907e-15,-39.7001)">
-        <g id="Artboard1" transform="matrix(2.63688,0,0,0.78313,-2.6111,39.5424)">
+<svg width="100%" height="100%" viewBox="0 0 1255 311" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+    <g transform="matrix(1,0,0,1,1.42109e-14,-39.7001)">
+        <g id="Artboard1" transform="matrix(3.16102,0,0,0.78313,-3.13011,39.5424)">
             <rect x="0.99" y="0.201" width="396.806" height="396.806" style="fill:none;"/>
-            <g transform="matrix(0.681469,0,0,2.29458,-75.4863,-161.324)">
+            <g transform="matrix(0.568473,0,0,2.29458,-59.2202,-161.324)">
                 <g>
                     <g transform="matrix(1,0,0,1,0.990222,0.201389)">
                         <path d="M222.932,121.659C222.932,121.659 209.865,127.06 202.215,118.732C195.144,112.078 198.306,115.291 201.015,113.678C202.97,112.514 223.116,91.088 231.692,87.245C240.268,83.402 239.702,86.814 238.729,92.21C238.509,93.251 236.813,102.216 222.932,121.659Z" style="fill:url(#_Linear1);"/>
@@ -50,11 +50,13 @@
                     </g>
                 </g>
             </g>
-            <g transform="matrix(1.21407,0,0,4.08791,77.8325,-975.239)">
-                <text x="48.462px" y="278.753px" style="font-family:'THICCCBOI-Regular', 'THICCCBOI';font-size:50px;fill:rgb(36,36,36);">C<tspan x="84.712px 115.412px 147.912px 178.862px 212.062px " y="278.753px 278.753px 278.753px 278.753px 278.753px ">ANADA</tspan></text>
+            <g transform="matrix(0.962092,0,0,3.88338,64.1418,-910.195)">
+                <text x="48.462px" y="278.753px" style="font-family:'THICCCBOI-Regular', 'THICCCBOI';font-size:50px;fill:rgb(39,39,39);">J<tspan x="75.462px 114.662px " y="278.753px 278.753px ">OB</tspan> W<tspan x="201.562px 226.862px 251.662px 288.062px " y="278.753px 278.753px 278.753px 278.753px ">ATCH</tspan></text>
             </g>
-            <g transform="matrix(0.550626,0,0,1.85401,134.114,374.437)">
-                <text x="0px" y="0px" style="font-family:'THICCCBOI-Bold', 'THICCCBOI';font-weight:700;font-size:150px;fill:rgb(36,36,36);">H<tspan x="117.9px 167.7px 268.2px 353.7px " y="0px 0px 0px 0px ">IRES</tspan></text>
+            <g transform="matrix(0.400181,0,0,1.61529,110.458,359.612)">
+                <g transform="matrix(150,0,0,150,657.9,0)">
+                </g>
+                <text x="0px" y="0px" style="font-family:'THICCCBOI-ExtraBold', 'THICCCBOI';font-weight:800;font-size:150px;fill:rgb(37,35,35);">C<tspan x="114.6px 224.4px 333.75px 442.8px 554.7px " y="0px 0px 0px 0px 0px ">ANADA</tspan></text>
             </g>
         </g>
     </g>
