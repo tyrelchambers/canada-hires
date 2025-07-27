@@ -160,4 +160,20 @@ JWT_SECRET=your_jwt_secret_key
 - Map integration
 - Enhanced user verification tiers
 
+📊 **Data Visualization & Analytics**
+- LMIA job application trends charts (monthly/yearly)
+- Regional employment pattern visualizations
+- Industry-specific TFW usage charts
+- Processing time trend analysis
+- Wage subsidy program effectiveness metrics
+- Interactive dashboards for policy impact analysis
+
+**Technical Requirements for Charts:**
+- Use Recharts library (already installed) for consistent styling
+- Implement responsive charts that work on mobile
+- Add data export functionality (CSV/PDF)
+- Include filtering and time range selection
+- Ensure accessibility with proper labels and alt text
+- Consider server-side caching for large datasets
+
 Refer to `docs/BUSINESS_DEMOGRAPHICS_FEATURE_SPEC.md` for complete feature specifications and implementation roadmap.

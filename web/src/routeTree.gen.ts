@@ -14,6 +14,8 @@ import { Route as JobsRouteImport } from './routes/jobs'
 import { Route as FeedbackRouteImport } from './routes/feedback'
 import { Route as DirectoryRouteImport } from './routes/directory'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ResearchIndexRouteImport } from './routes/research/index'
+import { Route as ResearchWageSubsidiesImmigrantsRouteImport } from './routes/research/wage-subsidies-immigrants'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 
 const LmiaRoute = LmiaRouteImport.update({
@@ -41,6 +43,17 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResearchIndexRoute = ResearchIndexRouteImport.update({
+  id: '/research/',
+  path: '/research/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResearchWageSubsidiesImmigrantsRoute =
+  ResearchWageSubsidiesImmigrantsRouteImport.update({
+    id: '/research/wage-subsidies-immigrants',
+    path: '/research/wage-subsidies-immigrants',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthLoginRoute = AuthLoginRouteImport.update({
   id: '/auth/login',
   path: '/auth/login',
@@ -54,6 +67,8 @@ export interface FileRoutesByFullPath {
   '/jobs': typeof JobsRoute
   '/lmia': typeof LmiaRoute
   '/auth/login': typeof AuthLoginRoute
+  '/research/wage-subsidies-immigrants': typeof ResearchWageSubsidiesImmigrantsRoute
+  '/research': typeof ResearchIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +77,8 @@ export interface FileRoutesByTo {
   '/jobs': typeof JobsRoute
   '/lmia': typeof LmiaRoute
   '/auth/login': typeof AuthLoginRoute
+  '/research/wage-subsidies-immigrants': typeof ResearchWageSubsidiesImmigrantsRoute
+  '/research': typeof ResearchIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,6 +88,8 @@ export interface FileRoutesById {
   '/jobs': typeof JobsRoute
   '/lmia': typeof LmiaRoute
   '/auth/login': typeof AuthLoginRoute
+  '/research/wage-subsidies-immigrants': typeof ResearchWageSubsidiesImmigrantsRoute
+  '/research/': typeof ResearchIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -81,8 +100,18 @@ export interface FileRouteTypes {
     | '/jobs'
     | '/lmia'
     | '/auth/login'
+    | '/research/wage-subsidies-immigrants'
+    | '/research'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/directory' | '/feedback' | '/jobs' | '/lmia' | '/auth/login'
+  to:
+    | '/'
+    | '/directory'
+    | '/feedback'
+    | '/jobs'
+    | '/lmia'
+    | '/auth/login'
+    | '/research/wage-subsidies-immigrants'
+    | '/research'
   id:
     | '__root__'
     | '/'
@@ -91,6 +120,8 @@ export interface FileRouteTypes {
     | '/jobs'
     | '/lmia'
     | '/auth/login'
+    | '/research/wage-subsidies-immigrants'
+    | '/research/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -100,6 +131,8 @@ export interface RootRouteChildren {
   JobsRoute: typeof JobsRoute
   LmiaRoute: typeof LmiaRoute
   AuthLoginRoute: typeof AuthLoginRoute
+  ResearchWageSubsidiesImmigrantsRoute: typeof ResearchWageSubsidiesImmigrantsRoute
+  ResearchIndexRoute: typeof ResearchIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -139,6 +172,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/research/': {
+      id: '/research/'
+      path: '/research'
+      fullPath: '/research'
+      preLoaderRoute: typeof ResearchIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/research/wage-subsidies-immigrants': {
+      id: '/research/wage-subsidies-immigrants'
+      path: '/research/wage-subsidies-immigrants'
+      fullPath: '/research/wage-subsidies-immigrants'
+      preLoaderRoute: typeof ResearchWageSubsidiesImmigrantsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/login': {
       id: '/auth/login'
       path: '/auth/login'
@@ -156,6 +203,8 @@ const rootRouteChildren: RootRouteChildren = {
   JobsRoute: JobsRoute,
   LmiaRoute: LmiaRoute,
   AuthLoginRoute: AuthLoginRoute,
+  ResearchWageSubsidiesImmigrantsRoute: ResearchWageSubsidiesImmigrantsRoute,
+  ResearchIndexRoute: ResearchIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

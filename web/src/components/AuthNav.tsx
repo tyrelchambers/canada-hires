@@ -5,6 +5,7 @@ import canadaHires from "@/assets/canada hires.svg";
 const navigationLinks = [
   { to: "/lmia", label: "LMIA Search" },
   { to: "/jobs", label: "Job Postings" },
+  { to: "/research", label: "Research" },
   { to: "/feedback", label: "Feedback" },
 ];
 
