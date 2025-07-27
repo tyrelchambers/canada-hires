@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AuthNav } from "@/components/AuthNav";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -13,7 +12,6 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faInfoCircle,
-  faExclamationTriangle,
   faMapMarkerAlt,
   faCalendar,
   faDollarSign,
@@ -25,9 +23,9 @@ export const Route = createFileRoute("/research/wage-subsidies-immigrants")({
     meta: [
       {
         title:
-          "Canadian Wage Subsidy Programs for Hiring Immigrants (2025) - JobWatch Canada",
+          "How Canadian Wage Subsidy Programs Work: What Canadians Need to Know (2025) - JobWatch Canada",
         description:
-          "Comprehensive guide to federal, provincial, and territorial wage subsidy programs available to Canadian businesses hiring immigrants and newcomers in 2025.",
+          "Understanding how your tax dollars fund wage subsidy programs for immigrant hiring across Canada. A comprehensive guide to federal, provincial, and territorial programs affecting Canadian workers and businesses.",
       },
     ],
   }),
@@ -42,34 +40,38 @@ function WageSubsidiesPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Canadian Wage Subsidy Programs for Hiring Immigrants and Newcomers
+            Understanding Canadian Wage Subsidy Programs: How They Work and What
+            They Mean for Canadians
           </h1>
           <p className="text-xl text-gray-600 mb-6">
-            Comprehensive analysis of federal, provincial, and territorial
-            programs providing wage subsidies to businesses hiring immigrants
-            (2025)
+            A comprehensive guide to how Canadian tax dollars fund wage
+            subsidies for immigrant hiring and what this means for Canadian
+            workers and communities (2025)
           </p>
 
           <div className="flex items-center gap-2 text-sm text-gray-500">
             <FontAwesomeIcon icon={faCalendar} className="w-4 h-4" />
-            <span>Last updated: January 2025</span>
+            <span>Last updated: July 2025</span>
           </div>
         </div>
 
-       {/* Executive Summary */}
+        {/* What This Means for Canadians */}
         <Card className="mb-8">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FontAwesomeIcon icon={faInfoCircle} className="w-5 h-5" />
-              Executive Summary
+              What This Means for Canadians
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p>
-              Canada offers numerous wage subsidy programs that can benefit
-              businesses hiring immigrants and newcomers. These programs range
-              from 15% to 80% wage subsidies, with durations from 4 months to 1
-              year depending on the specific program.
+              Canadian taxpayers fund numerous wage subsidy programs that
+              provide financial incentives to businesses hiring immigrants and
+              newcomers. These publicly-funded programs cover 15% to 80% of
+              wages paid by employers, with durations from 4 months to 1 year.
+              Understanding these programs helps Canadians see how their tax
+              dollars are being used and what impact they have on the Canadian
+              job market.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-blue-50 p-4 rounded-lg">
@@ -77,7 +79,8 @@ function WageSubsidiesPage() {
                   Federal Programs
                 </h4>
                 <p className="text-sm text-blue-700">
-                  Summer jobs, student placements, skills training
+                  Federal tax dollars fund summer jobs, student placements, and
+                  skills training programs
                 </p>
               </div>
               <div className="bg-green-50 p-4 rounded-lg">
@@ -85,7 +88,8 @@ function WageSubsidiesPage() {
                   Provincial Programs
                 </h4>
                 <p className="text-sm text-green-700">
-                  Integration programs, apprenticeships, employment support
+                  Provincial tax dollars fund integration programs,
+                  apprenticeships, and employment support
                 </p>
               </div>
               <div className="bg-purple-50 p-4 rounded-lg">
@@ -93,9 +97,79 @@ function WageSubsidiesPage() {
                   Territorial Programs
                 </h4>
                 <p className="text-sm text-purple-700">
-                  Remote area support, skills development, workforce integration
+                  Territorial tax dollars fund remote area support, skills
+                  development, and workforce integration
                 </p>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Understanding Wage Subsidies */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FontAwesomeIcon icon={faDollarSign} className="w-5 h-5" />
+              How Wage Subsidies Work and Impact Canadian Workers
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="bg-blue-50 p-6 rounded-lg">
+              <h3 className="font-semibold text-blue-900 mb-3">
+                What Are Wage Subsidies?
+              </h3>
+              <p className="text-blue-800">
+                Wage subsidies are government payments that cover a portion of
+                an employee's salary, paid directly to employers who hire from
+                specific groups. The employer pays the full wage to the worker,
+                then receives reimbursement from the government for the
+                subsidized portion.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-green-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-green-900 mb-2">
+                  Potential Benefits for Canadians
+                </h4>
+                <ul className="text-sm text-green-800 space-y-1">
+                  <li>• Skills integration helps fill labour shortages</li>
+                  <li>
+                    • Economic growth through increased workforce participation
+                  </li>
+                  <li>• Knowledge transfer and innovation</li>
+                  <li>• Regional development in areas with worker shortages</li>
+                </ul>
+              </div>
+
+              <div className="bg-yellow-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-yellow-900 mb-2">
+                  Considerations for Canadian Workers
+                </h4>
+                <ul className="text-sm text-yellow-800 space-y-1">
+                  <li>
+                    • May create financial incentives to hire subsidized workers
+                    over others
+                  </li>
+                  <li>• Programs are time-limited (typically 4-12 months)</li>
+                  <li>• Focus on specific sectors or skill areas</li>
+                  <li>• Transparency in program outcomes varies by region</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="bg-gray-100 p-4 rounded-lg">
+              <h4 className="font-semibold text-gray-900 mb-2">
+                Public Funding Transparency
+              </h4>
+              <p className="text-sm text-gray-700">
+                These programs are funded through federal, provincial, and
+                territorial budgets using Canadian tax dollars. While program
+                details are publicly available, comprehensive data on outcomes,
+                job displacement effects, and long-term employment retention is
+                often limited or not consistently published across
+                jurisdictions.
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -589,35 +663,50 @@ function WageSubsidiesPage() {
         {/* Conclusion */}
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle>Key Takeaways for Employers</CardTitle>
+            <CardTitle>Key Information for Canadians</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <h4 className="font-semibold text-green-700 mb-2">
-                  Available Support
+                  How Your Tax Dollars Are Used
                 </h4>
                 <ul className="space-y-1 text-sm">
                   <li>
-                    • Multiple funding streams available across all regions
+                    • Multiple publicly-funded programs across all regions
                   </li>
-                  <li>• Subsidies range from 15% to 80% of wages</li>
-                  <li>• Additional support for training and integration</li>
                   <li>
-                    • Programs target skills shortages and underrepresented
-                    groups
+                    • Government covers 15% to 80% of wages for participating
+                    employers
+                  </li>
+                  <li>
+                    • Additional funding for training and integration support
+                  </li>
+                  <li>
+                    • Programs aim to address regional labour shortages and
+                    skill gaps
                   </li>
                 </ul>
               </div>
               <div>
                 <h4 className="font-semibold text-blue-700 mb-2">
-                  Important Considerations
+                  What Canadians Should Know
                 </h4>
                 <ul className="space-y-1 text-sm">
-                  <li>• Programs are not exclusive to immigrants</li>
-                  <li>• Eligibility requirements vary by region</li>
-                  <li>• Some programs have limited funding/waitlists</li>
-                  <li>• 2025 sees reduced immigration allocations</li>
+                  <li>
+                    • Programs create temporary hiring incentives (4-12 months
+                    typically)
+                  </li>
+                  <li>
+                    • Eligibility requirements and oversight vary by region
+                  </li>
+                  <li>
+                    • Some programs have limited funding and may have waitlists
+                  </li>
+                  <li>
+                    • 2025 sees reduced immigration targets affecting program
+                    demand
+                  </li>
                 </ul>
               </div>
             </div>
@@ -625,10 +714,11 @@ function WageSubsidiesPage() {
             <div className="mt-6 p-4 bg-gray-100 rounded-lg">
               <p className="text-sm text-gray-700">
                 <strong>Disclaimer:</strong> This information is based on
-                publicly available sources as of January 2025. Program details,
-                funding amounts, and eligibility criteria may change. Employers
-                should contact relevant government agencies directly to confirm
-                current program availability and requirements.
+                publicly available sources as of July 2025. Program details,
+                funding amounts, and eligibility criteria may change. Canadians
+                interested in learning more should contact relevant government
+                agencies directly to confirm current program availability,
+                outcomes data, and transparency measures.
               </p>
             </div>
           </CardContent>
