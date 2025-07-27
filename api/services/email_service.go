@@ -30,7 +30,7 @@ func NewEmailService() EmailService {
 		smtpPort:     port,
 		smtpUser:     getEnv("SMTP_USER", ""),
 		smtpPassword: getEnv("SMTP_PASSWORD", ""),
-		fromEmail:    getEnv("FROM_EMAIL", "noreply@canada-hires.com"),
+		fromEmail:    getEnv("FROM_EMAIL", "noreply@jobwatchcanada.com"),
 		backendURL:   getEnv("API_URL", "http://localhost:8000"),
 	}
 }
@@ -41,14 +41,14 @@ func (s *emailService) SendLoginLink(email, token string) error {
 	m := gomail.NewMessage()
 	m.SetHeader("From", s.fromEmail)
 	m.SetHeader("To", email)
-	m.SetHeader("Subject", "Login to Canada Hires")
+	m.SetHeader("Subject", "Login to JobWatch Canada")
 
 	body := fmt.Sprintf(`
 		<html>
 		<body>
-			<h2>Login to Canada Hires</h2>
+			<h2>Login to JobWatch Canada</h2>
 			<p>Click the link below to log in to your account:</p>
-			<p><a href="%s">Login to Canada Hires</a></p>
+			<p><a href="%s">Login to JobWatch Canada</a></p>
 			<p>This link will expire in 15 minutes.</p>
 			<p>If you didn't request this login, please ignore this email.</p>
 		</body>

@@ -1,6 +1,6 @@
 # Job Scraper API Integration
 
-This document explains how to integrate your job scraper with the Canada Hires API.
+This document explains how to integrate your job scraper with the JobWatch Canada API.
 
 ## Database Migration
 

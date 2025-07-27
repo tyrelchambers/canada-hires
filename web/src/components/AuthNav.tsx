@@ -70,7 +70,7 @@ export function AuthNav() {
         <div></div>
         {/* <div className="hidden md:flex items-center gap-4">
           <div className="text-right">
-            <p className="text-sm font-medium">Canada Hires</p>
+            <p className="text-sm font-medium">JobWatch Canada</p>
             <p className="text-xs text-gray-600">Sign in to submit reports</p>
           </div>
           <Button onClick={handleLogin}>Sign In</Button>
@@ -113,7 +113,7 @@ export function AuthNav() {
             <NavLinks onLinkClick={() => setIsMobileMenuOpen(false)} />
             <div></div>
             {/* <div className="border-t pt-3 mt-3 text-center">
-              <p className="text-sm font-medium mb-1">Canada Hires</p>
+              <p className="text-sm font-medium mb-1">JobWatch Canada</p>
               <p className="text-xs text-gray-600 mb-3">
                 Sign in to submit reports
               </p>

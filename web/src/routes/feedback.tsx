@@ -26,7 +26,7 @@ function FeedbackPage() {
                 Feedback & Data Accuracy
               </CardTitle>
               <CardDescription>
-                Help us improve Canada Hires by reporting data issues or sharing
+                Help us improve JobWatch Canada by reporting data issues or sharing
                 suggestions
               </CardDescription>
             </CardHeader>
@@ -51,11 +51,11 @@ function FeedbackPage() {
                 </p>
                 <Button asChild className="w-full sm:w-auto">
                   <a
-                    href="mailto:connect@canadahires.info"
+                    href="mailto:connect@jobwatchcanada.com"
                     className="flex items-center gap-2"
                   >
                     <Mail className="h-4 w-4" />
-                    connect@canadahires.info
+                    connect@jobwatchcanada.com
                   </a>
                 </Button>
               </div>

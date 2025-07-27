@@ -27,7 +27,7 @@ function RouteComponent() {
             Make informed decisions about where you spend your money
           </h1>
           <p className="md:text-xl text-gray-500 font-light  text-center mb-10">
-            Canada Hires provides transparent reporting on Canadian businesses'
+            JobWatch Canada provides transparent reporting on Canadian businesses'
             use of the Temporary Foreign Worker program, helping you support
             companies that prioritize hiring Canadians.
           </p>
@@ -135,10 +135,10 @@ function RouteComponent() {
 
       <section className="max-w-5xl mx-auto w-full my-20 p-4">
         <h2 className="text-3xl lg:text-4xl -tracking-wide text-center mb-6 font-medium">
-          The goal of Canada Hires
+          The goal of JobWatch Canada
         </h2>
         <p className="lg:text-2xl font-light leading-relaxed text-center">
-          Canada Hires aims to bring transparency to these practices by tracking
+          JobWatch Canada aims to bring transparency to these practices by tracking
           which employers frequently rely on the TFW program and providing
           Canadians with the information needed to make informed decisions about
           where to spend their money.

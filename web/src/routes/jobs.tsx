@@ -8,7 +8,7 @@ export const Route = createFileRoute("/jobs")({
   head: () => ({
     meta: [
       {
-        title: "LMIA Job Postings - Canada Hires",
+        title: "LMIA Job Postings - JobWatch Canada",
         description:
           "Browse current LMIA job postings from Canadian employers. Find opportunities and apply for positions that require Labour Market Impact Assessment approval.",
       },
