@@ -56,7 +56,7 @@ export function AuthNav() {
   // };
 
   return (
-    <div className="bg-gray-100 border-b">
+    <div className="border-b">
       <div className="flex items-center justify-between p-4">
         <Link to="/" className="font-bold text-lg">
           <img src={canadaHires} className="h-10" />
