@@ -143,7 +143,7 @@ func (jc *JobController) GetJobPostings(w http.ResponseWriter, r *http.Request) 
 	// Parse pagination
 	limit := 25 // default
 	if limitStr != "" {
-		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 && parsedLimit <= 100 {
+		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 && parsedLimit <= 10000 {
 			limit = parsedLimit
 		}
 	}
@@ -155,8 +155,8 @@ func (jc *JobController) GetJobPostings(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	// Parse days filter (default to 30 days)
-	days := 30
+	// Parse days filter (default to all jobs if not specified)
+	days := 0 // 0 means no date filter
 	if daysStr != "" {
 		if parsedDays, err := strconv.Atoi(daysStr); err == nil && parsedDays >= 0 {
 			days = parsedDays

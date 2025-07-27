@@ -586,6 +586,7 @@ func (r *jobBankRepository) SearchJobPostingsAdvanced(filters map[string]interfa
 	}
 	
 	// Add days filter (jobs posted within X days)
+	// Only apply the filter if days > 0, otherwise show all jobs
 	if days, ok := filters["days"].(int); ok && days > 0 {
 		whereClause += fmt.Sprintf(" AND posting_date >= NOW() - INTERVAL '%d days'", days)
 	}

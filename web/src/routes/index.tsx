@@ -3,10 +3,13 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AuthNav } from "@/components/AuthNav";
 import { StripedBackground } from "@/components/StripedBackground";
 import { TodaysJobs } from "@/components/TodaysJobs";
+import { Footer } from "@/components/Footer";
 import clsx from "clsx";
 import { useLMIAStats } from "@/hooks/useLMIA";
 import { Badge } from "@/components/ui/badge";
 import Stat from "@/components/Stat";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faArrowRight, faFlask } from "@fortawesome/free-solid-svg-icons";
 
 export const Route = createFileRoute("/")({
   component: RouteComponent,
@@ -144,6 +147,31 @@ function RouteComponent() {
           decisions about where to spend their money.
         </p>
       </section>
+
+      <section className="my-20 mx-4 lg:max-w-5xl lg:w-full lg:mx-auto p-8 lg:p-20 bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl shadow-xl shadow-gray-900/60 relative">
+        <StripedBackground className="mask-l-from-0%" />
+        <div className="flex flex-col items-start">
+          <FontAwesomeIcon icon={faFlask} className="text-3xl text-white" />
+          <h3 className="lg:text-4xl font-medium -tracking-wide max-w-lg text-white my-4">
+            See how JobWatch Canada is tracking LMIA exploitation
+          </h3>
+          <p className="text-sm lg:text-lg text-white/70 mb-8 ">
+            JobWatch Canada is tracking LMIA exploitation by analyzing data on
+            temporary foreign worker applications and comparing them to the
+            domestic labor market. This information is then made available to
+            Canadians through our website and social media channels.
+          </p>
+          <Link
+            to="/research"
+            className={clsx(buttonVariants({ variant: "default" }))}
+          >
+            <FontAwesomeIcon icon={faArrowRight} />
+            See research
+          </Link>
+        </div>
+      </section>
+
+      <Footer />
     </div>
   );
 }

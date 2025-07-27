@@ -45,6 +45,13 @@ COPY --from=builder --chown=appuser:appgroup /app/main /app/main
 COPY --from=builder --chown=appuser:appgroup /app/migrations /app/migrations
 COPY --from=builder --chown=appuser:appgroup /app/scraper /app/scraper
 
+# Install scraper dependencies
+WORKDIR /app/scraper
+RUN npm install
+
+# Return to main app directory
+WORKDIR /app
+
 # Change ownership of npm files to appuser
 RUN chown -R appuser:appgroup /app
 

@@ -39,7 +39,7 @@ export function JobPostings() {
   const [sortBy, setSortBy] = useState("posting_date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 25;
+  const itemsPerPage = 100;
 
   // Debounced values for API calls
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
@@ -68,7 +68,7 @@ export function JobPostings() {
       offset: (currentPage - 1) * itemsPerPage,
       sort_by: sortBy,
       sort_order: sortOrder,
-      days: 30, // Default to last 30 days
+      days: 0, // Show all jobs by default
     };
 
     if (debouncedSearchQuery.trim()) f.search = debouncedSearchQuery.trim();
@@ -221,7 +221,7 @@ export function JobPostings() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {Array.from({ length: itemsPerPage }).map((_, index) => (
+            {Array.from({ length: Math.min(itemsPerPage, 10) }).map((_, index) => (
               <TableRow key={index}>
                 <TableCell>
                   <div className="max-w-xs">
@@ -333,7 +333,7 @@ export function JobPostings() {
             label="Unique Employers"
             value={statsData.total_employers.toLocaleString()}
           />
-          <Stat label="Default View Period" value="Last 30 Days" />
+          <Stat label="Default View Period" value="All Jobs" />
         </div>
       )}
 
