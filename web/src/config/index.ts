@@ -5,21 +5,21 @@ interface Config {
 
 const configs: Record<string, Config> = {
   development: {
-    apiUrl: 'http://localhost:8000',
-    environment: 'development'
+    apiUrl: "http://localhost:8000",
+    environment: "development",
   },
   production: {
-    apiUrl: 'https://api.canadahires.info',
-    environment: 'production'
+    apiUrl: "https://api.jobwatchcanada.com",
+    environment: "production",
   },
   staging: {
-    apiUrl: 'https://staging-api.canadahires.info',
-    environment: 'staging'
-  }
+    apiUrl: "https://staging-api.jobwatchcanada.com",
+    environment: "staging",
+  },
 };
 
 const getConfig = (): Config => {
-  const env = import.meta.env.MODE || 'development';
+  const env = import.meta.env.MODE || "development";
   return configs[env] || configs.development;
 };
 
