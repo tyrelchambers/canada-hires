@@ -188,10 +188,6 @@ export function TodaysJobs() {
                       job.salary_type,
                     ) ? (
                       <div className="flex items-center">
-                        <FontAwesomeIcon
-                          icon={faDollarSign}
-                          className="mr-1 text-gray-400 w-3 h-3"
-                        />
                         <span className="text-sm">
                           {formatSalary(
                             job.salary_min,
