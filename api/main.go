@@ -39,7 +39,7 @@ func main() {
 
 	// Setup router with CORS
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:5173", "https://canadahires.info"},
+		AllowedOrigins:   []string{"http://localhost:5173", "https://jobwatchcanada.com"},
 		AllowedMethods:   []string{http.MethodGet, http.MethodHead, http.MethodPut, http.MethodPatch, http.MethodPost, http.MethodDelete, http.MethodOptions},
 		AllowedHeaders:   []string{"Origin", "Content-Type", "file-type", "Authorization", "X-Request-ID"},
 		ExposedHeaders:   []string{"Link", "X-Request-ID"},
