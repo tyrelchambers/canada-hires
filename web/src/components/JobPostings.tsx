@@ -41,7 +41,27 @@ export function JobPostings() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 25;
 
-  // Build filters object
+  // Debounced values for API calls
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const [debouncedEmployer, setDebouncedEmployer] = useState("");
+  const [debouncedCity, setDebouncedCity] = useState("");
+  const [debouncedTitle, setDebouncedTitle] = useState("");
+  const [debouncedSalaryMin, setDebouncedSalaryMin] = useState("");
+
+  // Debounce effect for search inputs
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+      setDebouncedEmployer(employer);
+      setDebouncedCity(city);
+      setDebouncedTitle(title);
+      setDebouncedSalaryMin(salaryMin);
+    }, 500); // 500ms delay
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, employer, city, title, salaryMin]);
+
+  // Build filters object using debounced values
   const filters: JobPostingFilters = useMemo(() => {
     const f: JobPostingFilters = {
       limit: itemsPerPage,
@@ -51,24 +71,24 @@ export function JobPostings() {
       days: 30, // Default to last 30 days
     };
 
-    if (searchQuery.trim()) f.search = searchQuery.trim();
-    if (employer.trim()) f.employer = employer.trim();
-    if (city.trim()) f.city = city.trim();
-    if (province.trim()) f.province = province.trim();
-    if (title.trim()) f.title = title.trim();
-    if (salaryMin.trim()) {
-      const parsed = parseFloat(salaryMin);
+    if (debouncedSearchQuery.trim()) f.search = debouncedSearchQuery.trim();
+    if (debouncedEmployer.trim()) f.employer = debouncedEmployer.trim();
+    if (debouncedCity.trim()) f.city = debouncedCity.trim();
+    if (province.trim()) f.province = province.trim(); // Province is dropdown, no debounce needed
+    if (debouncedTitle.trim()) f.title = debouncedTitle.trim();
+    if (debouncedSalaryMin.trim()) {
+      const parsed = parseFloat(debouncedSalaryMin);
       if (!isNaN(parsed)) f.salary_min = parsed;
     }
 
     return f;
   }, [
-    searchQuery,
-    employer,
-    city,
+    debouncedSearchQuery,
+    debouncedEmployer,
+    debouncedCity,
     province,
-    title,
-    salaryMin,
+    debouncedTitle,
+    debouncedSalaryMin,
     sortBy,
     sortOrder,
     currentPage,
@@ -78,18 +98,26 @@ export function JobPostings() {
 
   const { data: statsData } = useJobStats();
 
+  // Check if we're waiting for debounced values to update
+  const isTyping =
+    searchQuery !== debouncedSearchQuery ||
+    employer !== debouncedEmployer ||
+    city !== debouncedCity ||
+    title !== debouncedTitle ||
+    salaryMin !== debouncedSalaryMin;
+
   const totalPages = jobData ? Math.ceil(jobData.total / itemsPerPage) : 0;
 
-  // Reset to first page when search parameters change
+  // Reset to first page when search parameters change (using debounced values)
   useEffect(() => {
     setCurrentPage(1);
   }, [
-    searchQuery,
-    employer,
-    city,
+    debouncedSearchQuery,
+    debouncedEmployer,
+    debouncedCity,
     province,
-    title,
-    salaryMin,
+    debouncedTitle,
+    debouncedSalaryMin,
     sortBy,
     sortOrder,
   ]);
@@ -113,6 +141,13 @@ export function JobPostings() {
     setSortBy("posting_date");
     setSortOrder("desc");
     setCurrentPage(1);
+
+    // Also clear debounced values immediately
+    setDebouncedSearchQuery("");
+    setDebouncedEmployer("");
+    setDebouncedCity("");
+    setDebouncedTitle("");
+    setDebouncedSalaryMin("");
   };
 
   const formatSalary = (min?: number, max?: number, type?: string) => {
@@ -163,6 +198,88 @@ export function JobPostings() {
     "SK",
     "YT",
   ];
+
+  // Skeleton loading component
+  const SkeletonTable = () => (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="h-6 bg-gray-200 rounded w-48 animate-pulse"></div>
+        <div className="h-4 bg-gray-200 rounded w-32 animate-pulse"></div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow-sm border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Job Title</TableHead>
+              <TableHead>Employer</TableHead>
+              <TableHead>Location</TableHead>
+              <TableHead>Salary</TableHead>
+              <TableHead>Posted Date</TableHead>
+              <TableHead>LMIA Status</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {Array.from({ length: itemsPerPage }).map((_, index) => (
+              <TableRow key={index}>
+                <TableCell>
+                  <div className="max-w-xs">
+                    <div className="h-4 bg-gray-200 rounded animate-pulse mb-1"></div>
+                    <div className="h-3 bg-gray-100 rounded animate-pulse w-3/4"></div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="max-w-xs flex items-center">
+                    <div className="w-3 h-3 bg-gray-200 rounded mr-2 animate-pulse"></div>
+                    <div className="h-4 bg-gray-200 rounded animate-pulse flex-1"></div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 bg-gray-200 rounded mr-2 animate-pulse"></div>
+                    <div className="h-4 bg-gray-200 rounded animate-pulse w-20"></div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="h-4 bg-gray-200 rounded animate-pulse w-24"></div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 bg-gray-200 rounded mr-1 animate-pulse"></div>
+                    <div className="h-4 bg-gray-200 rounded animate-pulse w-16"></div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="h-6 bg-yellow-100 rounded-full animate-pulse w-24"></div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 bg-gray-200 rounded animate-pulse w-16"></div>
+                    <div className="h-8 bg-gray-200 rounded animate-pulse w-16"></div>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Skeleton pagination */}
+      <div className="flex items-center justify-between mt-6">
+        <div className="h-4 bg-gray-200 rounded w-32 animate-pulse"></div>
+        <div className="flex gap-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-8 w-8 bg-gray-200 rounded animate-pulse"
+            ></div>
+          ))}
+        </div>
+        <div className="h-4 bg-gray-200 rounded w-24 animate-pulse"></div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -226,6 +343,12 @@ export function JobPostings() {
           <CardTitle className="flex items-center gap-2">
             <FontAwesomeIcon icon={faSearch} className="w-5 h-5" />
             Search LMIA Job Postings
+            {isTyping && (
+              <div className="ml-auto flex items-center gap-1 text-sm text-gray-500 font-normal">
+                <div className="animate-spin rounded-full h-3 w-3 border-b border-gray-400"></div>
+                Searching...
+              </div>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -323,16 +446,7 @@ export function JobPostings() {
       </Card>
 
       {/* Results */}
-      {isLoading && (
-        <Card>
-          <CardContent className="py-8 text-center">
-            <div className="flex items-center justify-center space-x-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
-              <span>Loading job postings...</span>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {(isLoading || isTyping) && <SkeletonTable />}
 
       {error && (
         <Card>
@@ -348,7 +462,7 @@ export function JobPostings() {
         </Card>
       )}
 
-      {jobData && jobData.jobs && jobData.jobs.length > 0 && (
+      {jobData && jobData.jobs && jobData.jobs.length > 0 && !isTyping && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">
@@ -520,23 +634,27 @@ export function JobPostings() {
         </div>
       )}
 
-      {jobData && jobData.jobs && jobData.jobs.length === 0 && !isLoading && (
-        <Card>
-          <CardContent className="py-8 text-center">
-            <FontAwesomeIcon
-              icon={faSearch}
-              className="w-8 h-8 text-gray-400 mx-auto mb-2"
-            />
-            <p className="text-gray-600">
-              No job postings found matching your criteria.
-            </p>
-            <p className="text-sm text-gray-500 mt-1">
-              Try adjusting your search filters or check back later for new
-              postings.
-            </p>
-          </CardContent>
-        </Card>
-      )}
+      {jobData &&
+        jobData.jobs &&
+        jobData.jobs.length === 0 &&
+        !isLoading &&
+        !isTyping && (
+          <Card>
+            <CardContent className="py-8 text-center">
+              <FontAwesomeIcon
+                icon={faSearch}
+                className="w-8 h-8 text-gray-400 mx-auto mb-2"
+              />
+              <p className="text-gray-600">
+                No job postings found matching your criteria.
+              </p>
+              <p className="text-sm text-gray-500 mt-1">
+                Try adjusting your search filters or check back later for new
+                postings.
+              </p>
+            </CardContent>
+          </Card>
+        )}
     </div>
   );
 }
