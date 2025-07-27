@@ -27,9 +27,9 @@ function RouteComponent() {
             Make informed decisions about where you spend your money
           </h1>
           <p className="md:text-xl text-gray-500 font-light  text-center mb-10">
-            JobWatch Canada provides transparent reporting on Canadian businesses'
-            use of the Temporary Foreign Worker program, helping you support
-            companies that prioritize hiring Canadians.
+            JobWatch Canada provides transparent reporting on Canadian
+            businesses' use of the Temporary Foreign Worker program, helping you
+            support companies that prioritize hiring Canadians.
           </p>
 
           <div className="flex md:flex-row flex-col gap-6 justify-center">
@@ -66,8 +66,8 @@ function RouteComponent() {
           />
 
           <Stat
-            label="Distinct employers"
-            value={String(stats?.distinct_employers.toLocaleString() ?? "0")}
+            label="Total records"
+            value={String(stats?.total_records.toLocaleString() ?? "0")}
           />
         </div>
       </section>
@@ -138,10 +138,10 @@ function RouteComponent() {
           The goal of JobWatch Canada
         </h2>
         <p className="lg:text-2xl font-light leading-relaxed text-center">
-          JobWatch Canada aims to bring transparency to these practices by tracking
-          which employers frequently rely on the TFW program and providing
-          Canadians with the information needed to make informed decisions about
-          where to spend their money.
+          JobWatch Canada aims to bring transparency to these practices by
+          tracking which employers frequently rely on the TFW program and
+          providing Canadians with the information needed to make informed
+          decisions about where to spend their money.
         </p>
       </section>
     </div>
