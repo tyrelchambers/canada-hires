@@ -12,7 +12,6 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faMapMarkerAlt,
   faBuilding,
-  faDollarSign,
   faFlag,
   faUsers,
   faExternalLinkAlt,

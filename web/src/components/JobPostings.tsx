@@ -19,7 +19,6 @@ import {
   faExclamationCircle,
   faBuilding,
   faCalendar,
-  faDollarSign,
   faExternalLinkAlt,
   faFlag,
   faInfoCircle,
