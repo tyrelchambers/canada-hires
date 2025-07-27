@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Canada Hires** is a community-driven business demographics reporting platform that provides transparency about Temporary Foreign Worker (TFW) program usage in Canadian businesses. The platform allows verified users to submit reports about hiring practices, creating a public directory with confidence-scored ratings to help Canadians make informed decisions about which businesses to support.
 
+**Data Disclaimer**: All government and business data is sourced from official databases and public records. While we make every effort to ensure accuracy, the complexity of these data systems may result in occasional errors. Our goal is to make this information more accessible and transparent. If you notice any inaccuracies or have feedback, please contact us through our feedback page - we value your input and will work promptly to address any issues.
+
 Key features include:
 - Passwordless email authentication system
 - Business directory with location-based search
@@ -13,6 +15,7 @@ Key features include:
 - Confidence scoring algorithm based on user verification tiers
 - Public business ratings (Green/Yellow/Red) based on TFW percentage
 - Anti-gaming measures and moderation system
+- Feedback system for data accuracy and platform improvements
 
 See `docs/FUNCTIONAL_OUTLINE.md` and `docs/BUSINESS_DEMOGRAPHICS_FEATURE_SPEC.md` for detailed project requirements and goals.
 

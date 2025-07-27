@@ -23,10 +23,12 @@ import {
   faExternalLinkAlt,
   faFlag,
   faInfoCircle,
-  faUsers,
+  faExclamationTriangle,
 } from "@fortawesome/free-solid-svg-icons";
 import { useJobPostings, useJobStats } from "@/hooks/useJobPostings";
 import { JobPostingFilters } from "@/types";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import Stat from "./Stat";
 
 export function JobPostings() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -166,76 +168,57 @@ export function JobPostings() {
   return (
     <div className="space-y-6">
       {/* Educational Content About LMIA */}
-      <Card className="border-l-4 border-l-yellow-500">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-yellow-700">
-            <FontAwesomeIcon icon={faInfoCircle} className="w-5 h-5" />
-            About Labour Market Impact Assessment (LMIA) Job Postings
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="bg-yellow-50 p-4 rounded-lg">
-            <p className="text-sm text-yellow-800 mb-3">
-              <strong>What is LMIA?</strong> A Labour Market Impact Assessment
-              (LMIA) is a document that an employer in Canada may need to get
-              before hiring a foreign worker. It shows that there is a need for
-              a foreign worker to fill the job and that no Canadian worker or
-              permanent resident is available to do the job.
-            </p>
-            <p className="text-sm text-yellow-800 mb-3">
-              <strong>Canadian workers are encouraged to apply!</strong> Before
-              hiring through the Temporary Foreign Worker (TFW) Program,
-              employers must demonstrate they couldn't find qualified Canadian
-              workers. If you're qualified for these positions, you should still
-              apply even if they show LMIA approval.
-            </p>
-            <p className="text-sm text-yellow-800">
-              <strong>No response from employers?</strong> If you apply for
-              these jobs but don't receive interviews or responses despite being
-              qualified, this could indicate potential misuse of the TFW
-              program. Report such cases to{" "}
-              <a
-                href="https://www.canada.ca/en/employment-social-development/programs/temporary-foreign-worker/report-fraud.html"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 underline"
-              >
-                the TFW program tip line
-              </a>
-              .
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="border border-border p-6 rounded-xl ">
+        <p>
+          <FontAwesomeIcon icon={faInfoCircle} /> About Labour Market Impact
+          Assessment (LMIA) Job Postings
+        </p>
+        <div className="space-y-4 mt-6">
+          <p className="text-sm mb-3">
+            <strong>What is LMIA?</strong> A Labour Market Impact Assessment
+            (LMIA) is a document that an employer in Canada may need to get
+            before hiring a foreign worker. It shows that there is a need for a
+            foreign worker to fill the job and that no Canadian worker or
+            permanent resident is available to do the job.
+          </p>
+          <p className="text-sm mb-3">
+            <strong>Canadian workers are encouraged to apply!</strong> Before
+            hiring through the Temporary Foreign Worker (TFW) Program, employers
+            must demonstrate they couldn't find qualified Canadian workers. If
+            you're qualified for these positions, you should still apply even if
+            they show LMIA approval.
+          </p>
+          <p className="text-sm">
+            <strong>No response from employers?</strong> If you apply for these
+            jobs but don't receive interviews or responses despite being
+            qualified, this could indicate potential misuse of the TFW program.
+            Report such cases to{" "}
+            <a
+              href="https://www.canada.ca/en/employment-social-development/services/foreign-workers/report-abuse.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 underline"
+            >
+              the TFW program tip line
+            </a>
+            .
+          </p>
+        </div>
+      </div>
 
       {/* Stats Card */}
       {statsData && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">
-                  {statsData.total_jobs.toLocaleString()}
-                </div>
-                <div className="text-sm text-gray-600">
-                  Total LMIA Job Postings
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">
-                  {statsData.total_employers.toLocaleString()}
-                </div>
-                <div className="text-sm text-gray-600">Unique Employers</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">
-                  Last 30 Days
-                </div>
-                <div className="text-sm text-gray-600">Default View Period</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="grid grid-cols-1 md:grid-cols-3  py-10">
+          <Stat
+            label="Total LMIA Job Postings"
+            value={statsData.total_jobs.toLocaleString()}
+          />
+          <Stat
+            label="Unique Employers"
+            value={statsData.total_employers.toLocaleString()}
+          />
+          <Stat label="Default View Period" value="Last 30 Days" />
+        </div>
       )}
 
       {/* Search and Filter Card */}
@@ -476,37 +459,51 @@ export function JobPostings() {
                             icon={faFlag}
                             className="w-3 h-3 mr-1"
                           />
-                          LMIA
+                          Pending LMIA
                         </Badge>
-                        {job.is_tfw && (
-                          <Badge
-                            variant="outline"
-                            className="bg-blue-50 text-blue-700 border-blue-200"
-                          >
-                            <FontAwesomeIcon
-                              icon={faUsers}
-                              className="w-3 h-3 mr-1"
-                            />
-                            TFW
-                          </Badge>
-                        )}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Button variant="outline" size="sm" asChild>
-                        <a
-                          href={job.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1"
-                        >
-                          <FontAwesomeIcon
-                            icon={faExternalLinkAlt}
-                            className="w-3 h-3"
-                          />
-                          Apply
-                        </a>
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" asChild>
+                          <a
+                            href={job.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1"
+                          >
+                            <FontAwesomeIcon
+                              icon={faExternalLinkAlt}
+                              className="w-3 h-3"
+                            />
+                            Apply
+                          </a>
+                        </Button>
+                        {job.job_bank_id && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="outline" size="sm" asChild>
+                                <a
+                                  href={`https://www.jobbank.gc.ca/surveyreportmisuse/${job.job_bank_id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1"
+                                >
+                                  <FontAwesomeIcon
+                                    icon={faExclamationTriangle}
+                                    className="w-3 h-3"
+                                  />
+                                  Report
+                                </a>
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Report potential misuse of this job posting to the
+                              Government of Canada
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

@@ -2,8 +2,11 @@ import { buttonVariants } from "@/components/ui/button";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AuthNav } from "@/components/AuthNav";
 import { StripedBackground } from "@/components/StripedBackground";
+import { TodaysJobs } from "@/components/TodaysJobs";
 import clsx from "clsx";
 import { useLMIAStats } from "@/hooks/useLMIA";
+import { Badge } from "@/components/ui/badge";
+import Stat from "@/components/Stat";
 
 export const Route = createFileRoute("/")({
   component: RouteComponent,
@@ -52,37 +55,30 @@ function RouteComponent() {
 
       <section className="min-h-[300px] items-center flex">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row py-10 gap-10 w-full justify-between">
-          <div className="flex items-center flex-col md:p-10">
-            <p className="font-mono text-5xl mb-2">
-              {stats?.distinct_employers.toLocaleString()}
-            </p>
-            <p className="uppercase font-medium text-xs text-muted-foreground">
-              Distinct employers
-            </p>
-          </div>
+          <Stat
+            label="Distinct employers"
+            value={String(stats?.distinct_employers.toLocaleString() ?? "0")}
+          />
 
-          <div className="flex items-center flex-col md:p-10">
-            <p className="font-mono text-5xl mb-2">
-              {stats?.year_range.min_year}-{stats?.year_range.max_year}
-            </p>
-            <p className="uppercase font-medium text-xs text-muted-foreground">
-              Years
-            </p>
-          </div>
+          <Stat
+            label="Years"
+            value={`${stats?.year_range.min_year}-${stats?.year_range.max_year}`}
+          />
 
-          <div className="flex items-center flex-col md:p-10">
-            <p className="font-mono text-5xl mb-2">
-              {stats?.total_records.toLocaleString()}
-            </p>
-            <p className="uppercase font-medium text-xs text-muted-foreground">
-              Total records
-            </p>
-          </div>
+          <Stat
+            label="Distinct employers"
+            value={String(stats?.distinct_employers.toLocaleString() ?? "0")}
+          />
         </div>
+      </section>
+
+      <section className="max-w-5xl mx-auto w-full my-20 px-4 ">
+        <TodaysJobs />
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-2 border-y border-border">
         <div className="flex flex-col gap-2 p-6 lg:p-20 max-w-3xl ml-auto border-r border-border">
+          <Badge className="w-fit">Exploitation</Badge>
           <h2 className="font-bold text-3xl mb-4 -tracking-wide">
             How Companies Exploit the LMIA Program
           </h2>
@@ -122,6 +118,8 @@ function RouteComponent() {
           <StripedBackground />
         </div>
         <div className="flex flex-col gap-2 p-6 lg:p-20 max-w-3xl mr-auto border-l border-border">
+          <Badge className="w-fit">Harming Canadians</Badge>
+
           <h2 className="font-bold text-3xl mb-4 -tracking-wide">
             LMIA exploitation is harming Canadians
           </h2>

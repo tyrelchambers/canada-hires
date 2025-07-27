@@ -538,24 +538,13 @@ func (r *jobBankRepository) SearchJobPostingsAdvanced(filters map[string]interfa
 	var totalCount int
 	
 	// Build base query
-	baseQuery := `
-		FROM job_postings 
-		WHERE 1=1
-	`
-	
-	countQuery := "SELECT COUNT(*) " + baseQuery
-	selectQuery := `
-		SELECT id, job_bank_id, title, employer, location, province, city,
-			   salary_min, salary_max, salary_type, salary_raw, posting_date, url, 
-			   is_tfw, has_lmia, description, scraping_run_id, created_at, updated_at
-	` + baseQuery
-	
+	whereClause := " WHERE 1=1"
 	var args []interface{}
 	argIndex := 1
 	
 	// Add search filter (searches across title, employer, location)
 	if search, ok := filters["search"].(string); ok && search != "" {
-		baseQuery += fmt.Sprintf(" AND (title ILIKE $%d OR employer ILIKE $%d OR location ILIKE $%d)", argIndex, argIndex, argIndex)
+		whereClause += fmt.Sprintf(" AND (title ILIKE $%d OR employer ILIKE $%d OR location ILIKE $%d)", argIndex, argIndex, argIndex)
 		searchTerm := "%" + search + "%"
 		args = append(args, searchTerm)
 		argIndex++
@@ -563,46 +552,46 @@ func (r *jobBankRepository) SearchJobPostingsAdvanced(filters map[string]interfa
 	
 	// Add employer filter
 	if employer, ok := filters["employer"].(string); ok && employer != "" {
-		baseQuery += fmt.Sprintf(" AND employer ILIKE $%d", argIndex)
+		whereClause += fmt.Sprintf(" AND employer ILIKE $%d", argIndex)
 		args = append(args, "%"+employer+"%")
 		argIndex++
 	}
 	
 	// Add title filter
 	if title, ok := filters["title"].(string); ok && title != "" {
-		baseQuery += fmt.Sprintf(" AND title ILIKE $%d", argIndex)
+		whereClause += fmt.Sprintf(" AND title ILIKE $%d", argIndex)
 		args = append(args, "%"+title+"%")
 		argIndex++
 	}
 	
 	// Add city filter
 	if city, ok := filters["city"].(string); ok && city != "" {
-		baseQuery += fmt.Sprintf(" AND (city ILIKE $%d OR location ILIKE $%d)", argIndex, argIndex)
+		whereClause += fmt.Sprintf(" AND (city ILIKE $%d OR location ILIKE $%d)", argIndex, argIndex)
 		args = append(args, "%"+city+"%")
 		argIndex++
 	}
 	
 	// Add province filter
 	if province, ok := filters["province"].(string); ok && province != "" {
-		baseQuery += fmt.Sprintf(" AND (province ILIKE $%d OR location ILIKE $%d)", argIndex, argIndex)
+		whereClause += fmt.Sprintf(" AND (province ILIKE $%d OR location ILIKE $%d)", argIndex, argIndex)
 		args = append(args, "%"+province+"%")
 		argIndex++
 	}
 	
 	// Add salary filter
 	if salaryMin, ok := filters["salary_min"].(*float64); ok && salaryMin != nil {
-		baseQuery += fmt.Sprintf(" AND salary_min >= $%d", argIndex)
+		whereClause += fmt.Sprintf(" AND salary_min >= $%d", argIndex)
 		args = append(args, *salaryMin)
 		argIndex++
 	}
 	
 	// Add days filter (jobs posted within X days)
 	if days, ok := filters["days"].(int); ok && days > 0 {
-		baseQuery += fmt.Sprintf(" AND posting_date >= NOW() - INTERVAL '%d days'", days)
+		whereClause += fmt.Sprintf(" AND posting_date >= NOW() - INTERVAL '%d days'", days)
 	}
 	
 	// Get total count
-	countQuery = "SELECT COUNT(*) " + baseQuery
+	countQuery := "SELECT COUNT(*) FROM job_postings" + whereClause
 	err := r.db.Get(&totalCount, countQuery, args...)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get total count: %w", err)
@@ -629,7 +618,11 @@ func (r *jobBankRepository) SearchJobPostingsAdvanced(filters map[string]interfa
 		sortOrder = order
 	}
 	
-	selectQuery = selectQuery + fmt.Sprintf(" ORDER BY %s %s", sortBy, sortOrder)
+	selectQuery := fmt.Sprintf(`
+		SELECT id, job_bank_id, title, employer, location, province, city,
+			   salary_min, salary_max, salary_type, salary_raw, posting_date, url, 
+			   is_tfw, has_lmia, description, scraping_run_id, created_at, updated_at
+		FROM job_postings%s ORDER BY %s %s`, whereClause, sortBy, sortOrder)
 	
 	// Add pagination
 	limit := 25

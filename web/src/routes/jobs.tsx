@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { JobPostings } from "@/components/JobPostings";
+import { AuthNav } from "@/components/AuthNav";
+import { DataDisclaimer } from "@/components/DataDisclaimer";
 
 export const Route = createFileRoute("/jobs")({
   component: JobsPage,
@@ -16,21 +18,25 @@ export const Route = createFileRoute("/jobs")({
 
 function JobsPage() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            LMIA Job Postings
-          </h1>
-          <p className="mt-2 text-lg text-gray-600">
-            Current job postings from Canadian employers that have received
-            Labour Market Impact Assessment (LMIA) approval for hiring foreign
-            workers. Canadian citizens and permanent residents are encouraged to
-            apply.
-          </p>
+    <section>
+      <AuthNav />
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">
+              LMIA Job Postings
+            </h1>
+            <p className="mt-2 text-lg text-gray-600">
+              Current job postings from Canadian employers that have received
+              Labour Market Impact Assessment (LMIA) approval for hiring foreign
+              workers. Canadian citizens and permanent residents are encouraged
+              to apply.
+            </p>
+          </div>
+          <JobPostings />
+          <DataDisclaimer className="mt-4" />
         </div>
-        <JobPostings />
       </div>
-    </div>
+    </section>
   );
 }

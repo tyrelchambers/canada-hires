@@ -11,6 +11,8 @@ import {
   faChartBar,
   faInfoCircle,
 } from "@fortawesome/free-solid-svg-icons";
+import { Quote } from "@/components/ui/quote";
+import { DataDisclaimer } from "@/components/DataDisclaimer";
 
 type LMIASearchParams = {
   tab?: "search" | "stats" | "about";
@@ -50,6 +52,16 @@ function RouteComponent() {
             Market Impact Assessments (LMIA) in Canada's Temporary Foreign
             Worker Program.
           </p>
+
+          <Quote
+            source="From the Government of Canada website"
+            url="https://open.canada.ca/data/en/dataset/90fed587-1364-4f33-a9ee-208181dc0b97"
+          >
+            This list excludes all personal names, such as employers of
+            caregivers or business names that use or include personal names. For
+            this reason, the list is not complete and does not reflect all
+            employers who requested or received an LMIA.
+          </Quote>
         </div>
 
         <Tabs value={tab} onValueChange={handleTabChange} className="space-y-6">
@@ -208,6 +220,7 @@ function RouteComponent() {
             </div>
           </TabsContent>
         </Tabs>
+        <DataDisclaimer className="mt-4" />
       </div>
     </div>
   );

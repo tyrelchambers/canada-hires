@@ -5,4 +5,5 @@ export interface JobData {
   location: string;
   jobUrl: string;
   date: string;
+  jobBankId?: string;
 }

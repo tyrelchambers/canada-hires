@@ -36,12 +36,13 @@ type JobPosting struct {
 
 // ScraperJobData represents the data structure from your scraper
 type ScraperJobData struct {
-	JobTitle string `json:"jobTitle"`
-	Business string `json:"business"`
-	Salary   string `json:"salary"`
-	Location string `json:"location"`
-	JobUrl   string `json:"jobUrl"`
-	Date     string `json:"date"`
+	JobTitle   string  `json:"jobTitle"`
+	Business   string  `json:"business"`
+	Salary     string  `json:"salary"`
+	Location   string  `json:"location"`
+	JobUrl     string  `json:"jobUrl"`
+	Date       string  `json:"date"`
+	JobBankID  *string `json:"jobBankId,omitempty"`
 }
 
 // NewJobPostingFromScraperData creates a JobPosting from scraper data
@@ -55,6 +56,7 @@ func NewJobPostingFromScraperData(scraperData ScraperJobData, scrapingRunID stri
 		ScrapingRunID: scrapingRunID,
 		IsTFW:         true, // All jobs from TFW scraper are TFW positions
 		HasLMIA:       true, // All jobs from TFW scraper have LMIA
+		JobBankID:     scraperData.JobBankID,                        // Job Bank ID from scraper
 	}
 
 	// Parse posting date
