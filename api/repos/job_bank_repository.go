@@ -465,6 +465,25 @@ func (r *jobBankRepository) createJobPostingsBatchUpdated(postings []*models.Job
 		return nil
 	}
 
+	// Deduplicate by URL to prevent "cannot affect row a second time" error
+	urlMap := make(map[string]*models.JobPosting)
+	var deduplicatedPostings []*models.JobPosting
+	
+	for _, posting := range postings {
+		if existing, exists := urlMap[posting.URL]; exists {
+			// Keep the one with more recent updated_at
+			if posting.UpdatedAt.After(existing.UpdatedAt) {
+				urlMap[posting.URL] = posting
+			}
+		} else {
+			urlMap[posting.URL] = posting
+		}
+	}
+	
+	for _, posting := range urlMap {
+		deduplicatedPostings = append(deduplicatedPostings, posting)
+	}
+
 	tx, err := r.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
@@ -492,15 +511,16 @@ func (r *jobBankRepository) createJobPostingsBatchUpdated(postings []*models.Job
 			has_lmia = EXCLUDED.has_lmia,
 			description = EXCLUDED.description,
 			updated_at = EXCLUDED.updated_at
+		WHERE job_postings.updated_at < EXCLUDED.updated_at
 	`
 
-	for _, posting := range postings {
+	for _, posting := range deduplicatedPostings {
 		posting.ID = uuid.New().String()
 		posting.CreatedAt = time.Now()
 		posting.UpdatedAt = time.Now()
 	}
 
-	_, err = tx.NamedExec(query, postings)
+	_, err = tx.NamedExec(query, deduplicatedPostings)
 	if err != nil {
 		return fmt.Errorf("failed to insert job postings batch: %w", err)
 	}
