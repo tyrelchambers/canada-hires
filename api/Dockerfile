@@ -13,6 +13,9 @@ COPY . .
 # Build the main Go application (now includes integrated scraper)
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o main ./
 
+# Build the CLI commands
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o job_scrape_cli ./cmd/job_scrape
+
 # Final runtime stage using Alpine for minimal footprint
 FROM golang:1.24-alpine AS prod
 
@@ -32,6 +35,7 @@ WORKDIR /app
 
 # Copy the built binary and directories
 COPY --from=builder --chown=appuser:appgroup /app/main /app/main
+COPY --from=builder --chown=appuser:appgroup /app/job_scrape_cli /app/job_scrape_cli
 COPY --from=builder --chown=appuser:appgroup /app/migrations /app/migrations
 COPY --from=builder --chown=appuser:appgroup /app/makefile /app/makefile
 

@@ -126,7 +126,11 @@ scrape:
 		echo "Pages: $(PAGES)"; \
 		FLAGS="$$FLAGS -pages=$(PAGES)"; \
 	fi; \
-	go run cmd/job_scrape/main.go $$FLAGS $(FLAGS)
+	if [ -f "./job_scrape_cli" ]; then \
+		./job_scrape_cli $$FLAGS $(FLAGS); \
+	else \
+		go run cmd/job_scrape/main.go $$FLAGS $(FLAGS); \
+	fi
 
 # Deploy helm image
 .PHONY: deploy-helm
