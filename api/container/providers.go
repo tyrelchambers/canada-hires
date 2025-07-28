@@ -98,6 +98,10 @@ func registerProviders(c *dig.Container) error {
 		return err
 	}
 
+	if err := c.Provide(NewScraperService); err != nil {
+		return err
+	}
+
 	// Controller providers
 	if err := c.Provide(NewAuthController); err != nil {
 		return err
@@ -263,14 +267,19 @@ func NewJobController(repo repos.JobBankRepository, jobService services.JobServi
 }
 
 // NewScraperCronService creates a new scraper cron service
-func NewScraperCronService() *services.ScraperCronService {
+func NewScraperCronService(scraperService services.ScraperService) *services.ScraperCronService {
 	logger := log.Default()
-	scraperPath := "./scraper-go/scraper"
-	return services.NewScraperCronService(logger, scraperPath)
+	return services.NewScraperCronService(logger, scraperService)
 }
 
 // NewRedditService creates a new Reddit service
 func NewRedditService() (services.RedditService, error) {
 	logger := log.Default()
 	return services.NewRedditService(logger)
+}
+
+// NewScraperService creates a new scraper service
+func NewScraperService(jobRepo repos.JobBankRepository) services.ScraperService {
+	logger := log.Default()
+	return services.NewScraperService(jobRepo, logger)
 }

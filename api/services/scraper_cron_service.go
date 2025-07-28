@@ -3,8 +3,6 @@ package services
 import (
 	"context"
 	"fmt"
-	"os/exec"
-	"path/filepath"
 	"time"
 
 	"github.com/charmbracelet/log"
@@ -12,19 +10,19 @@ import (
 )
 
 type ScraperCronService struct {
-	cron        *cron.Cron
-	logger      *log.Logger
-	scraperPath string
-	lastRun     time.Time
+	cron           *cron.Cron
+	logger         *log.Logger
+	scraperService ScraperService
+	lastRun        time.Time
 }
 
-func NewScraperCronService(logger *log.Logger, scraperPath string) *ScraperCronService {
+func NewScraperCronService(logger *log.Logger, scraperService ScraperService) *ScraperCronService {
 	c := cron.New(cron.WithLocation(time.UTC))
-	
+
 	return &ScraperCronService{
-		cron:        c,
-		logger:      logger,
-		scraperPath: scraperPath,
+		cron:           c,
+		logger:         logger,
+		scraperService: scraperService,
 	}
 }
 
@@ -58,31 +56,27 @@ func (scs *ScraperCronService) Stop() {
 
 func (scs *ScraperCronService) runScraper() {
 	scs.logger.Info("Starting scheduled scraper execution")
-	
+
 	if err := scs.executeScraper(); err != nil {
 		scs.logger.Error("Scraper execution failed", "error", err)
 		return
 	}
-	
+
 	scs.lastRun = time.Now()
 	scs.logger.Info("Scraper execution completed successfully", "timestamp", scs.lastRun)
 }
 
 func (scs *ScraperCronService) executeScraper() error {
-	// Change to scraper directory
-	scraperDir := filepath.Dir(scs.scraperPath)
-	
-	// Run the Go scraper binary
-	cmd := exec.Command(scs.scraperPath)
-	cmd.Dir = scraperDir
-	
-	// Capture both stdout and stderr
-	output, err := cmd.CombinedOutput()
+	// Run the integrated scraper service
+	scrapingRun, err := scs.scraperService.RunScraper(1) // -1 means scrape all pages
 	if err != nil {
-		return fmt.Errorf("scraper execution failed: %w, output: %s", err, string(output))
+		return fmt.Errorf("scraper execution failed: %w", err)
 	}
-	
-	scs.logger.Info("Scraper output", "output", string(output))
+
+	scs.logger.Info("Scraper execution completed",
+		"run_id", scrapingRun.ID,
+		"jobs_scraped", scrapingRun.JobsScraped,
+		"jobs_stored", scrapingRun.JobsStored)
 	return nil
 }
 
@@ -90,13 +84,13 @@ func (scs *ScraperCronService) checkMissedExecution() error {
 	// Check if we missed yesterday's execution
 	now := time.Now()
 	yesterday := now.AddDate(0, 0, -1)
-	
+
 	// If it's after midnight and we haven't run today, check if we missed yesterday
 	if now.Hour() > 0 && scs.shouldRunCatchup(yesterday) {
 		scs.logger.Info("Detected missed execution, running catch-up scraper")
 		go scs.runScraper() // Run asynchronously to not block startup
 	}
-	
+
 	return nil
 }
 
@@ -104,16 +98,16 @@ func (scs *ScraperCronService) shouldRunCatchup(targetDate time.Time) bool {
 	// Check if we have a record of running on the target date
 	// For simplicity, we'll check if lastRun is from the target date
 	// In production, you might want to store this in the database
-	
+
 	if scs.lastRun.IsZero() {
 		// No previous run recorded, assume we should catch up
 		return true
 	}
-	
+
 	// Check if lastRun was on or after the target date
 	targetStart := time.Date(targetDate.Year(), targetDate.Month(), targetDate.Day(), 0, 0, 0, 0, time.UTC)
 	targetEnd := targetStart.Add(24 * time.Hour)
-	
+
 	return scs.lastRun.Before(targetStart) || scs.lastRun.After(targetEnd)
 }
 

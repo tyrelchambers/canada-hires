@@ -486,13 +486,20 @@ func (r *jobBankRepository) createJobPostingsBatchUpdated(postings []*models.Job
 		return nil, nil
 	}
 
-	// First, check which URLs already exist in the database
+	// Check which job_bank_ids and URLs already exist in the database
 	var urls []string
+	var jobBankIds []string
 	for _, posting := range postings {
 		urls = append(urls, posting.URL)
+		if posting.JobBankID != nil && *posting.JobBankID != "" {
+			jobBankIds = append(jobBankIds, *posting.JobBankID)
+		}
 	}
 	
 	existingUrls := make(map[string]bool)
+	existingJobBankIds := make(map[string]bool)
+	
+	// Check existing URLs
 	if len(urls) > 0 {
 		query, args, err := sqlx.In("SELECT url FROM job_postings WHERE url IN (?)", urls)
 		if err != nil {
@@ -509,31 +516,62 @@ func (r *jobBankRepository) createJobPostingsBatchUpdated(postings []*models.Job
 			existingUrls[url] = true
 		}
 	}
+	
+	// Check existing job_bank_ids
+	if len(jobBankIds) > 0 {
+		query, args, err := sqlx.In("SELECT job_bank_id FROM job_postings WHERE job_bank_id IN (?)", jobBankIds)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build query for existing job_bank_ids: %w", err)
+		}
+		query = r.db.Rebind(query)
+		
+		var existingJobBankIdList []string
+		if err := r.db.Select(&existingJobBankIdList, query, args...); err != nil {
+			return nil, fmt.Errorf("failed to check existing job_bank_ids: %w", err)
+		}
+		
+		for _, jobBankId := range existingJobBankIdList {
+			existingJobBankIds[jobBankId] = true
+		}
+	}
 
-	// Deduplicate by URL to prevent "cannot affect row a second time" error
-	urlMap := make(map[string]*models.JobPosting)
+	// Deduplicate by job_bank_id first (if available), then by URL
+	duplicateMap := make(map[string]*models.JobPosting)
 	var deduplicatedPostings []*models.JobPosting
 	var newJobIds []string
 	
 	for _, posting := range postings {
-		if existing, exists := urlMap[posting.URL]; exists {
+		// Use job_bank_id as primary key if available, otherwise use URL
+		var key string
+		if posting.JobBankID != nil && *posting.JobBankID != "" {
+			key = "job_bank_id:" + *posting.JobBankID
+		} else {
+			key = "url:" + posting.URL
+		}
+		
+		if existing, exists := duplicateMap[key]; exists {
 			// Keep the one with more recent updated_at
 			if posting.UpdatedAt.After(existing.UpdatedAt) {
-				urlMap[posting.URL] = posting
+				duplicateMap[key] = posting
 			}
 		} else {
-			urlMap[posting.URL] = posting
+			duplicateMap[key] = posting
 		}
 	}
 	
-	for _, posting := range urlMap {
+	for _, posting := range duplicateMap {
 		// Assign ID and timestamps before checking if it's new
 		posting.ID = uuid.New().String()
 		posting.CreatedAt = time.Now()
 		posting.UpdatedAt = time.Now()
 		
 		// Track which jobs are truly new (not in database)
-		if !existingUrls[posting.URL] {
+		isExisting := existingUrls[posting.URL]
+		if posting.JobBankID != nil && *posting.JobBankID != "" {
+			isExisting = isExisting || existingJobBankIds[*posting.JobBankID]
+		}
+		
+		if !isExisting {
 			newJobIds = append(newJobIds, posting.ID)
 		}
 		
