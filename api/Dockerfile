@@ -43,8 +43,10 @@ RUN apt-get update && apt-get install -y \
     xvfb
 
 WORKDIR /tmp
-RUN echo 'module temp' > go.mod && \
-    go run github.com/playwright-community/playwright-go/cmd/playwright@latest install --with-deps chromium
+# Install the exact version from go.mod
+COPY go.mod go.sum ./
+RUN go mod download
+RUN go run github.com/playwright-community/playwright-go/cmd/playwright install --with-deps chromium
 
 # Final runtime stage
 FROM ubuntu:22.04 AS prod
@@ -88,8 +90,11 @@ WORKDIR /app
 COPY --from=builder --chown=appuser:appgroup /app/main /app/main
 COPY --from=builder --chown=appuser:appgroup /app/migrations /app/migrations
 
-# Copy Playwright browsers from installer stage
+# Copy Playwright browsers and drivers from installer stage
 COPY --from=playwright-installer --chown=appuser:appgroup /root/.cache/ms-playwright /home/appuser/.cache/ms-playwright
+
+# Set environment variable for Playwright
+ENV PLAYWRIGHT_BROWSERS_PATH=/home/appuser/.cache/ms-playwright
 
 # Switch to non-root user
 USER appuser
