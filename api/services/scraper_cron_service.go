@@ -68,7 +68,7 @@ func (scs *ScraperCronService) runScraper() {
 
 func (scs *ScraperCronService) executeScraper() error {
 	// Run the integrated scraper service
-	scrapingRun, err := scs.scraperService.RunScraper(1) // -1 means scrape all pages
+	scrapingRun, err := scs.scraperService.RunScraper(-1) // -1 means scrape all pages
 	if err != nil {
 		return fmt.Errorf("scraper execution failed: %w", err)
 	}
