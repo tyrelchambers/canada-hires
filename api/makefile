@@ -103,7 +103,11 @@ ifndef JOB_ID
 	@exit 1
 endif
 	@echo "Posting job $(JOB_ID) to Reddit..."
-	go run cmd/reddit_post/main.go $(FLAGS) $(JOB_ID)
+	@if [ -f "./reddit_post_cli" ]; then \
+		./reddit_post_cli $(FLAGS) $(JOB_ID); \
+	else \
+		go run cmd/reddit_post/main.go $(FLAGS) $(JOB_ID); \
+	fi
 
 # Run job scraper with optional parameters
 .PHONY: scrape
