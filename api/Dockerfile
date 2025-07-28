@@ -42,7 +42,7 @@ RUN apt-get update && apt-get install -y \
     wget \
     xvfb
 
-WORKDIR /tmp
+WORKDIR /playwright-setup
 # Install the exact version from go.mod
 COPY go.mod go.sum ./
 RUN go mod download
