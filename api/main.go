@@ -25,9 +25,9 @@ func main() {
 	defer database.Close()
 
 	// Run migrations on startup
-	// if err := db.RunMigrations(database.GetDB().DB); err != nil {
-	// 	log.Fatal("Failed to run migrations", "error", err)
-	// }
+	if err := db.RunMigrations(database.GetDB().DB); err != nil {
+		log.Fatal("Failed to run migrations", "error", err)
+	}
 	// Create router
 	r := chi.NewRouter()
 	// Start the application with dependency injection
