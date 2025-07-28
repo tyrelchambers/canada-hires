@@ -72,8 +72,8 @@ func (scs *ScraperCronService) executeScraper() error {
 	// Change to scraper directory
 	scraperDir := filepath.Dir(scs.scraperPath)
 	
-	// Run npm start in the scraper directory
-	cmd := exec.Command("npm", "start")
+	// Run the Go scraper binary
+	cmd := exec.Command(scs.scraperPath)
 	cmd.Dir = scraperDir
 	
 	// Capture both stdout and stderr

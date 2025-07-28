@@ -265,7 +265,7 @@ func NewJobController(repo repos.JobBankRepository, jobService services.JobServi
 // NewScraperCronService creates a new scraper cron service
 func NewScraperCronService() *services.ScraperCronService {
 	logger := log.Default()
-	scraperPath := "./scraper/src/index.ts"
+	scraperPath := "./scraper-go/scraper"
 	return services.NewScraperCronService(logger, scraperPath)
 }
 
