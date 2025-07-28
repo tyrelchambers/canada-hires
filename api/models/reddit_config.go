@@ -21,7 +21,7 @@ type RedditConfig struct {
 func DefaultRedditConfig() *RedditConfig {
 	return &RedditConfig{
 		Subreddit:         os.Getenv("REDDIT_SUBREDDIT"),
-		PostTitleTemplate: "🇨🇦 New TFW Job: {{.Title}} at {{.Employer}} - {{.Location}}",
+		PostTitleTemplate: "🇨🇦 New LMIA Job: {{.Title}} at {{.Employer}} - {{.Location}}",
 		PostBodyTemplate: `Apparently, the {{.Employer}} is unable to find anyone in {{.Location}} or surrounding area to work for them. They are so in need of employees that they are applying for a Labour Market Impact Assessment (LMIA).
 
 If the LMIA application is successful, {{.Employer}} will be able to bring in Temporary Foreign Workers to do the jobs.
