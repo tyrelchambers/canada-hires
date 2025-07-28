@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import Stat from "@/components/Stat";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowRight, faFlask } from "@fortawesome/free-solid-svg-icons";
+import { useJobStats } from "@/hooks/useJobPostings";
 
 export const Route = createFileRoute("/")({
   component: RouteComponent,
@@ -17,6 +18,9 @@ export const Route = createFileRoute("/")({
 
 function RouteComponent() {
   const { data: stats } = useLMIAStats();
+  const { data: statsData } = useJobStats();
+
+  console.log(statsData);
 
   return (
     <div className="min-h-screen">
@@ -57,7 +61,7 @@ function RouteComponent() {
       </section>
 
       <section className="min-h-[300px] items-center flex">
-        <div className="max-w-5xl mx-auto flex flex-col md:flex-row py-10 gap-10 w-full justify-between">
+        <div className="max-w-5xl mx-auto flex flex-col flex-wrap md:flex-row py-10 gap-10 w-full justify-evenly">
           <Stat
             label="Distinct employers"
             value={String(stats?.distinct_employers.toLocaleString() ?? "0")}
@@ -71,6 +75,16 @@ function RouteComponent() {
           <Stat
             label="Total records"
             value={String(stats?.total_records.toLocaleString() ?? "0")}
+          />
+
+          <Stat
+            label="Total Jobs"
+            value={String(statsData?.total_jobs.toLocaleString() ?? "0")}
+          />
+
+          <Stat
+            label="Total Employers"
+            value={String(statsData?.total_employers.toLocaleString() ?? "0")}
           />
         </div>
       </section>
