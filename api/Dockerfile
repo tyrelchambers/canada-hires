@@ -22,9 +22,9 @@ RUN apk update && apk add --no-cache \
     chromium \
     && rm -rf /var/cache/apk/*
 
-# Create non-root user
-RUN groupadd -g 1001 appgroup && \
-    useradd -u 1001 -g appgroup -m appuser
+# Create non-root user (Alpine Linux compatible)
+RUN addgroup -g 1001 appgroup && \
+    adduser -u 1001 -G appgroup -h /home/appuser -s /bin/sh -D appuser
 
 # Set working directory
 WORKDIR /app
