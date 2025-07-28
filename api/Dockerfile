@@ -5,55 +5,100 @@ RUN apk --no-cache add ca-certificates
 # Set the working directory inside the container
 WORKDIR /app
 
-# Copy the source code into the container
+# Copy the main app source code
 COPY go.mod go.sum ./
-
 RUN go mod download
-
 COPY . .
 
-# Build the Go application
+# Build the main Go application
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o main ./
 
-# Use Alpine for runtime with non-root user
-FROM alpine:3.19 AS prod
+# Build the Go scraper in a separate stage
+FROM golang:1.24.1-alpine AS scraper-builder
+WORKDIR /app/scraper-go
+COPY scraper-go/go.mod scraper-go/go.sum ./
+RUN go mod download
+COPY scraper-go/ ./
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o scraper main.go
 
-# Install CA certificates, Node.js, npm, Chromium and create non-root user
-RUN apk --no-cache add \
+# Download Playwright browsers in a separate stage
+FROM golang:1.24.1-bullseye AS playwright-installer
+RUN apt-get update && apt-get install -y \
     ca-certificates \
-    nodejs \
-    npm \
-    chromium \
-    nss \
-    freetype \
-    freetype-dev \
-    harfbuzz \
-    ttf-freefont \
-    && addgroup -g 1001 -S appgroup \
-    && adduser -S appuser -u 1001 -G appgroup
+    fonts-liberation \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libatspi2.0-0 \
+    libcups2 \
+    libdbus-1-3 \
+    libdrm2 \
+    libgtk-3-0 \
+    libnspr4 \
+    libnss3 \
+    libwayland-client0 \
+    libx11-6 \
+    libx11-xcb1 \
+    libxcb1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxext6 \
+    libxfixes3 \
+    libxrandr2 \
+    libxss1 \
+    libxtst6 \
+    wget \
+    xvfb
 
-# Set Puppeteer to use the installed Chromium
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+WORKDIR /tmp
+RUN echo 'module temp' > go.mod && \
+    go run github.com/playwright-community/playwright-go/cmd/playwright@latest install --with-deps chromium
 
-# Set working directory and install puppeteer
+# Final runtime stage
+FROM ubuntu:22.04 AS prod
+
+# Install only runtime dependencies for Playwright
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    fonts-liberation \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libatspi2.0-0 \
+    libcups2 \
+    libdbus-1-3 \
+    libdrm2 \
+    libgtk-3-0 \
+    libnspr4 \
+    libnss3 \
+    libwayland-client0 \
+    libx11-6 \
+    libx11-xcb1 \
+    libxcb1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxext6 \
+    libxfixes3 \
+    libxrandr2 \
+    libxss1 \
+    libxtst6 \
+    xvfb \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN groupadd -g 1001 appgroup && \
+    useradd -u 1001 -g appgroup -m appuser
+
+# Set working directory
 WORKDIR /app
-RUN npm init -y && npm install puppeteer
 
-# Copy the built binary and directories
+# Copy the built binaries and directories
 COPY --from=builder --chown=appuser:appgroup /app/main /app/main
 COPY --from=builder --chown=appuser:appgroup /app/migrations /app/migrations
-COPY --from=builder --chown=appuser:appgroup /app/scraper /app/scraper
+COPY --from=scraper-builder --chown=appuser:appgroup /app/scraper-go/scraper /app/scraper-go/scraper
 
-# Install scraper dependencies
-WORKDIR /app/scraper
-RUN npm install
-
-# Return to main app directory
-WORKDIR /app
-
-# Change ownership of npm files to appuser
-RUN chown -R appuser:appgroup /app
+# Copy Playwright browsers from installer stage
+COPY --from=playwright-installer --chown=appuser:appgroup /root/.cache/ms-playwright /home/appuser/.cache/ms-playwright
 
 # Switch to non-root user
 USER appuser
