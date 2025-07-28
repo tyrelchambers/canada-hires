@@ -14,7 +14,7 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o main ./
 
 # Final runtime stage using Alpine for minimal footprint
-FROM golang:1.24.1-alpine AS prod
+FROM alpine:latest AS prod
 
 # Install runtime dependencies for chromedp
 RUN apk update && apk add --no-cache \
