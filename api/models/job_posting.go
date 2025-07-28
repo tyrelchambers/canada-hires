@@ -28,6 +28,7 @@ type JobPosting struct {
 	URL          string     `json:"url" db:"url"`                       // Link to job posting
 	IsTFW        bool       `json:"is_tfw" db:"is_tfw"`                 // Whether this is a TFW position
 	HasLMIA      bool       `json:"has_lmia" db:"has_lmia"`             // Whether job has LMIA flag
+	RedditPosted bool       `json:"reddit_posted" db:"reddit_posted"`   // Whether job has been posted to Reddit
 	Description  *string    `json:"description" db:"description"`       // Job description if available
 	ScrapingRunID string    `json:"scraping_run_id" db:"scraping_run_id"` // Reference to scraping session
 	CreatedAt    time.Time  `json:"created_at" db:"created_at"`

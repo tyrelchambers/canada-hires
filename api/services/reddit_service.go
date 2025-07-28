@@ -2,14 +2,17 @@ package services
 
 import (
 	"canada-hires/models"
+	"canada-hires/repos"
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/charmbracelet/log"
-	"github.com/vartanbeno/go-reddit/v2/reddit"
 )
 
 type RedditService interface {
@@ -21,26 +24,29 @@ type RedditService interface {
 }
 
 type redditService struct {
-	client *reddit.Client
-	config *models.RedditConfig
-	logger *log.Logger
+	authService RedditAuthService
+	config      *models.RedditConfig
+	logger      *log.Logger
+	jobRepo     repos.JobBankRepository
+	httpClient  *http.Client
+	userAgent   string
 }
 
-func NewRedditService(logger *log.Logger) (RedditService, error) {
-	// Get Reddit credentials from environment
-	clientID := os.Getenv("REDDIT_ID")
-	clientSecret := os.Getenv("REDDIT_SECRET")
-	
-	if clientID == "" || clientSecret == "" {
-		return nil, fmt.Errorf("Reddit credentials not found in environment variables")
-	}
+type RedditSubmitResponse struct {
+	JSON struct {
+		Errors [][]string `json:"errors"`
+		Data   struct {
+			Name string `json:"name"`
+			URL  string `json:"url"`
+		} `json:"data"`
+	} `json:"json"`
+}
 
-	// Create Reddit client using app credentials (script app)
-	credentials := reddit.Credentials{
-		ID:       clientID,
-		Secret:   clientSecret,
-		Username: "", // Not needed for app-only posting
-		Password: "", // Not needed for app-only posting
+func NewRedditService(logger *log.Logger, jobRepo repos.JobBankRepository) (RedditService, error) {
+	// Create Reddit auth service
+	authService, err := NewRedditAuthService(logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Reddit auth service: %w", err)
 	}
 
 	userAgent := os.Getenv("REDDIT_USER_AGENT")
@@ -48,15 +54,13 @@ func NewRedditService(logger *log.Logger) (RedditService, error) {
 		userAgent = "JobWatchCanada/1.0"
 	}
 
-	redditClient, err := reddit.NewClient(credentials, reddit.WithUserAgent(userAgent))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create Reddit client: %w", err)
-	}
-
 	service := &redditService{
-		client: redditClient,
-		config: models.DefaultRedditConfig(),
-		logger: logger,
+		authService: authService,
+		config:      models.DefaultRedditConfig(),
+		logger:      logger,
+		jobRepo:     jobRepo,
+		httpClient:  &http.Client{Timeout: 30 * time.Second},
+		userAgent:   userAgent,
 	}
 
 	return service, nil
@@ -95,13 +99,16 @@ func (rs *redditService) PostJobWithConfig(ctx context.Context, job *models.JobP
 		"employer", job.Employer,
 	)
 
-	// Submit the post to Reddit
-	// TODO: Implement actual Reddit posting once we verify the correct API methods
-	rs.logger.Info("Would post to Reddit", 
-		"subreddit", postData.Subreddit,
-		"title", postData.Title,
-		"body_length", len(postData.Body),
-	)
+	// Get access token before posting
+	accessToken, err := rs.authService.GetAccessToken(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get Reddit access token: %w", err)
+	}
+
+	// Submit the post to Reddit using the API directly
+	if err := rs.submitTextPost(ctx, accessToken, postData); err != nil {
+		return fmt.Errorf("failed to submit post to Reddit: %w", err)
+	}
 
 	rs.logger.Info("Successfully posted job to Reddit",
 		"subreddit", postData.Subreddit,
@@ -109,6 +116,71 @@ func (rs *redditService) PostJobWithConfig(ctx context.Context, job *models.JobP
 		"post_title", postData.Title,
 	)
 
+	// Mark job as posted to Reddit
+	if err := rs.jobRepo.UpdateJobPostingRedditStatus(job.ID, true); err != nil {
+		rs.logger.Error("Failed to update Reddit posted status", 
+			"error", err,
+			"job_id", job.ID,
+		)
+		// Don't return error as the Reddit posting was successful
+	}
+
+	return nil
+}
+
+// submitTextPost submits a text post to Reddit using the authenticated API
+func (rs *redditService) submitTextPost(ctx context.Context, accessToken string, postData *models.RedditPostData) error {
+	// Prepare form data
+	data := url.Values{}
+	data.Set("sr", postData.Subreddit)
+	data.Set("kind", "self")
+	data.Set("title", postData.Title)
+	data.Set("text", postData.Body)
+	data.Set("api_type", "json")
+	
+	// Create the request
+	req, err := http.NewRequestWithContext(ctx, "POST", "https://oauth.reddit.com/api/submit", strings.NewReader(data.Encode()))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+	
+	// Set headers
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("User-Agent", rs.userAgent)
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	
+	// Make the request
+	resp, err := rs.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("HTTP request failed: %w", err)
+	}
+	defer resp.Body.Close()
+	
+	// Parse the response
+	var submitResp RedditSubmitResponse
+	if err := json.NewDecoder(resp.Body).Decode(&submitResp); err != nil {
+		return fmt.Errorf("failed to decode response: %w", err)
+	}
+	
+	// Check for errors in the response
+	if len(submitResp.JSON.Errors) > 0 {
+		errMsg := "Reddit API errors: "
+		for _, err := range submitResp.JSON.Errors {
+			if len(err) > 0 {
+				errMsg += strings.Join(err, " ") + "; "
+			}
+		}
+		return fmt.Errorf(errMsg)
+	}
+	
+	// Log successful submission details
+	if submitResp.JSON.Data.Name != "" {
+		rs.logger.Info("Reddit post created successfully",
+			"reddit_id", submitResp.JSON.Data.Name,
+			"reddit_url", submitResp.JSON.Data.URL,
+		)
+	}
+	
 	return nil
 }
 
@@ -116,12 +188,13 @@ func (rs *redditService) PostJobWithConfig(ctx context.Context, job *models.JobP
 func (rs *redditService) TestConnection(ctx context.Context) error {
 	rs.logger.Info("Testing Reddit API connection")
 	
-	// For now, just verify the client is configured
-	if rs.client == nil {
-		return fmt.Errorf("Reddit client is not initialized")
+	// Test by getting an access token
+	_, err := rs.authService.GetAccessToken(ctx)
+	if err != nil {
+		return fmt.Errorf("Reddit authentication failed: %w", err)
 	}
 
-	rs.logger.Info("Reddit API client configured successfully")
+	rs.logger.Info("Reddit API authentication successful")
 	return nil
 }
 

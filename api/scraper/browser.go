@@ -262,7 +262,7 @@ func cleanJobURL(url string) (cleanURL string, jobBankID string) {
 	if len(matches) > 1 {
 		jobBankID = matches[1]
 		// Clean URL by removing everything after the job ID
-		cleanURL = fmt.Sprintf("%s/jobpostingtfw/%s", baseURL, jobBankID)
+		cleanURL = fmt.Sprintf("%s/jobsearch/jobpostingtfw/%s", baseURL, jobBankID)
 		return cleanURL, jobBankID
 	}
 	

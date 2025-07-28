@@ -28,6 +28,8 @@ help:
 	@echo "  make populate-routes   - Populate database with GPX routes from docs/"
 	@echo "  make stripe-listen     - Start Stripe webhook listener forwarding to localhost:8000/v1/webhooks/stripe"
 	@echo "  make lmia-update       - Fetch and process LMIA data from Open Canada API"
+	@echo "  make reddit-post       - Post a job to Reddit (usage: make reddit-post JOB_ID=your_job_id [FLAGS='--dry-run --subreddit testjobs'])"
+	@echo "  make scrape            - Run job scraper (usage: make scrape [TITLE='job title'] [PROVINCE='AB'] [PAGES=5] [FLAGS='--dry-run'])"
 	@echo "  make run               - Start the server with all environment variables loaded"
 	@echo "  make docker-run        - Run the server in Docker with all environment variables loaded"
 	@echo "  make deploy-helm       - Deploy the server using Helm"
@@ -96,6 +98,35 @@ populate-routes:
 lmia-update:
 	@echo "Starting LMIA data update..."
 	go run cmd/lmia_update.go
+
+# Post a job to Reddit for testing
+.PHONY: reddit-post
+reddit-post:
+ifndef JOB_ID
+	@echo "Error: Please provide a job ID with JOB_ID=your_job_id"
+	@echo "Usage: make reddit-post JOB_ID=abc123 [FLAGS='--dry-run --subreddit testjobs']"
+	@exit 1
+endif
+	@echo "Posting job $(JOB_ID) to Reddit..."
+	go run cmd/reddit_post/main.go $(FLAGS) $(JOB_ID)
+
+# Run job scraper with optional parameters
+.PHONY: scrape
+scrape:
+	@echo "Starting job scraper..."
+	@if [ -n "$(TITLE)" ]; then \
+		echo "Job title: $(TITLE)"; \
+		FLAGS="$$FLAGS -title='$(TITLE)'"; \
+	fi; \
+	if [ -n "$(PROVINCE)" ]; then \
+		echo "Province: $(PROVINCE)"; \
+		FLAGS="$$FLAGS -province='$(PROVINCE)'"; \
+	fi; \
+	if [ -n "$(PAGES)" ]; then \
+		echo "Pages: $(PAGES)"; \
+		FLAGS="$$FLAGS -pages=$(PAGES)"; \
+	fi; \
+	go run cmd/job_scrape/main.go $$FLAGS $(FLAGS)
 
 # Deploy helm image
 .PHONY: deploy-helm

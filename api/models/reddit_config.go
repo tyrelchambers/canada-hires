@@ -2,47 +2,58 @@ package models
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
 )
 
 type RedditConfig struct {
-	ID                string     `json:"id" db:"id"`
-	Subreddit         string     `json:"subreddit" db:"subreddit"`                     // Target subreddit (e.g., "canadajobs")
-	PostTitleTemplate string     `json:"post_title_template" db:"post_title_template"` // Template for post title
-	PostBodyTemplate  string     `json:"post_body_template" db:"post_body_template"`   // Template for post body
-	IsEnabled         bool       `json:"is_enabled" db:"is_enabled"`                   // Enable/disable Reddit posting
-	CreatedAt         time.Time  `json:"created_at" db:"created_at"`
-	UpdatedAt         time.Time  `json:"updated_at" db:"updated_at"`
+	ID                string    `json:"id" db:"id"`
+	Subreddit         string    `json:"subreddit" db:"subreddit"`                     // Target subreddit (e.g., "canadajobs")
+	PostTitleTemplate string    `json:"post_title_template" db:"post_title_template"` // Template for post title
+	PostBodyTemplate  string    `json:"post_body_template" db:"post_body_template"`   // Template for post body
+	IsEnabled         bool      `json:"is_enabled" db:"is_enabled"`                   // Enable/disable Reddit posting
+	CreatedAt         time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // Default Reddit configuration
 func DefaultRedditConfig() *RedditConfig {
 	return &RedditConfig{
-		Subreddit:         "canadajobs",
+		Subreddit:         os.Getenv("REDDIT_SUBREDDIT"),
 		PostTitleTemplate: "🇨🇦 New TFW Job: {{.Title}} at {{.Employer}} - {{.Location}}",
-		PostBodyTemplate: `**New Temporary Foreign Worker (TFW) Job Posting**
+		PostBodyTemplate: `Apparently, the {{.Employer}} is unable to find anyone in {{.Location}} or surrounding area to work for them. They are so in need of employees that they are applying for a Labour Market Impact Assessment (LMIA).
+
+If the LMIA application is successful, {{.Employer}} will be able to bring in Temporary Foreign Workers to do the jobs.
 
 **Position:** {{.Title}}
+
 **Employer:** {{.Employer}}
+
 **Location:** {{.Location}}
+
 {{if .SalaryRaw}}**Salary:** {{.SalaryRaw}}{{end}}
+
 {{if .PostingDate}}**Posted:** {{.PostingDate}}{{end}}
 
 **Job Details:** [View on Job Bank]({{.URL}})
 
+Apply, and if you don't hear back, follow the links on the ad to report the business.
+
 ---
-*This posting was automatically detected from Government of Canada Job Bank TFW listings. Data provided by JobWatch Canada for transparency in hiring practices.*`,
+*This posting was automatically detected from Government of Canada Job Bank TFW listings. Data provided by JobWatch Canada for transparency in hiring practices.*
+
+*See more LMIA listings at [JobWatch Canada](https://jobwatchcanada.com)*`,
 		IsEnabled: true,
 	}
 }
 
 // RedditPostData contains the data needed to create a Reddit post
 type RedditPostData struct {
-	Title       string
-	Body        string
-	Subreddit   string
-	JobPosting  *JobPosting
+	Title      string
+	Body       string
+	Subreddit  string
+	JobPosting *JobPosting
 }
 
 // GeneratePostData creates Reddit post data from a job posting using the config templates

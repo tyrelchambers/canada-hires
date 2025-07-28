@@ -23,7 +23,10 @@ type JobBankRepository interface {
 	CreateJobPostingsBatch(postings []*models.JobPosting) error
 	CreateJobPostingsFromScraperData(scraperData []models.ScraperJobData, scrapingRunID string) ([]*models.JobPosting, error)
 	GetJobPostingByJobBankID(jobBankID string) (*models.JobPosting, error)
+	GetJobPostingByID(id string) (*models.JobPosting, error)
 	GetJobPostingByURL(url string) (*models.JobPosting, error)
+	UpdateJobPostingRedditStatus(id string, redditPosted bool) error
+	GetJobPostingsNotPostedToReddit(limit int) ([]*models.JobPosting, error)
 	SearchJobPostingsByEmployer(employer string, limit int) ([]*models.JobPosting, error)
 	GetJobPostingsByLocation(city, province string, limit int) ([]*models.JobPosting, error)
 	GetJobPostingsByScrapingRun(scrapingRunID string) ([]*models.JobPosting, error)
@@ -131,10 +134,10 @@ func (r *jobBankRepository) CreateJobPosting(posting *models.JobPosting) error {
 	query := `
 		INSERT INTO job_postings (id, job_bank_id, title, employer, location, province, city,
 								 salary_min, salary_max, salary_type, posting_date, url, is_tfw,
-								 description, scraping_run_id, created_at, updated_at)
+								 has_lmia, reddit_posted, description, scraping_run_id, created_at, updated_at)
 		VALUES (:id, :job_bank_id, :title, :employer, :location, :province, :city,
 				:salary_min, :salary_max, :salary_type, :posting_date, :url, :is_tfw,
-				:description, :scraping_run_id, :created_at, :updated_at)
+				:has_lmia, :reddit_posted, :description, :scraping_run_id, :created_at, :updated_at)
 		ON CONFLICT (job_bank_id) DO UPDATE SET
 			title = EXCLUDED.title,
 			employer = EXCLUDED.employer,
@@ -146,6 +149,7 @@ func (r *jobBankRepository) CreateJobPosting(posting *models.JobPosting) error {
 			salary_type = EXCLUDED.salary_type,
 			posting_date = EXCLUDED.posting_date,
 			url = EXCLUDED.url,
+			has_lmia = EXCLUDED.has_lmia,
 			description = EXCLUDED.description,
 			updated_at = EXCLUDED.updated_at
 	`
@@ -180,10 +184,10 @@ func (r *jobBankRepository) CreateJobPostingsBatch(postings []*models.JobPosting
 	query := `
 		INSERT INTO job_postings (id, job_bank_id, title, employer, location, province, city,
 								 salary_min, salary_max, salary_type, posting_date, url, is_tfw,
-								 description, scraping_run_id, created_at, updated_at)
+								 has_lmia, reddit_posted, description, scraping_run_id, created_at, updated_at)
 		VALUES (:id, :job_bank_id, :title, :employer, :location, :province, :city,
 				:salary_min, :salary_max, :salary_type, :posting_date, :url, :is_tfw,
-				:description, :scraping_run_id, :created_at, :updated_at)
+				:has_lmia, :reddit_posted, :description, :scraping_run_id, :created_at, :updated_at)
 		ON CONFLICT (job_bank_id) DO UPDATE SET
 			title = EXCLUDED.title,
 			employer = EXCLUDED.employer,
@@ -195,6 +199,7 @@ func (r *jobBankRepository) CreateJobPostingsBatch(postings []*models.JobPosting
 			salary_type = EXCLUDED.salary_type,
 			posting_date = EXCLUDED.posting_date,
 			url = EXCLUDED.url,
+			has_lmia = EXCLUDED.has_lmia,
 			description = EXCLUDED.description,
 			updated_at = EXCLUDED.updated_at
 	`
@@ -222,6 +227,18 @@ func (r *jobBankRepository) GetJobPostingByJobBankID(jobBankID string) (*models.
 	query := `SELECT * FROM job_postings WHERE job_bank_id = $1`
 
 	err := r.db.Get(&posting, query, jobBankID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &posting, nil
+}
+
+func (r *jobBankRepository) GetJobPostingByID(id string) (*models.JobPosting, error) {
+	var posting models.JobPosting
+	query := `SELECT * FROM job_postings WHERE id = $1`
+
+	err := r.db.Get(&posting, query, id)
 	if err != nil {
 		return nil, err
 	}
@@ -479,6 +496,38 @@ func (r *jobBankRepository) GetJobPostingByURL(url string) (*models.JobPosting, 
 	return &posting, nil
 }
 
+// UpdateJobPostingRedditStatus updates the reddit_posted status for a job posting
+func (r *jobBankRepository) UpdateJobPostingRedditStatus(id string, redditPosted bool) error {
+	query := `UPDATE job_postings SET reddit_posted = $2, updated_at = NOW() WHERE id = $1`
+	_, err := r.db.Exec(query, id, redditPosted)
+	return err
+}
+
+// GetJobPostingsNotPostedToReddit retrieves job postings that haven't been posted to Reddit
+func (r *jobBankRepository) GetJobPostingsNotPostedToReddit(limit int) ([]*models.JobPosting, error) {
+	var postings []*models.JobPosting
+	query := `
+		SELECT * FROM job_postings
+		WHERE reddit_posted = FALSE
+		ORDER BY posting_date DESC, created_at DESC
+	`
+
+	if limit > 0 {
+		query += " LIMIT $1"
+		err := r.db.Select(&postings, query, limit)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		err := r.db.Select(&postings, query)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return postings, nil
+}
+
 // createJobPostingsBatchUpdated creates job postings in batch with updated schema
 // Returns a list of newly inserted job IDs
 func (r *jobBankRepository) createJobPostingsBatchUpdated(postings []*models.JobPosting) ([]string, error) {
@@ -710,7 +759,7 @@ func (r *jobBankRepository) SearchJobPostingsAdvanced(filters map[string]interfa
 	selectQuery := fmt.Sprintf(`
 		SELECT id, job_bank_id, title, employer, location, province, city,
 			   salary_min, salary_max, salary_type, salary_raw, posting_date, url, 
-			   is_tfw, has_lmia, description, scraping_run_id, created_at, updated_at
+			   is_tfw, has_lmia, reddit_posted, description, scraping_run_id, created_at, updated_at
 		FROM job_postings%s ORDER BY %s %s`, whereClause, sortBy, sortOrder)
 	
 	// Add pagination
