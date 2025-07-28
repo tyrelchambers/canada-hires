@@ -88,11 +88,6 @@ docker-run:
 	docker build -t wildbarrens-server .
 	docker run --env-file .env --network app-network -p 8000:8000 wildbarrens-server
 
-# Populate database with GPX routes
-.PHONY: populate-routes
-populate-routes:
-	cd scripts && DB_HOST=localhost DB_PORT=5432 DB_USER=postgres DB_PASSWORD=secret DB_NAME=wildbarrens go run populate_routes.go
-
 # Fetch and process LMIA data from Open Canada API
 .PHONY: lmia-update
 lmia-update:

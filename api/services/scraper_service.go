@@ -83,6 +83,22 @@ func (s *scraperService) RunScraper(numberOfPages int) (*models.JobScrapingRun, 
 		return nil, fmt.Errorf("failed to save jobs to database: %w", err)
 	}
 
+	// Clean up orphaned jobs (jobs that existed in previous scrapes but not in current scrape)
+	currentJobBankIDs := make([]string, 0, len(jobs))
+	for _, job := range jobs {
+		if job.JobBankID != "" {
+			currentJobBankIDs = append(currentJobBankIDs, job.JobBankID)
+		}
+	}
+
+	deletedCount, err := s.jobRepo.DeleteJobPostingsNotInScrapeRun(scrapingRun.ID, currentJobBankIDs)
+	if err != nil {
+		s.logger.Error("Failed to clean up orphaned job postings", "error", err)
+		// Don't fail the entire operation if cleanup fails, just log the error
+	} else {
+		s.logger.Info("Cleaned up orphaned job postings", "deleted_count", deletedCount)
+	}
+
 	// Update scraping run as completed
 	if err := s.jobRepo.UpdateScrapingRunCompleted(scrapingRun.ID, numberOfPages, len(jobs), len(savedJobs)); err != nil {
 		s.logger.Error("Failed to update scraping run completion", "error", err)
@@ -91,7 +107,8 @@ func (s *scraperService) RunScraper(numberOfPages int) (*models.JobScrapingRun, 
 	s.logger.Info("Scraping run completed successfully", 
 		"run_id", scrapingRun.ID,
 		"jobs_scraped", len(jobs),
-		"jobs_saved", len(savedJobs))
+		"jobs_saved", len(savedJobs),
+		"orphaned_jobs_deleted", deletedCount)
 
 	return scrapingRun, nil
 }
@@ -156,6 +173,22 @@ func (s *scraperService) RunScraperWithConfig(ctx context.Context, config Scrape
 		return nil, fmt.Errorf("failed to save jobs to database: %w", err)
 	}
 
+	// Clean up orphaned jobs (jobs that existed in previous scrapes but not in current scrape)
+	currentJobBankIDs := make([]string, 0, len(jobs))
+	for _, job := range jobs {
+		if job.JobBankID != "" {
+			currentJobBankIDs = append(currentJobBankIDs, job.JobBankID)
+		}
+	}
+
+	deletedCount, err := s.jobRepo.DeleteJobPostingsNotInScrapeRun(scrapingRun.ID, currentJobBankIDs)
+	if err != nil {
+		s.logger.Error("Failed to clean up orphaned job postings", "error", err)
+		// Don't fail the entire operation if cleanup fails, just log the error
+	} else {
+		s.logger.Info("Cleaned up orphaned job postings", "deleted_count", deletedCount)
+	}
+
 	// Update scraping run as completed
 	if err := s.jobRepo.UpdateScrapingRunCompleted(scrapingRun.ID, config.Pages, len(jobs), len(savedJobs)); err != nil {
 		s.logger.Error("Failed to update scraping run completion", "error", err)
@@ -164,7 +197,8 @@ func (s *scraperService) RunScraperWithConfig(ctx context.Context, config Scrape
 	s.logger.Info("Scraping run completed successfully", 
 		"run_id", scrapingRun.ID,
 		"jobs_scraped", len(jobs),
-		"jobs_saved", len(savedJobs))
+		"jobs_saved", len(savedJobs),
+		"orphaned_jobs_deleted", deletedCount)
 
 	return scrapingRun, nil
 }

@@ -94,13 +94,13 @@ func main() {
 	config := redditService.GetDefaultConfig()
 	originalSubreddit := config.Subreddit
 
-	// Priority: CLI flag > env var > default config
+	// Priority: CLI flag > REDDIT_SUBREDDIT env var > default config
 	if *subreddit != "" {
 		config.Subreddit = *subreddit
 		log.Info("Using subreddit from CLI flag", "subreddit", *subreddit)
-	} else if testSubreddit := os.Getenv("REDDIT_TEST_SUBREDDIT"); testSubreddit != "" {
-		config.Subreddit = testSubreddit
-		log.Info("Using subreddit from environment variable", "subreddit", testSubreddit)
+	} else if redditSubreddit := os.Getenv("REDDIT_SUBREDDIT"); redditSubreddit != "" {
+		config.Subreddit = redditSubreddit
+		log.Info("Using subreddit from REDDIT_SUBREDDIT environment variable", "subreddit", redditSubreddit)
 	}
 
 	// Generate post data

@@ -35,6 +35,7 @@ type JobBankRepository interface {
 	GetJobPostingsCount() (int, error)
 	GetDistinctEmployersCount() (int, error)
 	GetEmployerJobCounts(limit int) ([]map[string]interface{}, error)
+	DeleteJobPostingsNotInScrapeRun(scrapingRunID string, currentJobBankIDs []string) (int, error)
 }
 
 type jobBankRepository struct {
@@ -782,4 +783,59 @@ func (r *jobBankRepository) SearchJobPostingsAdvanced(filters map[string]interfa
 	}
 	
 	return postings, totalCount, nil
+}
+
+// DeleteJobPostingsNotInScrapeRun deletes job postings that are not in the current scrape run
+// This removes jobs that existed in previous scrapes but are no longer available on the job bank site
+func (r *jobBankRepository) DeleteJobPostingsNotInScrapeRun(scrapingRunID string, currentJobBankIDs []string) (int, error) {
+	if len(currentJobBankIDs) == 0 {
+		// If no job bank IDs provided, don't delete anything to be safe
+		return 0, nil
+	}
+
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return 0, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	// Delete jobs that:
+	// 1. Were created from previous scraping runs (not the current one)
+	// 2. Have job_bank_id values that are not in the current scrape
+	// 3. Are TFW/LMIA jobs (to avoid deleting manually added jobs)
+	var deletedCount int64
+	
+	if len(currentJobBankIDs) > 0 {
+		// Build the NOT IN clause dynamically based on the number of IDs
+		query, args, err := sqlx.In(`
+			DELETE FROM job_postings 
+			WHERE scraping_run_id != ? 
+			AND job_bank_id IS NOT NULL 
+			AND job_bank_id NOT IN (?)
+			AND is_tfw = true
+			AND has_lmia = true
+		`, scrapingRunID, currentJobBankIDs)
+		if err != nil {
+			return 0, fmt.Errorf("failed to build delete query: %w", err)
+		}
+		
+		// Rebind the query for the specific database driver
+		query = r.db.Rebind(query)
+		
+		result, err := tx.Exec(query, args...)
+		if err != nil {
+			return 0, fmt.Errorf("failed to delete orphaned job postings: %w", err)
+		}
+		
+		deletedCount, err = result.RowsAffected()
+		if err != nil {
+			return 0, fmt.Errorf("failed to get deleted rows count: %w", err)
+		}
+	}
+
+	if err = tx.Commit(); err != nil {
+		return 0, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return int(deletedCount), nil
 }
