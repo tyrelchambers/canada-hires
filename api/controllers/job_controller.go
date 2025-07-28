@@ -68,7 +68,8 @@ func (jc *JobController) SubmitScraperJobs(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Store the job postings
-	if err := jc.jobBankRepo.CreateJobPostingsFromScraperData(scraperData, scrapingRunID); err != nil {
+	_, err := jc.jobBankRepo.CreateJobPostingsFromScraperData(scraperData, scrapingRunID)
+	if err != nil {
 		log.Error("Failed to store scraper job data", "error", err, "scraping_run_id", scrapingRunID)
 		http.Error(w, "Failed to store job data", http.StatusInternalServerError)
 		return

@@ -21,7 +21,7 @@ type JobBankRepository interface {
 	// Job Postings
 	CreateJobPosting(posting *models.JobPosting) error
 	CreateJobPostingsBatch(postings []*models.JobPosting) error
-	CreateJobPostingsFromScraperData(scraperData []models.ScraperJobData, scrapingRunID string) error
+	CreateJobPostingsFromScraperData(scraperData []models.ScraperJobData, scrapingRunID string) ([]*models.JobPosting, error)
 	GetJobPostingByJobBankID(jobBankID string) (*models.JobPosting, error)
 	GetJobPostingByURL(url string) (*models.JobPosting, error)
 	SearchJobPostingsByEmployer(employer string, limit int) ([]*models.JobPosting, error)
@@ -409,9 +409,9 @@ func (r *jobBankRepository) GetEmployerJobCounts(limit int) ([]map[string]interf
 }
 
 // CreateJobPostingsFromScraperData processes scraper data and creates job postings
-func (r *jobBankRepository) CreateJobPostingsFromScraperData(scraperData []models.ScraperJobData, scrapingRunID string) error {
+func (r *jobBankRepository) CreateJobPostingsFromScraperData(scraperData []models.ScraperJobData, scrapingRunID string) ([]*models.JobPosting, error) {
 	if len(scraperData) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	// Convert scraper data to job postings
@@ -425,6 +425,7 @@ func (r *jobBankRepository) CreateJobPostingsFromScraperData(scraperData []model
 	// Each job posting has ~19 parameters, so we'll use batches of 1000 to stay well under 65535 limit
 	batchSize := 1000
 	totalJobs := len(postings)
+	var allNewJobIds []string
 	
 	for i := 0; i < totalJobs; i += batchSize {
 		end := i + batchSize
@@ -433,17 +434,36 @@ func (r *jobBankRepository) CreateJobPostingsFromScraperData(scraperData []model
 		}
 		
 		batch := postings[i:end]
-		if err := r.createJobPostingsBatchUpdated(batch); err != nil {
-			return fmt.Errorf("failed to insert batch %d-%d: %w", i, end, err)
+		newJobIds, err := r.createJobPostingsBatchUpdated(batch)
+		if err != nil {
+			return nil, fmt.Errorf("failed to insert batch %d-%d: %w", i, end, err)
 		}
+		
+		allNewJobIds = append(allNewJobIds, newJobIds...)
 		
 		// Log progress for large datasets
 		if totalJobs > batchSize {
-			fmt.Printf("Processed batch %d-%d of %d jobs\n", i+1, end, totalJobs)
+			fmt.Printf("Processed batch %d-%d of %d jobs (%d new)\n", i+1, end, totalJobs, len(newJobIds))
 		}
 	}
 
-	return nil
+	// Now fetch only the newly inserted jobs to return
+	if len(allNewJobIds) == 0 {
+		return []*models.JobPosting{}, nil
+	}
+
+	var newJobPostings []*models.JobPosting
+	query, args, err := sqlx.In("SELECT * FROM job_postings WHERE id IN (?)", allNewJobIds)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build query for new jobs: %w", err)
+	}
+	query = r.db.Rebind(query)
+	
+	if err := r.db.Select(&newJobPostings, query, args...); err != nil {
+		return nil, fmt.Errorf("failed to fetch new job postings: %w", err)
+	}
+
+	return newJobPostings, nil
 }
 
 // GetJobPostingByURL retrieves a job posting by its URL
@@ -460,14 +480,40 @@ func (r *jobBankRepository) GetJobPostingByURL(url string) (*models.JobPosting, 
 }
 
 // createJobPostingsBatchUpdated creates job postings in batch with updated schema
-func (r *jobBankRepository) createJobPostingsBatchUpdated(postings []*models.JobPosting) error {
+// Returns a list of newly inserted job IDs
+func (r *jobBankRepository) createJobPostingsBatchUpdated(postings []*models.JobPosting) ([]string, error) {
 	if len(postings) == 0 {
-		return nil
+		return nil, nil
+	}
+
+	// First, check which URLs already exist in the database
+	var urls []string
+	for _, posting := range postings {
+		urls = append(urls, posting.URL)
+	}
+	
+	existingUrls := make(map[string]bool)
+	if len(urls) > 0 {
+		query, args, err := sqlx.In("SELECT url FROM job_postings WHERE url IN (?)", urls)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build query for existing URLs: %w", err)
+		}
+		query = r.db.Rebind(query)
+		
+		var existingUrlList []string
+		if err := r.db.Select(&existingUrlList, query, args...); err != nil {
+			return nil, fmt.Errorf("failed to check existing URLs: %w", err)
+		}
+		
+		for _, url := range existingUrlList {
+			existingUrls[url] = true
+		}
 	}
 
 	// Deduplicate by URL to prevent "cannot affect row a second time" error
 	urlMap := make(map[string]*models.JobPosting)
 	var deduplicatedPostings []*models.JobPosting
+	var newJobIds []string
 	
 	for _, posting := range postings {
 		if existing, exists := urlMap[posting.URL]; exists {
@@ -481,12 +527,22 @@ func (r *jobBankRepository) createJobPostingsBatchUpdated(postings []*models.Job
 	}
 	
 	for _, posting := range urlMap {
+		// Assign ID and timestamps before checking if it's new
+		posting.ID = uuid.New().String()
+		posting.CreatedAt = time.Now()
+		posting.UpdatedAt = time.Now()
+		
+		// Track which jobs are truly new (not in database)
+		if !existingUrls[posting.URL] {
+			newJobIds = append(newJobIds, posting.ID)
+		}
+		
 		deduplicatedPostings = append(deduplicatedPostings, posting)
 	}
 
 	tx, err := r.db.Beginx()
 	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer tx.Rollback()
 
@@ -514,22 +570,16 @@ func (r *jobBankRepository) createJobPostingsBatchUpdated(postings []*models.Job
 		WHERE job_postings.updated_at < EXCLUDED.updated_at
 	`
 
-	for _, posting := range deduplicatedPostings {
-		posting.ID = uuid.New().String()
-		posting.CreatedAt = time.Now()
-		posting.UpdatedAt = time.Now()
-	}
-
 	_, err = tx.NamedExec(query, deduplicatedPostings)
 	if err != nil {
-		return fmt.Errorf("failed to insert job postings batch: %w", err)
+		return nil, fmt.Errorf("failed to insert job postings batch: %w", err)
 	}
 
 	if err = tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	return nil
+	return newJobIds, nil
 }
 
 // SearchJobPostingsAdvanced performs advanced search with multiple filters and pagination

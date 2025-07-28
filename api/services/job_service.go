@@ -3,7 +3,9 @@ package services
 import (
 	"canada-hires/models"
 	"canada-hires/repos"
+	"context"
 	"fmt"
+	"time"
 
 	"github.com/charmbracelet/log"
 )
@@ -21,12 +23,14 @@ type JobStatistics struct {
 }
 
 type jobService struct {
-	jobBankRepo repos.JobBankRepository
+	jobBankRepo   repos.JobBankRepository
+	redditService RedditService
 }
 
-func NewJobService(jobBankRepo repos.JobBankRepository) JobService {
+func NewJobService(jobBankRepo repos.JobBankRepository, redditService RedditService) JobService {
 	return &jobService{
-		jobBankRepo: jobBankRepo,
+		jobBankRepo:   jobBankRepo,
+		redditService: redditService,
 	}
 }
 
@@ -42,11 +46,22 @@ func (js *jobService) ProcessScraperData(scraperData []models.ScraperJobData, sc
 	}
 
 	// Store the job postings using the repository
-	if err := js.jobBankRepo.CreateJobPostingsFromScraperData(scraperData, scrapingRunID); err != nil {
+	newJobPostings, err := js.jobBankRepo.CreateJobPostingsFromScraperData(scraperData, scrapingRunID)
+	if err != nil {
 		return fmt.Errorf("failed to store job postings: %w", err)
 	}
 
-	log.Info("Successfully processed scraper data", "job_count", len(scraperData), "scraping_run_id", scrapingRunID)
+	log.Info("Successfully processed scraper data", 
+		"total_scraped", len(scraperData), 
+		"new_jobs", len(newJobPostings),
+		"scraping_run_id", scrapingRunID)
+
+	// Post only new jobs to Reddit asynchronously
+	if js.redditService != nil && len(newJobPostings) > 0 {
+		go js.postJobsToReddit(newJobPostings)
+	} else if len(newJobPostings) == 0 {
+		log.Info("No new jobs to post to Reddit - all jobs were updates to existing postings")
+	}
 	return nil
 }
 
@@ -91,4 +106,40 @@ func (js *jobService) GetJobStatistics() (*JobStatistics, error) {
 		TotalEmployers: totalEmployers,
 		TopEmployers:   topEmployers,
 	}, nil
+}
+
+// postJobsToReddit posts new job postings to Reddit
+func (js *jobService) postJobsToReddit(jobPostings []*models.JobPosting) {
+	if len(jobPostings) == 0 {
+		return
+	}
+
+	log.Info("Posting new jobs to Reddit", "job_count", len(jobPostings))
+
+	for _, job := range jobPostings {
+		if job == nil {
+			continue
+		}
+
+		// Use async posting to avoid blocking
+		go func(j *models.JobPosting) {
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+
+			if err := js.redditService.PostJob(ctx, j); err != nil {
+				log.Error("Failed to post job to Reddit",
+					"error", err,
+					"job_id", j.ID,
+					"job_title", j.Title,
+					"employer", j.Employer,
+				)
+			} else {
+				log.Info("Successfully posted job to Reddit",
+					"job_id", j.ID,
+					"job_title", j.Title,
+					"employer", j.Employer,
+				)
+			}
+		}(job)
+	}
 }

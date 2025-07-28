@@ -94,6 +94,10 @@ func registerProviders(c *dig.Container) error {
 		return err
 	}
 
+	if err := c.Provide(NewRedditService); err != nil {
+		return err
+	}
+
 	// Controller providers
 	if err := c.Provide(NewAuthController); err != nil {
 		return err
@@ -249,8 +253,8 @@ func NewJobBankConcurrentService(repo repos.JobBankRepository) services.JobBankC
 }
 
 // NewJobService creates a new Job service
-func NewJobService(repo repos.JobBankRepository) services.JobService {
-	return services.NewJobService(repo)
+func NewJobService(repo repos.JobBankRepository, redditService services.RedditService) services.JobService {
+	return services.NewJobService(repo, redditService)
 }
 
 // NewJobController creates a new Job controller
@@ -263,4 +267,10 @@ func NewScraperCronService() *services.ScraperCronService {
 	logger := log.Default()
 	scraperPath := "./scraper/src/index.ts"
 	return services.NewScraperCronService(logger, scraperPath)
+}
+
+// NewRedditService creates a new Reddit service
+func NewRedditService() (services.RedditService, error) {
+	logger := log.Default()
+	return services.NewRedditService(logger)
 }
