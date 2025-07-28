@@ -46,8 +46,8 @@ WORKDIR /playwright-setup
 # Install the exact version from go.mod
 COPY go.mod go.sum ./
 RUN go mod download
-RUN go run github.com/playwright-community/playwright-go/cmd/playwright install --with-deps chromium
-
+RUN PWGO_VER=$(grep -oE "playwright-go v\S+" /playwright-setup/go.mod | sed 's/playwright-go //g') \
+    && go install github.com/playwright-community/playwright-go/cmd/playwright@${PWGO_VER}
 # Final runtime stage
 FROM ubuntu:22.04 AS prod
 
@@ -91,10 +91,13 @@ COPY --from=builder --chown=appuser:appgroup /app/main /app/main
 COPY --from=builder --chown=appuser:appgroup /app/migrations /app/migrations
 
 # Copy Playwright browsers and drivers from installer stage
-COPY --from=playwright-installer --chown=appuser:appgroup /root/.cache/ms-playwright /home/appuser/.cache/ms-playwright
+COPY --from=playwright-installer /go/bin/playwright /app
 
-# Set environment variable for Playwright
-ENV PLAYWRIGHT_BROWSERS_PATH=/home/appuser/.cache/ms-playwright
+RUN apt-get update && apt-get install -y ca-certificates \
+    # Install dependencies and all browsers (or specify one)
+    && ./playwright install --with-deps \
+    && rm -rf /var/lib/apt/lists/*
+
 
 # Switch to non-root user
 USER appuser
