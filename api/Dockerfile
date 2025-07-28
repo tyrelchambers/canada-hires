@@ -5,21 +5,13 @@ RUN apk --no-cache add ca-certificates
 # Set the working directory inside the container
 WORKDIR /app
 
-# Copy the main app source code
+# Copy the Go source code (includes integrated scraper)
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 
-# Build the main Go application
+# Build the main Go application (now includes integrated scraper)
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o main ./
-
-# Build the Go scraper in a separate stage
-FROM golang:1.24.1-alpine AS scraper-builder
-WORKDIR /app/scraper-go
-COPY scraper-go/go.mod scraper-go/go.sum ./
-RUN go mod download
-COPY scraper-go/ ./
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o scraper main.go
 
 # Download Playwright browsers in a separate stage
 FROM golang:1.24.1-bullseye AS playwright-installer
@@ -92,10 +84,9 @@ RUN groupadd -g 1001 appgroup && \
 # Set working directory
 WORKDIR /app
 
-# Copy the built binaries and directories
+# Copy the built binary and directories
 COPY --from=builder --chown=appuser:appgroup /app/main /app/main
 COPY --from=builder --chown=appuser:appgroup /app/migrations /app/migrations
-COPY --from=scraper-builder --chown=appuser:appgroup /app/scraper-go/scraper /app/scraper-go/scraper
 
 # Copy Playwright browsers from installer stage
 COPY --from=playwright-installer --chown=appuser:appgroup /root/.cache/ms-playwright /home/appuser/.cache/ms-playwright
