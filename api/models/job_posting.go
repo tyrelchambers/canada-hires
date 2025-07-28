@@ -186,6 +186,14 @@ func normalizeProvince(province string) string {
 
 // parseScraperDate parses the date format from scraper
 func parseScraperDate(dateStr string) (time.Time, error) {
+	// Load Eastern timezone (Canada's primary business timezone)
+	// Job Bank and most Canadian job sites display dates in Eastern Time
+	eastern, err := time.LoadLocation("America/Toronto")
+	if err != nil {
+		// Fallback to UTC if timezone loading fails
+		eastern = time.UTC
+	}
+	
 	// Try common date formats
 	formats := []string{
 		"January 2, 2006",
@@ -196,7 +204,8 @@ func parseScraperDate(dateStr string) (time.Time, error) {
 	}
 	
 	for _, format := range formats {
-		if t, err := time.Parse(format, dateStr); err == nil {
+		// Parse in Eastern Time to prevent timezone conversion issues
+		if t, err := time.ParseInLocation(format, dateStr, eastern); err == nil {
 			return t, nil
 		}
 	}

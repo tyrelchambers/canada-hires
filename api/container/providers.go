@@ -49,6 +49,10 @@ func registerProviders(c *dig.Container) error {
 		return err
 	}
 
+	if err := c.Provide(NewScraperJobRepository); err != nil {
+		return err
+	}
+
 	// Service providers
 	if err := c.Provide(NewEmailService); err != nil {
 		return err
@@ -266,10 +270,15 @@ func NewJobController(repo repos.JobBankRepository, jobService services.JobServi
 	return controllers.NewJobController(repo, jobService)
 }
 
+// NewScraperJobRepository creates a new scraper job repository
+func NewScraperJobRepository(database db.Database) repos.ScraperJobRepository {
+	return repos.NewScraperJobRepository(database.GetDB())
+}
+
 // NewScraperCronService creates a new scraper cron service
-func NewScraperCronService(scraperService services.ScraperService) *services.ScraperCronService {
+func NewScraperCronService(scraperService services.ScraperService, scraperJobRepo repos.ScraperJobRepository) *services.ScraperCronService {
 	logger := log.Default()
-	return services.NewScraperCronService(logger, scraperService)
+	return services.NewScraperCronService(logger, scraperService, scraperJobRepo)
 }
 
 // NewRedditService creates a new Reddit service

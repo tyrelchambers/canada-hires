@@ -1,6 +1,7 @@
 package services
 
 import (
+	"canada-hires/repos"
 	"context"
 	"fmt"
 	"time"
@@ -10,19 +11,22 @@ import (
 )
 
 type ScraperCronService struct {
-	cron           *cron.Cron
-	logger         *log.Logger
-	scraperService ScraperService
-	lastRun        time.Time
+	cron              *cron.Cron
+	logger            *log.Logger
+	scraperService    ScraperService
+	scraperJobRepo    repos.ScraperJobRepository
+	jobType           string
 }
 
-func NewScraperCronService(logger *log.Logger, scraperService ScraperService) *ScraperCronService {
+func NewScraperCronService(logger *log.Logger, scraperService ScraperService, scraperJobRepo repos.ScraperJobRepository) *ScraperCronService {
 	c := cron.New(cron.WithLocation(time.UTC))
 
 	return &ScraperCronService{
 		cron:           c,
 		logger:         logger,
 		scraperService: scraperService,
+		scraperJobRepo: scraperJobRepo,
+		jobType:        "lmia_scraper",
 	}
 }
 
@@ -57,13 +61,37 @@ func (scs *ScraperCronService) Stop() {
 func (scs *ScraperCronService) runScraper() {
 	scs.logger.Info("Starting scheduled scraper execution")
 
+	// Update status to running
+	if err := scs.scraperJobRepo.UpdateStatus(scs.jobType, "running"); err != nil {
+		scs.logger.Error("Failed to update scraper status to running", "error", err)
+	}
+
 	if err := scs.executeScraper(); err != nil {
 		scs.logger.Error("Scraper execution failed", "error", err)
+		// Update status to failed
+		if updateErr := scs.scraperJobRepo.UpdateStatus(scs.jobType, "failed"); updateErr != nil {
+			scs.logger.Error("Failed to update scraper status to failed", "error", updateErr)
+		}
 		return
 	}
 
-	scs.lastRun = time.Now()
-	scs.logger.Info("Scraper execution completed successfully", "timestamp", scs.lastRun)
+	// Update last run time and status
+	now := time.Now()
+	if err := scs.scraperJobRepo.UpdateLastRunTime(scs.jobType, now); err != nil {
+		scs.logger.Error("Failed to update last run time", "error", err)
+	}
+	
+	if err := scs.scraperJobRepo.UpdateStatus(scs.jobType, "completed"); err != nil {
+		scs.logger.Error("Failed to update scraper status to completed", "error", err)
+	}
+
+	// Set next scheduled run for tomorrow
+	nextRun := now.Add(24 * time.Hour)
+	if err := scs.scraperJobRepo.UpdateNextScheduledRun(scs.jobType, nextRun); err != nil {
+		scs.logger.Error("Failed to update next scheduled run", "error", err)
+	}
+
+	scs.logger.Info("Scraper execution completed successfully", "timestamp", now)
 }
 
 func (scs *ScraperCronService) executeScraper() error {
@@ -81,39 +109,37 @@ func (scs *ScraperCronService) executeScraper() error {
 }
 
 func (scs *ScraperCronService) checkMissedExecution() error {
-	// Check if we missed yesterday's execution
-	now := time.Now()
-	yesterday := now.AddDate(0, 0, -1)
+	// Get scraper job from database
+	scraperJob, err := scs.scraperJobRepo.GetScraperJobByType(scs.jobType)
+	if err != nil {
+		scs.logger.Error("Failed to get scraper job from database", "error", err)
+		return err
+	}
 
-	// If it's after midnight and we haven't run today, check if we missed yesterday
-	if now.Hour() > 0 && scs.shouldRunCatchup(yesterday) {
-		scs.logger.Info("Detected missed execution, running catch-up scraper")
+	// Check if we should run based on database record
+	if scraperJob.ShouldRun() {
+		if scraperJob.IsOverdue() {
+			scs.logger.Info("Detected overdue scraper job, running catch-up scraper")
+		} else {
+			scs.logger.Info("Detected scraper job should run, starting execution")
+		}
 		go scs.runScraper() // Run asynchronously to not block startup
+	} else {
+		scs.logger.Info("Scraper job does not need to run yet", 
+			"last_run", scraperJob.LastRunAt,
+			"should_run_at", scraperJob.LastRunAt.Add(24*time.Hour))
 	}
 
 	return nil
 }
 
-func (scs *ScraperCronService) shouldRunCatchup(targetDate time.Time) bool {
-	// Check if we have a record of running on the target date
-	// For simplicity, we'll check if lastRun is from the target date
-	// In production, you might want to store this in the database
-
-	if scs.lastRun.IsZero() {
-		// No previous run recorded, assume we should catch up
-		return true
+// GetLastRunTime returns the timestamp of the last successful scraper execution from database
+func (scs *ScraperCronService) GetLastRunTime() (*time.Time, error) {
+	scraperJob, err := scs.scraperJobRepo.GetScraperJobByType(scs.jobType)
+	if err != nil {
+		return nil, err
 	}
-
-	// Check if lastRun was on or after the target date
-	targetStart := time.Date(targetDate.Year(), targetDate.Month(), targetDate.Day(), 0, 0, 0, 0, time.UTC)
-	targetEnd := targetStart.Add(24 * time.Hour)
-
-	return scs.lastRun.Before(targetStart) || scs.lastRun.After(targetEnd)
-}
-
-// GetLastRunTime returns the timestamp of the last successful scraper execution
-func (scs *ScraperCronService) GetLastRunTime() time.Time {
-	return scs.lastRun
+	return scraperJob.LastRunAt, nil
 }
 
 // RunNow manually triggers the scraper execution (useful for testing/admin)
