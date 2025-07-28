@@ -33,6 +33,7 @@ WORKDIR /app
 COPY --from=builder --chown=appuser:appgroup /app/main /app/main
 COPY --from=builder --chown=appuser:appgroup /app/migrations /app/migrations
 
+
 # Set environment variable for chromium path
 ENV CHROME_BIN=/usr/bin/chromium-browser
 ENV CHROME_PATH=/usr/bin/chromium-browser
