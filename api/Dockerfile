@@ -16,10 +16,11 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o main ./
 # Final runtime stage using Alpine for minimal footprint
 FROM golang:1.24-alpine AS prod
 
-# Install runtime dependencies for chromedp
+# Install runtime dependencies for chromedp and make
 RUN apk update && apk add --no-cache \
     ca-certificates \
     chromium \
+    make \
     && rm -rf /var/cache/apk/*
 
 # Create non-root user (Alpine Linux compatible)
@@ -32,6 +33,7 @@ WORKDIR /app
 # Copy the built binary and directories
 COPY --from=builder --chown=appuser:appgroup /app/main /app/main
 COPY --from=builder --chown=appuser:appgroup /app/migrations /app/migrations
+COPY --from=builder --chown=appuser:appgroup /app/makefile /app/makefile
 
 
 # Set environment variable for chromium path
