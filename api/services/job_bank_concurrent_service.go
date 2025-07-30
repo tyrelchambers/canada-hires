@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/chromedp/chromedp"
 	"github.com/charmbracelet/log"
+	"github.com/chromedp/chromedp"
 )
 
 type JobBankConcurrentService interface {
@@ -113,10 +113,10 @@ func (s *jobBankConcurrentService) ScrapeTFWJobsConcurrently() error {
 	jobsScraped := 0
 
 	fmt.Printf("=== CONCURRENT SCRAPING PROGRESS ===\n")
-	
+
 	for result := range results {
 		completedPages++
-		
+
 		if result.Error != nil {
 			log.Error("Page scraping failed", "page", result.PageNum, "error", result.Error)
 			errorCount++
@@ -127,9 +127,9 @@ func (s *jobBankConcurrentService) ScrapeTFWJobsConcurrently() error {
 
 		// Progress update
 		progress := float64(completedPages) / float64(totalPages) * 100
-		fmt.Printf("\rProgress: %d/%d pages (%.1f%%) | Jobs: %d | Errors: %d", 
+		fmt.Printf("\rProgress: %d/%d pages (%.1f%%) | Jobs: %d | Errors: %d",
 			completedPages, totalPages, progress, len(allJobs), errorCount)
-		
+
 		// Update database progress every 10 pages
 		if completedPages%10 == 0 {
 			s.repo.UpdateScrapingRunProgress(scrapingRun.ID, totalPages, jobsScraped, 0, completedPages)
@@ -141,18 +141,18 @@ func (s *jobBankConcurrentService) ScrapeTFWJobsConcurrently() error {
 	fmt.Printf("\n=== SAVING TO DATABASE ===\n")
 	jobsStored := 0
 	batchSize := 100
-	
+
 	for i := 0; i < len(allJobs); i += batchSize {
 		end := min(i+batchSize, len(allJobs))
 		batch := allJobs[i:end]
-		
+
 		err = s.repo.CreateJobPostingsBatch(batch)
 		if err != nil {
 			log.Error("Failed to store job batch", "batch_start", i, "error", err)
 		} else {
 			jobsStored += len(batch)
 		}
-		
+
 		// Progress for saving
 		saveProgress := float64(jobsStored) / float64(len(allJobs)) * 100
 		fmt.Printf("\rSaving: %d/%d jobs (%.1f%%)", jobsStored, len(allJobs), saveProgress)
@@ -168,27 +168,27 @@ func (s *jobBankConcurrentService) ScrapeTFWJobsConcurrently() error {
 	// Print final summary
 	s.printFinalSummary(scrapingRun.ID, totalPages, jobsScraped, jobsStored, errorCount)
 
-	log.Info("Concurrent TFW job scraping completed", 
-		"total_pages", totalPages, 
-		"jobs_scraped", jobsScraped, 
+	log.Info("Concurrent TFW job scraping completed",
+		"total_pages", totalPages,
+		"jobs_scraped", jobsScraped,
 		"jobs_stored", jobsStored,
 		"errors", errorCount,
 		"workers", numWorkers)
-	
+
 	return nil
 }
 
 func (s *jobBankConcurrentService) worker(workerID int, pageJobs <-chan PageJob, results chan<- PageResult, wg *sync.WaitGroup) {
 	defer wg.Done()
-	
+
 	log.Debug("Worker started", "worker_id", workerID)
 
 	for job := range pageJobs {
 		// Rate limiting per worker - stagger workers
 		time.Sleep(time.Duration(workerID) * 500 * time.Millisecond)
-		
+
 		log.Debug("Worker processing page", "worker_id", workerID, "page", job.PageNum)
-		
+
 		// Create fresh context for each page to avoid context pollution
 		allocatorCtx, cancel := chromedp.NewExecAllocator(context.Background(),
 			chromedp.UserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36"),
@@ -200,22 +200,22 @@ func (s *jobBankConcurrentService) worker(workerID int, pageJobs <-chan PageJob,
 		defer cancel()
 
 		ctx, cancel := chromedp.NewContext(allocatorCtx)
-		
+
 		jobs, err := s.scrapePageConcurrent(ctx, job.PageNum, job.ScrapingRunID)
-		
+
 		// Always cancel context after use
 		cancel()
-		
+
 		results <- PageResult{
 			PageNum: job.PageNum,
 			Jobs:    jobs,
 			Error:   err,
 		}
-		
+
 		// Small delay between requests from same worker
 		time.Sleep(1 * time.Second)
 	}
-	
+
 	log.Debug("Worker finished", "worker_id", workerID)
 }
 
@@ -304,50 +304,50 @@ func (s *jobBankConcurrentService) scrapePageConcurrent(ctx context.Context, pag
 	// Add retry logic for failed pages
 	maxRetries := 2
 	var lastErr error
-	
+
 	for attempt := 1; attempt <= maxRetries; attempt++ {
 		err := chromedp.Run(pageCtx,
 			chromedp.Navigate(url),
 			chromedp.WaitVisible(`article[id^="article-"]`, chromedp.ByQuery),
 			chromedp.Sleep(1*time.Second), // Small sleep after visible
-			
+
 			// Get page title for debugging
 			chromedp.Title(&pageTitle),
-			
+
 			chromedp.Evaluate(`
 				const jobs = [];
 				const articles = document.querySelectorAll('article[id^="article-"]');
-				
+
 				articles.forEach((article) => {
 					try {
 						// Get job ID from article ID
 						const jobId = article.id.replace('article-', '');
-						
+
 						// Find title link - it's the main job posting link
 						const titleLink = article.querySelector('a[href*="/jobposting/"]');
 						if (!titleLink) return;
-						
+
 						const url = titleLink.href;
-						
+
 						// Extract job details using class names
 						const titleEl = article.querySelector('span.no-wrap[property="title"]');
 						const title = titleEl ? titleEl.textContent.trim() : '';
-						
+
 						const businessEl = article.querySelector('li.employer');
 						const employer = businessEl ? businessEl.textContent.trim() : '';
-						
+
 						const locationEl = article.querySelector('li.location');
 						const location = locationEl ? locationEl.textContent.trim() : '';
-						
+
 						const salaryEl = article.querySelector('li.salary');
 						const salaryText = salaryEl ? salaryEl.textContent.trim() : '';
-						
+
 						const dateEl = article.querySelector('.date');
 						const postedDate = dateEl ? dateEl.textContent.trim() : '';
-						
+
 						const lmiaEl = article.querySelector('.jobLMIAflag');
 						const lmiaFlag = lmiaEl ? lmiaEl.textContent.trim() : '';
-						
+
 						if (title && jobId && title.length > 2) {
 							jobs.push({
 								jobId: jobId,
@@ -364,7 +364,7 @@ func (s *jobBankConcurrentService) scrapePageConcurrent(ctx context.Context, pag
 						console.log('Error processing article:', e);
 					}
 				});
-				
+
 				jobs;
 			`, &jobsData),
 		)
@@ -416,7 +416,7 @@ func (s *jobBankConcurrentService) printFinalSummary(scrapingRunID string, total
 	fmt.Printf("Total Jobs Stored: %d\n", jobsStored)
 	fmt.Printf("Errors: %d\n", errorCount)
 	fmt.Printf("Success Rate: %.1f%%\n", float64(jobsStored)/float64(jobsScraped)*100)
-	
+
 	// Get sample data
 	recentJobs, err := s.repo.GetJobPostingsByScrapingRun(scrapingRunID)
 	if err == nil && len(recentJobs) > 0 {

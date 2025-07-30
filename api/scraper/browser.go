@@ -179,7 +179,7 @@ func (s *Scraper) parseJobs() ([]scraper_types.JobData, error) {
 				const salaryEl = article.querySelector('.list-unstyled .salary');
 				const dateEl = article.querySelector('.list-unstyled .date');
 				const linkEl = article.querySelector('.resultJobItem');
-				
+
 				result.push({
 					title: titleEl ? titleEl.textContent.trim() : '',
 					business: businessEl ? businessEl.textContent.trim() : '',
@@ -241,9 +241,6 @@ func (s *Scraper) parseJobs() ([]scraper_types.JobData, error) {
 				JobBankID: jobBankID,
 			})
 
-			if len(jobs) <= 5 || len(jobs)%100 == 0 {
-				fmt.Printf("Job %d: %s at %s\n", len(jobs), jobTitle, business)
-			}
 		} else {
 			if i < 5 {
 				fmt.Printf("Skipping article %d: title='%s', url='%s'\n", i+1, jobTitle, jobURL)
@@ -265,7 +262,7 @@ func cleanJobURL(url string) (cleanURL string, jobBankID string) {
 		cleanURL = fmt.Sprintf("%s/jobsearch/jobpostingtfw/%s", baseURL, jobBankID)
 		return cleanURL, jobBankID
 	}
-	
+
 	// If no job ID found in expected format, try other patterns
 	re = regexp.MustCompile(`/(\d+)`)
 	matches = re.FindStringSubmatch(url)
@@ -281,7 +278,7 @@ func cleanJobURL(url string) (cleanURL string, jobBankID string) {
 		}
 		return cleanURL, jobBankID
 	}
-	
+
 	// Fallback: just clean session IDs and query params
 	re = regexp.MustCompile(`(.*?)(;jsessionid=.*|\?.*)`)
 	matches = re.FindStringSubmatch(url)

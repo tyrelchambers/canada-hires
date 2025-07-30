@@ -78,6 +78,37 @@ func RequireAuth(next http.Handler) http.Handler {
 	})
 }
 
+// RequireAdmin creates a middleware that requires admin role
+// It will return a 403 Forbidden response if the user is not an admin
+func RequireAdmin(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user := helpers.GetUserFromContext(r.Context())
+		if user == nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte(`{"error":"Unauthorized - Please log in"}`))
+			return
+		}
+
+		if !user.IsAdmin() {
+			log.Warn("Non-admin user attempted to access admin endpoint",
+				"user_id", user.ID,
+				"email", user.Email,
+				"role", user.Role,
+				"path", r.URL.Path)
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte(`{"error":"Forbidden - Admin access required"}`))
+			return
+		}
+
+		log.Info("Admin user accessing admin endpoint",
+			"user_id", user.ID,
+			"email", user.Email,
+			"path", r.URL.Path)
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 // RequestIDMiddleware adds a unique request ID to each request
 func RequestIDMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

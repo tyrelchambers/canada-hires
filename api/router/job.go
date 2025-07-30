@@ -18,4 +18,5 @@ func JobRoutes(r chi.Router, jobController *controllers.JobController) {
 		r.Post("/scraping-runs/{scraping_run_id}/jobs", jobController.SubmitScraperJobs)
 		r.Post("/scraping-runs/{scraping_run_id}/complete", jobController.CompleteScrapingRun)
 	})
+
 }

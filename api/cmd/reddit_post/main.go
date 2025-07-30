@@ -2,6 +2,7 @@ package main
 
 import (
 	"canada-hires/container"
+	"canada-hires/models"
 	"canada-hires/repos"
 	"canada-hires/services"
 	"context"
@@ -135,12 +136,18 @@ func main() {
 		os.Exit(0)
 	}
 
+	// Create temporary subreddit object for the posting
+	tempSubreddit := &models.Subreddit{
+		Name: postData.Subreddit,
+	}
+
 	// Post to Reddit
 	log.Info("Posting job to Reddit", "job_id", jobPostingID, "subreddit", postData.Subreddit)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	if err := redditService.PostJobWithConfig(ctx, jobPosting, config); err != nil {
+	_, err = redditService.PostJobWithConfig(ctx, jobPosting, config, tempSubreddit)
+	if err != nil {
 		log.Error("Failed to post job to Reddit", "error", err, "job_id", jobPostingID)
 		fmt.Printf("Error posting to Reddit: %v\n", err)
 		os.Exit(1)

@@ -113,6 +113,7 @@ JWT_SECRET=your_jwt_secret_key
 - Database operations use sqlx with prepared statements
 - Error handling with structured logging using charmbracelet/log
 - **API Calls**: Always use TanStack Query (useQuery) hooks for API calls instead of manual fetch/useEffect patterns
+- **Icons**: Use FontAwesome icons for consistency across the application
 
 ## Current Implementation Status
 

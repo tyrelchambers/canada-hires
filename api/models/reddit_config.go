@@ -73,6 +73,51 @@ func (rc *RedditConfig) GeneratePostData(job *JobPosting) *RedditPostData {
 	}
 }
 
+// buildSalaryRangeText formats salary information from min, max, and type
+func buildSalaryRangeText(min *float64, max *float64, salaryType *string) string {
+	if min == nil && max == nil {
+		return ""
+	}
+	
+	// Default type to "hourly" if not specified
+	typeStr := "per hour"
+	if salaryType != nil {
+		switch *salaryType {
+		case "yearly":
+			typeStr = "per year"
+		case "monthly":
+			typeStr = "per month"
+		case "weekly":
+			typeStr = "per week"
+		case "biweekly":
+			typeStr = "biweekly"
+		case "hourly":
+			typeStr = "per hour"
+		default:
+			typeStr = "per hour"
+		}
+	}
+	
+	// Format salary amounts
+	if min != nil && max != nil {
+		if *min == *max {
+			// Same min and max, show single salary
+			return fmt.Sprintf("$%.2f %s", *min, typeStr)
+		} else {
+			// Different min and max, show range
+			return fmt.Sprintf("$%.2f - $%.2f %s", *min, *max, typeStr)
+		}
+	} else if min != nil {
+		// Only minimum specified
+		return fmt.Sprintf("$%.2f+ %s", *min, typeStr)
+	} else if max != nil {
+		// Only maximum specified
+		return fmt.Sprintf("Up to $%.2f %s", *max, typeStr)
+	}
+	
+	return ""
+}
+
 // processTemplate replaces template placeholders with job data
 func (rc *RedditConfig) processTemplate(template string, job *JobPosting) string {
 	result := template
@@ -84,8 +129,9 @@ func (rc *RedditConfig) processTemplate(template string, job *JobPosting) string
 	result = strings.ReplaceAll(result, "{{.URL}}", job.URL)
 
 	// Replace optional fields with conditional logic
-	if job.SalaryRaw != nil && *job.SalaryRaw != "" {
-		result = strings.ReplaceAll(result, "{{if .SalaryRaw}}**Salary:** {{.SalaryRaw}}{{end}}", "**Salary:** "+*job.SalaryRaw)
+	salaryText := buildSalaryRangeText(job.SalaryMin, job.SalaryMax, job.SalaryType)
+	if salaryText != "" {
+		result = strings.ReplaceAll(result, "{{if .SalaryRaw}}**Salary:** {{.SalaryRaw}}{{end}}", "**Salary:** "+salaryText)
 	} else {
 		result = strings.ReplaceAll(result, "{{if .SalaryRaw}}**Salary:** {{.SalaryRaw}}{{end}}", "")
 	}

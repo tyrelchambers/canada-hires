@@ -5,6 +5,8 @@ import (
 	"canada-hires/repos"
 	"context"
 	"fmt"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/charmbracelet/log"
@@ -56,11 +58,14 @@ func (js *jobService) ProcessScraperData(scraperData []models.ScraperJobData, sc
 		"new_jobs", len(newJobPostings),
 		"scraping_run_id", scrapingRunID)
 
-	// Post only new jobs to Reddit asynchronously
-	if js.redditService != nil && len(newJobPostings) > 0 {
+	// Check if automatic Reddit posting is enabled via environment variable
+	if js.isAutoPostingEnabled() && js.redditService != nil && len(newJobPostings) > 0 {
+		log.Info("Auto-posting enabled - posting new jobs to Reddit", "new_jobs", len(newJobPostings))
 		go js.postJobsToReddit(newJobPostings)
-	} else if len(newJobPostings) == 0 {
-		log.Info("No new jobs to post to Reddit - all jobs were updates to existing postings")
+	} else if len(newJobPostings) > 0 {
+		log.Info("New jobs created and ready for admin review (auto-posting disabled)", "new_jobs", len(newJobPostings))
+	} else {
+		log.Info("No new jobs created - all jobs were updates to existing postings")
 	}
 	return nil
 }
@@ -106,6 +111,23 @@ func (js *jobService) GetJobStatistics() (*JobStatistics, error) {
 		TotalEmployers: totalEmployers,
 		TopEmployers:   topEmployers,
 	}, nil
+}
+
+// isAutoPostingEnabled checks if automatic Reddit posting is enabled via environment variable
+// Defaults to false (disabled) for safety - set REDDIT_AUTO_POST=true to enable
+func (js *jobService) isAutoPostingEnabled() bool {
+	autoPost := os.Getenv("REDDIT_AUTO_POST")
+	if autoPost == "" {
+		return false // Default to disabled
+	}
+	
+	enabled, err := strconv.ParseBool(autoPost)
+	if err != nil {
+		log.Warn("Invalid REDDIT_AUTO_POST value, defaulting to disabled", "value", autoPost)
+		return false
+	}
+	
+	return enabled
 }
 
 // postJobsToReddit posts new job postings to Reddit

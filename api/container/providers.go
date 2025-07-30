@@ -53,6 +53,14 @@ func registerProviders(c *dig.Container) error {
 		return err
 	}
 
+	if err := c.Provide(NewSubredditRepository); err != nil {
+		return err
+	}
+
+	if err := c.Provide(NewJobSubredditPostRepository); err != nil {
+		return err
+	}
+
 	// Service providers
 	if err := c.Provide(NewEmailService); err != nil {
 		return err
@@ -125,6 +133,10 @@ func registerProviders(c *dig.Container) error {
 	}
 
 	if err := c.Provide(NewJobController); err != nil {
+		return err
+	}
+
+	if err := c.Provide(NewSubredditController); err != nil {
 		return err
 	}
 
@@ -266,8 +278,8 @@ func NewJobService(repo repos.JobBankRepository, redditService services.RedditSe
 }
 
 // NewJobController creates a new Job controller
-func NewJobController(repo repos.JobBankRepository, jobService services.JobService) *controllers.JobController {
-	return controllers.NewJobController(repo, jobService)
+func NewJobController(repo repos.JobBankRepository, jobService services.JobService, redditService services.RedditService) *controllers.JobController {
+	return controllers.NewJobController(repo, jobService, redditService)
 }
 
 // NewScraperJobRepository creates a new scraper job repository
@@ -282,13 +294,28 @@ func NewScraperCronService(scraperService services.ScraperService, scraperJobRep
 }
 
 // NewRedditService creates a new Reddit service
-func NewRedditService(jobRepo repos.JobBankRepository) (services.RedditService, error) {
+func NewRedditService(jobRepo repos.JobBankRepository, subredditRepo repos.SubredditRepository, jobSubredditPostRepo repos.JobSubredditPostRepository) (services.RedditService, error) {
 	logger := log.Default()
-	return services.NewRedditService(logger, jobRepo)
+	return services.NewRedditService(logger, jobRepo, subredditRepo, jobSubredditPostRepo)
 }
 
 // NewScraperService creates a new scraper service
 func NewScraperService(jobRepo repos.JobBankRepository) services.ScraperService {
 	logger := log.Default()
 	return services.NewScraperService(jobRepo, logger)
+}
+
+// NewSubredditRepository creates a new subreddit repository
+func NewSubredditRepository(database db.Database) repos.SubredditRepository {
+	return repos.NewSubredditRepository(database.GetDB())
+}
+
+// NewSubredditController creates a new subreddit controller
+func NewSubredditController(subredditRepo repos.SubredditRepository) *controllers.SubredditController {
+	return controllers.NewSubredditController(subredditRepo)
+}
+
+// NewJobSubredditPostRepository creates a new job subreddit post repository
+func NewJobSubredditPostRepository(database db.Database) repos.JobSubredditPostRepository {
+	return repos.NewJobSubredditPostRepository(database.GetDB())
 }

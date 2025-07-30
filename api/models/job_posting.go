@@ -22,17 +22,24 @@ type JobPosting struct {
 	City         *string    `json:"city" db:"city"`                     // Parsed city
 	SalaryMin    *float64   `json:"salary_min" db:"salary_min"`         // Minimum salary
 	SalaryMax    *float64   `json:"salary_max" db:"salary_max"`         // Maximum salary
-	SalaryType   *string    `json:"salary_type" db:"salary_type"`       // hourly, weekly, monthly, yearly
+	SalaryType   *string    `json:"salary_type" db:"salary_type"`       // hourly, weekly, biweekly, monthly, yearly
 	SalaryRaw    *string    `json:"salary_raw" db:"salary_raw"`         // Original salary string from scraper
 	PostingDate  *time.Time `json:"posting_date" db:"posting_date"`     // When job was posted
 	URL          string     `json:"url" db:"url"`                       // Link to job posting
-	IsTFW        bool       `json:"is_tfw" db:"is_tfw"`                 // Whether this is a TFW position
-	HasLMIA      bool       `json:"has_lmia" db:"has_lmia"`             // Whether job has LMIA flag
-	RedditPosted bool       `json:"reddit_posted" db:"reddit_posted"`   // Whether job has been posted to Reddit
-	Description  *string    `json:"description" db:"description"`       // Job description if available
+	IsTFW                 bool       `json:"is_tfw" db:"is_tfw"`                                   // Whether this is a TFW position
+	HasLMIA               bool       `json:"has_lmia" db:"has_lmia"`                               // Whether job has LMIA flag
+	RedditPosted          bool       `json:"reddit_posted" db:"reddit_posted"`                     // Whether job has been posted to Reddit
+	RedditApprovalStatus  string     `json:"reddit_approval_status" db:"reddit_approval_status"`   // pending, approved, rejected
+	RedditApprovedBy      *string    `json:"reddit_approved_by" db:"reddit_approved_by"`           // Admin who approved/rejected
+	RedditApprovedAt      *time.Time `json:"reddit_approved_at" db:"reddit_approved_at"`           // When approval decision was made
+	RedditRejectionReason *string    `json:"reddit_rejection_reason" db:"reddit_rejection_reason"` // Reason for rejection
+	Description           *string    `json:"description" db:"description"`                         // Job description if available
 	ScrapingRunID string    `json:"scraping_run_id" db:"scraping_run_id"` // Reference to scraping session
 	CreatedAt    time.Time  `json:"created_at" db:"created_at"`
 	UpdatedAt    time.Time  `json:"updated_at" db:"updated_at"`
+	
+	// Joined data when querying with subreddit posting information
+	SubredditPosts []JobSubredditPost `json:"subreddit_posts,omitempty"`
 }
 
 // ScraperJobData represents the data structure from your scraper
@@ -49,15 +56,16 @@ type ScraperJobData struct {
 // NewJobPostingFromScraperData creates a JobPosting from scraper data
 func NewJobPostingFromScraperData(scraperData ScraperJobData, scrapingRunID string) *JobPosting {
 	job := &JobPosting{
-		Title:         truncateString(scraperData.JobTitle, 500),     // Keep title reasonable length
-		Employer:      truncateString(scraperData.Business, 500),    // Match DB constraint
-		Location:      truncateString(scraperData.Location, 200),    // Match DB constraint
-		URL:           scraperData.JobUrl,                           // URLs can be long
-		SalaryRaw:     &scraperData.Salary,
-		ScrapingRunID: scrapingRunID,
-		IsTFW:         true, // All jobs from TFW scraper are TFW positions
-		HasLMIA:       true, // All jobs from TFW scraper have LMIA
-		JobBankID:     scraperData.JobBankID,                        // Job Bank ID from scraper
+		Title:                truncateString(scraperData.JobTitle, 500),     // Keep title reasonable length
+		Employer:             truncateString(scraperData.Business, 500),    // Match DB constraint
+		Location:             truncateString(scraperData.Location, 200),    // Match DB constraint
+		URL:                  scraperData.JobUrl,                           // URLs can be long
+		SalaryRaw:            &scraperData.Salary,
+		ScrapingRunID:        scrapingRunID,
+		IsTFW:                true,      // All jobs from TFW scraper are TFW positions
+		HasLMIA:              true,      // All jobs from TFW scraper have LMIA
+		RedditApprovalStatus: "pending", // New jobs need approval before Reddit posting
+		JobBankID:            scraperData.JobBankID,                        // Job Bank ID from scraper
 	}
 
 	// Parse posting date
@@ -96,11 +104,14 @@ func (jp *JobPosting) parseSalary() {
 	
 	// Determine salary type based on keywords
 	salaryType := "hourly" // default
-	if strings.Contains(strings.ToLower(salaryStr), "yearly") || strings.Contains(strings.ToLower(salaryStr), "annual") {
+	salaryStrLower := strings.ToLower(salaryStr)
+	if strings.Contains(salaryStrLower, "yearly") || strings.Contains(salaryStrLower, "annual") {
 		salaryType = "yearly"
-	} else if strings.Contains(strings.ToLower(salaryStr), "monthly") {
+	} else if strings.Contains(salaryStrLower, "monthly") {
 		salaryType = "monthly"
-	} else if strings.Contains(strings.ToLower(salaryStr), "weekly") {
+	} else if strings.Contains(salaryStrLower, "biweekly") || strings.Contains(salaryStrLower, "bi-weekly") {
+		salaryType = "biweekly"
+	} else if strings.Contains(salaryStrLower, "weekly") {
 		salaryType = "weekly"
 	}
 	jp.SalaryType = &salaryType

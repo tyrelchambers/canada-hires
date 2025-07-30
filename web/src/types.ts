@@ -2,6 +2,7 @@ export interface User {
   id: string;
   email: string;
   username: string;
+  role: 'user' | 'admin';
   verification_tier: string;
   account_status: string;
   email_verified: boolean;
@@ -98,6 +99,17 @@ export interface LMIAStatsResponse {
   };
 }
 
+export interface JobSubredditPost {
+  id: string;
+  job_posting_id: string;
+  subreddit_id: string;
+  reddit_post_id?: string;
+  reddit_post_url?: string;
+  posted_at: string;
+  created_at: string;
+  subreddit_name?: string; // Joined data when queried with subreddit info
+}
+
 export interface JobPosting {
   id: string;
   job_bank_id?: string;
@@ -114,10 +126,16 @@ export interface JobPosting {
   url: string;
   is_tfw: boolean;
   has_lmia: boolean;
+  reddit_posted: boolean;
+  reddit_approval_status: 'pending' | 'approved' | 'rejected';
+  reddit_approved_by?: string;
+  reddit_approved_at?: string;
+  reddit_rejection_reason?: string;
   description?: string;
   scraping_run_id: string;
   created_at: string;
   updated_at: string;
+  subreddit_posts?: JobSubredditPost[]; // Joined data when queried with posting info
 }
 
 export interface JobPostingsResponse {
@@ -151,4 +169,54 @@ export interface JobStats {
     earliest_posting?: string;
     latest_posting?: string;
   }>;
+}
+
+// Admin interfaces for Reddit approval
+export interface RedditApprovalRequest {
+  approved_by: string;
+}
+
+export interface RedditRejectionRequest {
+  rejected_by: string;
+  reason?: string;
+}
+
+export interface BulkApprovalRequest {
+  job_ids: string[];
+  approved_by: string;
+}
+
+export interface BulkRejectionRequest {
+  job_ids: string[];
+  rejected_by: string;
+  reason?: string;
+}
+
+export interface RedditApprovalStats {
+  pending_count: number;
+  approved_count: number;
+  rejected_count: number;
+}
+
+export interface Subreddit {
+  id: string;
+  name: string;
+  is_active: boolean;
+  post_count: number;
+  last_posted_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateSubredditRequest {
+  name: string;
+  is_active?: boolean;
+}
+
+export interface UpdateSubredditRequest {
+  is_active?: boolean;
+}
+
+export interface SubredditsResponse {
+  subreddits: Subreddit[];
 }

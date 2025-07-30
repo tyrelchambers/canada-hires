@@ -26,6 +26,7 @@ type JobBankRepository interface {
 	GetJobPostingByID(id string) (*models.JobPosting, error)
 	GetJobPostingByURL(url string) (*models.JobPosting, error)
 	UpdateJobPostingRedditStatus(id string, redditPosted bool) error
+	UpdateJobRedditApprovalStatus(id string, status string, approvedBy string, approvedAt *time.Time, rejectionReason *string) error
 	GetJobPostingsNotPostedToReddit(limit int) ([]*models.JobPosting, error)
 	SearchJobPostingsByEmployer(employer string, limit int) ([]*models.JobPosting, error)
 	GetJobPostingsByLocation(city, province string, limit int) ([]*models.JobPosting, error)
@@ -504,6 +505,21 @@ func (r *jobBankRepository) UpdateJobPostingRedditStatus(id string, redditPosted
 	return err
 }
 
+// UpdateJobRedditApprovalStatus updates the Reddit approval status and related fields for a job posting
+func (r *jobBankRepository) UpdateJobRedditApprovalStatus(id string, status string, approvedBy string, approvedAt *time.Time, rejectionReason *string) error {
+	query := `
+		UPDATE job_postings 
+		SET reddit_approval_status = $2, 
+		    reddit_approved_by = $3, 
+		    reddit_approved_at = $4, 
+		    reddit_rejection_reason = $5,
+		    updated_at = NOW() 
+		WHERE id = $1`
+	
+	_, err := r.db.Exec(query, id, status, approvedBy, approvedAt, rejectionReason)
+	return err
+}
+
 // GetJobPostingsNotPostedToReddit retrieves job postings that haven't been posted to Reddit
 func (r *jobBankRepository) GetJobPostingsNotPostedToReddit(limit int) ([]*models.JobPosting, error) {
 	var postings []*models.JobPosting
@@ -729,6 +745,13 @@ func (r *jobBankRepository) SearchJobPostingsAdvanced(filters map[string]interfa
 		whereClause += fmt.Sprintf(" AND posting_date >= NOW() - INTERVAL '%d days'", days)
 	}
 	
+	// Add Reddit approval status filter
+	if approvalStatus, ok := filters["reddit_approval_status"].(string); ok && approvalStatus != "" {
+		whereClause += fmt.Sprintf(" AND reddit_approval_status = $%d", argIndex)
+		args = append(args, approvalStatus)
+		argIndex++
+	}
+	
 	// Get total count
 	countQuery := "SELECT COUNT(*) FROM job_postings" + whereClause
 	err := r.db.Get(&totalCount, countQuery, args...)
@@ -760,7 +783,9 @@ func (r *jobBankRepository) SearchJobPostingsAdvanced(filters map[string]interfa
 	selectQuery := fmt.Sprintf(`
 		SELECT id, job_bank_id, title, employer, location, province, city,
 			   salary_min, salary_max, salary_type, salary_raw, posting_date, url, 
-			   is_tfw, has_lmia, reddit_posted, description, scraping_run_id, created_at, updated_at
+			   is_tfw, has_lmia, reddit_posted, reddit_approval_status, reddit_approved_by, 
+			   reddit_approved_at, reddit_rejection_reason, description, scraping_run_id, 
+			   created_at, updated_at
 		FROM job_postings%s ORDER BY %s %s`, whereClause, sortBy, sortOrder)
 	
 	// Add pagination

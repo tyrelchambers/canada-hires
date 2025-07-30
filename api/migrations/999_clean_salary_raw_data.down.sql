@@ -1,0 +1,2 @@
+-- This migration cannot be rolled back as we don't know which entries originally had the "Salary" prefix
+-- The data cleanup is a one-way operation

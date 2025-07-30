@@ -14,6 +14,13 @@ const (
 	VerificationTrusted  VerificationTier = "trusted"
 )
 
+type UserRole string
+
+const (
+	RoleUser  UserRole = "user"
+	RoleAdmin UserRole = "admin"
+)
+
 type IPAddresses []string
 
 func (ips IPAddresses) Value() (driver.Value, error) {
@@ -40,10 +47,16 @@ func (ips *IPAddresses) Scan(value interface{}) error {
 type User struct {
 	ID               string           `json:"id" db:"id"`
 	Email            string           `json:"email" db:"email"`
+	Role             UserRole         `json:"role" db:"role"`
 	VerificationTier VerificationTier `json:"verification_tier" db:"verification_tier"`
 	EmailDomain      *string          `json:"email_domain" db:"email_domain"`
 	IPAddresses      IPAddresses      `json:"ip_addresses" db:"ip_addresses"`
 	CreatedAt        time.Time        `json:"created_at" db:"created_at"`
 	LastActive       time.Time        `json:"last_active" db:"last_active"`
 	UpdatedAt        time.Time        `json:"updated_at" db:"updated_at"`
+}
+
+// IsAdmin checks if the user has admin role
+func (u *User) IsAdmin() bool {
+	return u.Role == RoleAdmin
 }

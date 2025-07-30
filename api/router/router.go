@@ -15,6 +15,7 @@ func InitRoutes(cn *container.Container, r *chi.Mux) {
 	br := &businessRouter{}
 	rr := &reportRouter{}
 	ur := &userRouter{}
+	adr := &adminRouter{}
 
 	// Invoke the router initializers
 	err := cn.Invoke(func(authController controllers.AuthController, businessController controllers.BusinessController, reportController controllers.ReportController, userController controllers.UserController, jobController *controllers.JobController, authMW func(http.Handler) http.Handler, requireMW func(http.Handler) http.Handler) {
@@ -22,6 +23,7 @@ func InitRoutes(cn *container.Container, r *chi.Mux) {
 		*br = *NewBusinessRouter(cn, businessController).(*businessRouter)
 		*rr = *NewReportRouter(cn, reportController).(*reportRouter)
 		*ur = *NewUserRouter(cn, userController, authMW, requireMW).(*userRouter)
+		*adr = *NewAdminRouter(cn, jobController, authMW).(*adminRouter)
 		
 		// Initialize job routes
 		JobRoutes(r, jobController)
@@ -37,6 +39,7 @@ func InitRoutes(cn *container.Container, r *chi.Mux) {
 		br.Init(r)
 		rr.Init(r)
 		ur.Init(r)
+		adr.InjectAdminRoutes(r)
 		
 		// Add LMIA routes
 		err := cn.Invoke(func(lmiaController *controllers.LMIAController) {
@@ -44,6 +47,14 @@ func InitRoutes(cn *container.Container, r *chi.Mux) {
 		})
 		if err != nil {
 			log.Error("Failed to initialize LMIA routes", "error", err)
+		}
+		
+		// Add subreddit routes
+		err = cn.Invoke(func(subredditController *controllers.SubredditController, authMW func(http.Handler) http.Handler) {
+			SubredditRoutes(subredditController, authMW)(r)
+		})
+		if err != nil {
+			log.Error("Failed to initialize subreddit routes", "error", err)
 		}
 	})
 }

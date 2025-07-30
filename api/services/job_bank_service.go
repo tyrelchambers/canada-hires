@@ -399,11 +399,14 @@ func parseSalary(salaryText string) (min *float64, max *float64, salaryType stri
 
 	// Determine salary type
 	salaryType = "hourly" // default
-	if strings.Contains(strings.ToLower(salaryText), "year") {
+	salaryTextLower := strings.ToLower(salaryText)
+	if strings.Contains(salaryTextLower, "year") {
 		salaryType = "yearly"
-	} else if strings.Contains(strings.ToLower(salaryText), "month") {
+	} else if strings.Contains(salaryTextLower, "month") {
 		salaryType = "monthly"
-	} else if strings.Contains(strings.ToLower(salaryText), "week") {
+	} else if strings.Contains(salaryTextLower, "biweekly") || strings.Contains(salaryTextLower, "bi-weekly") {
+		salaryType = "biweekly"
+	} else if strings.Contains(salaryTextLower, "week") {
 		salaryType = "weekly"
 	}
 
