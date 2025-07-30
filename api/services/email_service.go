@@ -1,8 +1,8 @@
 package services
 
 import (
+	"canada-hires/utils"
 	"fmt"
-	"os"
 	"strconv"
 
 	"github.com/charmbracelet/log"
@@ -23,15 +23,15 @@ type emailService struct {
 }
 
 func NewEmailService() EmailService {
-	port, _ := strconv.Atoi(getEnv("SMTP_PORT", "587"))
+	port, _ := strconv.Atoi(utils.GetEnv("SMTP_PORT", "587"))
 
 	return &emailService{
-		smtpHost:     getEnv("SMTP_HOST", "localhost"),
+		smtpHost:     utils.GetEnv("SMTP_HOST", "localhost"),
 		smtpPort:     port,
-		smtpUser:     getEnv("SMTP_USER", ""),
-		smtpPassword: getEnv("SMTP_PASSWORD", ""),
-		fromEmail:    getEnv("FROM_EMAIL", "noreply@jobwatchcanada.com"),
-		backendURL:   getEnv("API_URL", "http://localhost:8000"),
+		smtpUser:     utils.GetEnv("SMTP_USER", ""),
+		smtpPassword: utils.GetEnv("SMTP_PASSWORD", ""),
+		fromEmail:    utils.GetEnv("FROM_EMAIL", "noreply@jobwatchcanada.com"),
+		backendURL:   utils.GetEnv("API_URL", "http://localhost:8000"),
 	}
 }
 
@@ -68,9 +68,3 @@ func (s *emailService) SendLoginLink(email, token string) error {
 	return nil
 }
 
-func getEnv(key, fallback string) string {
-	if value, exists := os.LookupEnv(key); exists {
-		return value
-	}
-	return fallback
-}

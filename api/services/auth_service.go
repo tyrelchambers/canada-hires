@@ -3,11 +3,13 @@ package services
 import (
 	"canada-hires/models"
 	"canada-hires/repos"
+	"canada-hires/utils"
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
 	"fmt"
 	"net"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -40,13 +42,18 @@ func NewAuthService(userRepo repos.UserRepository, tokenRepo repos.LoginTokenRep
 		tokenRepo:       tokenRepo,
 		sessionRepo:     sessionRepo,
 		emailService:    emailService,
-		jwtSecret:       []byte(getEnv("JWT_SECRET", "your-secret-key")),
+		jwtSecret:       []byte(utils.GetEnv("JWT_SECRET", "your-secret-key")),
 		tokenDuration:   15 * time.Minute,
 		sessionDuration: 30 * 24 * time.Hour, // 30 days
 	}
 }
 
 func (s *authService) SendLoginLink(email, ipAddress string) error {
+	// Check if email is in approved list
+	if !s.isEmailApproved(email) {
+		return fmt.Errorf("email not approved for registration")
+	}
+
 	// Get or create user
 	user, err := s.userRepo.GetByEmail(email)
 	if err != nil {
@@ -231,3 +238,23 @@ func getClientIP(r interface{}) string {
 func isValidIP(ip string) bool {
 	return net.ParseIP(ip) != nil
 }
+
+// isEmailApproved checks if the email is in the APPROVED_EMAILS environment variable
+func (s *authService) isEmailApproved(email string) bool {
+	approvedEmails := utils.GetEnv("APPROVED_EMAILS", "")
+	if approvedEmails == "" {
+		// If no approved emails are set, allow all emails (backward compatibility)
+		return true
+	}
+
+	// Split by comma and check each email
+	emails := strings.Split(approvedEmails, ",")
+	for _, approvedEmail := range emails {
+		if strings.TrimSpace(approvedEmail) == strings.TrimSpace(email) {
+			return true
+		}
+	}
+
+	return false
+}
+

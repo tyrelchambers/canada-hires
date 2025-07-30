@@ -1,6 +1,7 @@
 package db
 
 import (
+	"canada-hires/utils"
 	"database/sql"
 	"fmt"
 	"os"
@@ -79,12 +80,12 @@ func NewConfigFromEnv() Config {
 	// Load .env file if it exists
 
 	return Config{
-		Host:     getEnv("DB_HOST", "localhost"),
-		Port:     getEnv("DB_PORT", "5432"),
-		User:     getEnv("DB_USER", "postgres"),
-		Password: getEnv("DB_PASSWORD", ""),
-		DBName:   getEnv("DB_NAME", "canada-hires"),
-		SSLMode:  getEnv("DB_SSLMODE", "disable"),
+		Host:     utils.GetEnv("DB_HOST", "localhost"),
+		Port:     utils.GetEnv("DB_PORT", "5432"),
+		User:     utils.GetEnv("DB_USER", "postgres"),
+		Password: utils.GetEnv("DB_PASSWORD", ""),
+		DBName:   utils.GetEnv("DB_NAME", "canada-hires"),
+		SSLMode:  utils.GetEnv("DB_SSLMODE", "disable"),
 	}
 }
 
@@ -111,13 +112,6 @@ func InitDB() Database {
 	return db
 }
 
-// Helper function to get environment variables with fallback
-func getEnv(key, fallback string) string {
-	if value, exists := os.LookupEnv(key); exists {
-		return value
-	}
-	return fallback
-}
 
 // GetInstance returns the global database instance
 // This can be called from any package to get access to the database
