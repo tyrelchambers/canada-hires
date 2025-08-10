@@ -12,9 +12,7 @@ const navigationLinks = [
   { to: "/feedback", label: "Feedback" },
 ];
 
-const adminNavigationLinks = [
-  { to: "/admin", label: "Admin Dashboard" },
-];
+const adminNavigationLinks = [{ to: "/admin", label: "Admin Dashboard" }];
 
 interface NavLinksProps {
   onLinkClick?: () => void;
@@ -22,9 +20,15 @@ interface NavLinksProps {
   isAdmin?: boolean;
 }
 
-function NavLinks({ onLinkClick, className = "", isAdmin = false }: NavLinksProps) {
-  const links = isAdmin ? [...navigationLinks, ...adminNavigationLinks] : navigationLinks;
-  
+function NavLinks({
+  onLinkClick,
+  className = "",
+  isAdmin = false,
+}: NavLinksProps) {
+  const links = isAdmin
+    ? [...navigationLinks, ...adminNavigationLinks]
+    : navigationLinks;
+
   return (
     <>
       {links.map((link) => (
@@ -59,7 +63,7 @@ export function AuthNav() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const isAuthenticated = !!user;
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === "admin";
 
   const handleLogin = () => {
     void navigate({ to: "/auth/login" });
@@ -74,7 +78,7 @@ export function AuthNav() {
   };
 
   return (
-    <div className="border-b">
+    <div className="border-b bg-white">
       <div className="flex items-center justify-between p-4">
         <Link to="/" className="font-bold text-lg">
           <img src={canadaHires} className="h-10" />
@@ -92,7 +96,10 @@ export function AuthNav() {
               <div className="text-right">
                 <p className="text-sm font-medium">{user.email}</p>
                 <div className="flex items-center gap-2">
-                  <Badge variant={isAdmin ? "destructive" : "secondary"} className="text-xs">
+                  <Badge
+                    variant={isAdmin ? "destructive" : "secondary"}
+                    className="text-xs"
+                  >
                     {isAdmin ? "Admin" : "User"}
                   </Badge>
                   <span className="text-xs text-gray-600">Logged in</span>
@@ -106,7 +113,9 @@ export function AuthNav() {
             <>
               <div className="text-right">
                 <p className="text-sm font-medium">JobWatch Canada</p>
-                <p className="text-xs text-gray-600">Sign in to access admin features</p>
+                <p className="text-xs text-gray-600">
+                  Sign in to access admin features
+                </p>
               </div>
               <Button onClick={handleLogin}>Sign In</Button>
             </>
@@ -147,13 +156,19 @@ export function AuthNav() {
       {isMobileMenuOpen && (
         <div className="md:hidden border-t bg-white">
           <nav className="flex flex-col p-4 space-y-3">
-            <NavLinks onLinkClick={() => setIsMobileMenuOpen(false)} isAdmin={isAdmin} />
+            <NavLinks
+              onLinkClick={() => setIsMobileMenuOpen(false)}
+              isAdmin={isAdmin}
+            />
             <div className="border-t pt-3 mt-3 text-center">
               {isAuthenticated ? (
                 <>
                   <p className="text-sm font-medium mb-1">{user.email}</p>
                   <div className="flex items-center justify-center gap-2 mb-3">
-                    <Badge variant={isAdmin ? "destructive" : "secondary"} className="text-xs">
+                    <Badge
+                      variant={isAdmin ? "destructive" : "secondary"}
+                      className="text-xs"
+                    >
                       {isAdmin ? "Admin" : "User"}
                     </Badge>
                   </div>

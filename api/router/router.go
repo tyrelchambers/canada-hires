@@ -37,7 +37,7 @@ func InitRoutes(cn *container.Container, r *chi.Mux) {
 		// Inject routes
 		ar.InjectAuthRoutes(r)
 		br.Init(r)
-		rr.Init(r)
+		rr.InjectReportRoutes(r)
 		ur.Init(r)
 		adr.InjectAdminRoutes(r)
 		
