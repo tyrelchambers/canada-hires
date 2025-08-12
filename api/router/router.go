@@ -21,7 +21,7 @@ func InitRoutes(cn *container.Container, r *chi.Mux) {
 	err := cn.Invoke(func(authController controllers.AuthController, businessController controllers.BusinessController, reportController controllers.ReportController, userController controllers.UserController, jobController *controllers.JobController, authMW func(http.Handler) http.Handler, requireMW func(http.Handler) http.Handler) {
 		*ar = *NewAuthRouter(cn, authController).(*authRouter)
 		*br = *NewBusinessRouter(cn, businessController).(*businessRouter)
-		*rr = *NewReportRouter(cn, reportController).(*reportRouter)
+		*rr = *NewReportRouter(cn, reportController, authMW).(*reportRouter)
 		*ur = *NewUserRouter(cn, userController, authMW, requireMW).(*userRouter)
 		*adr = *NewAdminRouter(cn, jobController, authMW).(*adminRouter)
 		

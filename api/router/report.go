@@ -4,6 +4,7 @@ import (
 	"canada-hires/container"
 	"canada-hires/controllers"
 	"canada-hires/middleware"
+	"net/http"
 
 	"github.com/charmbracelet/log"
 	"github.com/go-chi/chi/v5"
@@ -17,18 +18,20 @@ type ReportRouter interface {
 type reportRouter struct {
 	cn               *container.Container
 	reportController controllers.ReportController
+	authMW           func(http.Handler) http.Handler
 }
 
-func NewReportRouter(cn *container.Container, reportController controllers.ReportController) ReportRouter {
+func NewReportRouter(cn *container.Container, reportController controllers.ReportController, authMW func(http.Handler) http.Handler) ReportRouter {
 	return &reportRouter{
 		cn:               cn,
 		reportController: reportController,
+		authMW:           authMW,
 	}
 }
 
 func (rr *reportRouter) InjectReportRoutes(r chi.Router) {
-	err := rr.cn.Invoke(func(reportController controllers.ReportController) {
-		rr := NewReportRouter(rr.cn, reportController)
+	err := rr.cn.Invoke(func(reportController controllers.ReportController, authMW func(http.Handler) http.Handler) {
+		rr := NewReportRouter(rr.cn, reportController, authMW)
 		rr.Init(r)
 	})
 
@@ -46,6 +49,9 @@ func (rr *reportRouter) Init(r chi.Router) {
 		
 		// Protected routes - authentication required
 		r.Group(func(r chi.Router) {
+			// Apply auth middleware to extract user from cookie
+			r.Use(rr.authMW)
+			// Apply authentication requirement middleware
 			r.Use(middleware.RequireAuth)
 			r.Post("/", rr.reportController.CreateReport)
 			r.Put("/{id}", rr.reportController.UpdateReport)
@@ -55,6 +61,9 @@ func (rr *reportRouter) Init(r chi.Router) {
 		
 		// Admin-only routes
 		r.Group(func(r chi.Router) {
+			// Apply auth middleware to extract user from cookie
+			r.Use(rr.authMW)
+			// Apply admin requirement middleware
 			r.Use(middleware.RequireAdmin)
 			r.Get("/status/{status}", rr.reportController.GetReportsByStatus)
 			r.Post("/{id}/approve", rr.reportController.ApproveReport)

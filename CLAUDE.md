@@ -66,7 +66,8 @@ This is a full-stack application with separate Go backend API and React frontend
 ## Required Setup
 
 ### Environment Variables
-Create a `.env` file in the `api/` directory with:
+
+#### API Environment (.env in api/ directory)
 ```
 DATABASE_URL=postgres://username:password@localhost/dbname?sslmode=disable
 EMAIL_SMTP_HOST=your_smtp_host
@@ -75,6 +76,13 @@ EMAIL_SMTP_USER=your_email@domain.com
 EMAIL_SMTP_PASSWORD=your_app_password
 JWT_SECRET=your_jwt_secret_key
 ```
+
+#### Frontend Environment (.env in web/ directory)
+```
+VITE_MAPBOX_ACCESS_TOKEN=your_mapbox_access_token_here
+```
+
+**Mapbox Setup**: Create a free account at [mapbox.com](https://mapbox.com) and get an access token for address search functionality. Without this token, the address search will fall back to a regular text input.
 
 ### Database Setup
 1. Install and start PostgreSQL

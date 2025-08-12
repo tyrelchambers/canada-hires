@@ -4,10 +4,25 @@ import canadaHires from "@/assets/canada hires.svg";
 import { useCurrentUser, useLogout } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faFileAlt,
+  faSignOutAlt,
+  faChevronDown,
+} from "@fortawesome/free-solid-svg-icons";
 
 const navigationLinks = [
   { to: "/lmia", label: "LMIA Search" },
   { to: "/jobs", label: "Job Postings" },
+  { to: "/directory", label: "Directory" },
   { to: "/research", label: "Research" },
   { to: "/feedback", label: "Feedback" },
 ];
@@ -77,6 +92,15 @@ export function AuthNav() {
     });
   };
 
+  const handleCreateReport = () => {
+    void navigate({ to: "/reports/create" });
+  };
+
+  // Generate initials from email for avatar fallback
+  const getInitials = (email: string) => {
+    return email.slice(0, 2).toUpperCase();
+  };
+
   return (
     <div className="border-b bg-white">
       <div className="flex items-center justify-between p-4">
@@ -92,23 +116,38 @@ export function AuthNav() {
         {/* Desktop Auth */}
         <div className="hidden md:flex items-center gap-4">
           {isAuthenticated ? (
-            <>
-              <div className="text-right">
-                <p className="text-sm font-medium">{user.email}</p>
-                <div className="flex items-center gap-2">
-                  <Badge
-                    variant={isAdmin ? "destructive" : "secondary"}
-                    className="text-xs"
-                  >
-                    {isAdmin ? "Admin" : "User"}
-                  </Badge>
-                  <span className="text-xs text-gray-600">Logged in</span>
-                </div>
-              </div>
-              <Button variant="outline" onClick={handleLogout}>
-                Sign Out
-              </Button>
-            </>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-2 p-2">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                      {getInitials(user.email)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="hidden sm:block text-left">
+                    <p className="text-sm font-medium">{user.email}</p>
+                  </div>
+                  <FontAwesomeIcon icon={faChevronDown} className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem onClick={handleCreateReport}>
+                  <FontAwesomeIcon icon={faFileAlt} className="mr-2 h-4 w-4" />
+                  Create Report
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  disabled={logoutMutation.isPending}
+                >
+                  <FontAwesomeIcon
+                    icon={faSignOutAlt}
+                    className="mr-2 h-4 w-4"
+                  />
+                  {logoutMutation.isPending ? "Logging out..." : "Log out"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
             <>
               <div className="text-right">
@@ -172,16 +211,30 @@ export function AuthNav() {
                       {isAdmin ? "Admin" : "User"}
                     </Badge>
                   </div>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      handleLogout();
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className="w-full"
-                  >
-                    Sign Out
-                  </Button>
+                  <div className="space-y-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        handleCreateReport();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="w-full"
+                    >
+                      <FontAwesomeIcon icon={faFileAlt} className="mr-2" />
+                      Create Report
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        handleLogout();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="w-full"
+                    >
+                      <FontAwesomeIcon icon={faSignOutAlt} className="mr-2" />
+                      {logoutMutation.isPending ? "Logging out..." : "Log out"}
+                    </Button>
+                  </div>
                 </>
               ) : (
                 <>

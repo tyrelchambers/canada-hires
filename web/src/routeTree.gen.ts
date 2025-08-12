@@ -17,6 +17,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ResearchIndexRouteImport } from './routes/research/index'
 import { Route as ResearchWageSubsidiesImmigrantsRouteImport } from './routes/research/wage-subsidies-immigrants'
+import { Route as ReportsCreateRouteImport } from './routes/reports/create'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 
 const LmiaRoute = LmiaRouteImport.update({
@@ -60,6 +61,11 @@ const ResearchWageSubsidiesImmigrantsRoute =
     path: '/research/wage-subsidies-immigrants',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ReportsCreateRoute = ReportsCreateRouteImport.update({
+  id: '/reports/create',
+  path: '/reports/create',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthLoginRoute = AuthLoginRouteImport.update({
   id: '/auth/login',
   path: '/auth/login',
@@ -74,6 +80,7 @@ export interface FileRoutesByFullPath {
   '/jobs': typeof JobsRoute
   '/lmia': typeof LmiaRoute
   '/auth/login': typeof AuthLoginRoute
+  '/reports/create': typeof ReportsCreateRoute
   '/research/wage-subsidies-immigrants': typeof ResearchWageSubsidiesImmigrantsRoute
   '/research': typeof ResearchIndexRoute
 }
@@ -85,6 +92,7 @@ export interface FileRoutesByTo {
   '/jobs': typeof JobsRoute
   '/lmia': typeof LmiaRoute
   '/auth/login': typeof AuthLoginRoute
+  '/reports/create': typeof ReportsCreateRoute
   '/research/wage-subsidies-immigrants': typeof ResearchWageSubsidiesImmigrantsRoute
   '/research': typeof ResearchIndexRoute
 }
@@ -97,6 +105,7 @@ export interface FileRoutesById {
   '/jobs': typeof JobsRoute
   '/lmia': typeof LmiaRoute
   '/auth/login': typeof AuthLoginRoute
+  '/reports/create': typeof ReportsCreateRoute
   '/research/wage-subsidies-immigrants': typeof ResearchWageSubsidiesImmigrantsRoute
   '/research/': typeof ResearchIndexRoute
 }
@@ -110,6 +119,7 @@ export interface FileRouteTypes {
     | '/jobs'
     | '/lmia'
     | '/auth/login'
+    | '/reports/create'
     | '/research/wage-subsidies-immigrants'
     | '/research'
   fileRoutesByTo: FileRoutesByTo
@@ -121,6 +131,7 @@ export interface FileRouteTypes {
     | '/jobs'
     | '/lmia'
     | '/auth/login'
+    | '/reports/create'
     | '/research/wage-subsidies-immigrants'
     | '/research'
   id:
@@ -132,6 +143,7 @@ export interface FileRouteTypes {
     | '/jobs'
     | '/lmia'
     | '/auth/login'
+    | '/reports/create'
     | '/research/wage-subsidies-immigrants'
     | '/research/'
   fileRoutesById: FileRoutesById
@@ -144,6 +156,7 @@ export interface RootRouteChildren {
   JobsRoute: typeof JobsRoute
   LmiaRoute: typeof LmiaRoute
   AuthLoginRoute: typeof AuthLoginRoute
+  ReportsCreateRoute: typeof ReportsCreateRoute
   ResearchWageSubsidiesImmigrantsRoute: typeof ResearchWageSubsidiesImmigrantsRoute
   ResearchIndexRoute: typeof ResearchIndexRoute
 }
@@ -206,6 +219,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResearchWageSubsidiesImmigrantsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reports/create': {
+      id: '/reports/create'
+      path: '/reports/create'
+      fullPath: '/reports/create'
+      preLoaderRoute: typeof ReportsCreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/login': {
       id: '/auth/login'
       path: '/auth/login'
@@ -224,6 +244,7 @@ const rootRouteChildren: RootRouteChildren = {
   JobsRoute: JobsRoute,
   LmiaRoute: LmiaRoute,
   AuthLoginRoute: AuthLoginRoute,
+  ReportsCreateRoute: ReportsCreateRoute,
   ResearchWageSubsidiesImmigrantsRoute: ResearchWageSubsidiesImmigrantsRoute,
   ResearchIndexRoute: ResearchIndexRoute,
 }
