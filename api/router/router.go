@@ -56,5 +56,13 @@ func InitRoutes(cn *container.Container, r *chi.Mux) {
 		if err != nil {
 			log.Error("Failed to initialize subreddit routes", "error", err)
 		}
+		
+		// Add LMIA statistics routes
+		err = cn.Invoke(func(statisticsController controllers.LMIAStatisticsController, authMW func(http.Handler) http.Handler) {
+			LMIAStatisticsRoutes(statisticsController, authMW)(r)
+		})
+		if err != nil {
+			log.Error("Failed to initialize LMIA statistics routes", "error", err)
+		}
 	})
 }

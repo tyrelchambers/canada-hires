@@ -6,7 +6,6 @@ import {
   RedditRejectionRequest,
   BulkApprovalRequest,
   BulkRejectionRequest,
-  RedditApprovalStats,
 } from "@/types";
 
 // Get pending jobs for Reddit approval
@@ -71,9 +70,6 @@ export const useApproveJob = () => {
       await queryClient.invalidateQueries({
         queryKey: ["admin", "jobs", "reddit", "posted"],
       });
-      await queryClient.invalidateQueries({
-        queryKey: ["admin", "jobs", "reddit", "stats"],
-      });
     },
   });
 };
@@ -108,9 +104,6 @@ export const useRejectJob = () => {
       await queryClient.invalidateQueries({
         queryKey: ["admin", "jobs", "reddit", "posted"],
       });
-      await queryClient.invalidateQueries({
-        queryKey: ["admin", "jobs", "reddit", "stats"],
-      });
     },
   });
 };
@@ -142,9 +135,6 @@ export const useBulkApproveJobs = () => {
       });
       await queryClient.invalidateQueries({
         queryKey: ["admin", "jobs", "reddit", "posted"],
-      });
-      await queryClient.invalidateQueries({
-        queryKey: ["admin", "jobs", "reddit", "stats"],
       });
     },
   });
@@ -181,24 +171,7 @@ export const useBulkRejectJobs = () => {
       await queryClient.invalidateQueries({
         queryKey: ["admin", "jobs", "reddit", "posted"],
       });
-      await queryClient.invalidateQueries({
-        queryKey: ["admin", "jobs", "reddit", "stats"],
-      });
     },
   });
 };
 
-// Get Reddit approval statistics
-export const useRedditApprovalStats = () => {
-  const api = useApiClient();
-  return useQuery({
-    queryKey: ["admin", "jobs", "reddit", "stats"],
-    queryFn: async (): Promise<RedditApprovalStats> => {
-      const response = await api.get<RedditApprovalStats>(
-        "/admin/jobs/reddit/stats",
-      );
-      return response.data;
-    },
-    staleTime: 60 * 1000, // 1 minute
-  });
-};

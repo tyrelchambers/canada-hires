@@ -3,22 +3,22 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card, CardContent } from "@/components/ui/card";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faSearch,
   faMapMarkerAlt,
   faFilter,
+  faStar,
+  faStarHalfAlt,
+  faBuilding,
+  faCalendar,
+  faUser,
 } from "@fortawesome/free-solid-svg-icons";
+import { faStar as faStarEmpty } from "@fortawesome/free-regular-svg-icons";
 import { useReports } from "@/hooks/useReports";
 import { AuthNav } from "@/components/AuthNav";
+import { StripedBackground } from "@/components/StripedBackground";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -38,16 +38,59 @@ const getStatusColor = (status: string) => {
 const getStatusLabel = (status: string) => {
   switch (status) {
     case "approved":
-      return "✅ Approved";
+      return "Verified";
     case "pending":
-      return "⏳ Pending";
+      return "Under Review";
     case "rejected":
-      return "❌ Rejected";
+      return "Unverified";
     case "flagged":
-      return "🚩 Flagged";
+      return "Flagged";
     default:
-      return "❓ Unknown";
+      return "Unknown";
   }
+};
+
+const renderStars = (rating: number) => {
+  const stars = [];
+  const fullStars = Math.floor(rating);
+  const hasHalfStar = rating % 1 !== 0;
+
+  for (let i = 0; i < fullStars; i++) {
+    stars.push(
+      <FontAwesomeIcon key={i} icon={faStar} className="text-yellow-400" />,
+    );
+  }
+
+  if (hasHalfStar) {
+    stars.push(
+      <FontAwesomeIcon
+        key="half"
+        icon={faStarHalfAlt}
+        className="text-yellow-400"
+      />,
+    );
+  }
+
+  const emptyStars = 5 - Math.ceil(rating);
+  for (let i = 0; i < emptyStars; i++) {
+    stars.push(
+      <FontAwesomeIcon
+        key={`empty-${i}`}
+        icon={faStarEmpty}
+        className="text-gray-300"
+      />,
+    );
+  }
+
+  return stars;
+};
+
+const getTFWRating = (confidenceLevel: number) => {
+  if (confidenceLevel >= 8)
+    return { rating: 2, color: "text-red-600", label: "High TFW Usage" };
+  if (confidenceLevel >= 5)
+    return { rating: 3, color: "text-yellow-600", label: "Moderate TFW Usage" };
+  return { rating: 4, color: "text-green-600", label: "Low TFW Usage" };
 };
 
 function DirectoryPage() {
@@ -101,219 +144,329 @@ function DirectoryPage() {
   const totalPages = Math.ceil(total / limit);
 
   return (
-    <section>
+    <section className="bg-gray-50 min-h-screen">
       <AuthNav />
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Reports Directory</h1>
-          <p className="text-gray-600">
-            Community-submitted reports about business hiring practices in
-            Canada
-          </p>
-        </div>
 
-        {/* Search and Filters */}
-        <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
-            <div className="relative">
-              <FontAwesomeIcon
-                icon={faSearch}
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-              />
-              <Input
-                placeholder="Search businesses..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-
-            <Input
-              placeholder="City"
-              value={cityFilter}
-              onChange={(e) => setCityFilter(e.target.value)}
-            />
-
-            <Input
-              placeholder="Province"
-              value={provinceFilter}
-              onChange={(e) => setProvinceFilter(e.target.value)}
-            />
-
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <option value="">All Statuses</option>
-              <option value="approved">✅ Approved</option>
-              <option value="pending">⏳ Pending</option>
-              <option value="rejected">❌ Rejected</option>
-              <option value="flagged">🚩 Flagged</option>
-            </select>
-
-            <select
-              value={yearFilter}
-              onChange={(e) => setYearFilter(e.target.value)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <option value="">All Years</option>
-              {yearOptions.map((year) => (
-                <option key={year} value={year.toString()}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex gap-2">
-            <Button onClick={handleSearch} size="sm">
-              <FontAwesomeIcon icon={faSearch} className="mr-2" />
-              Search
-            </Button>
-            <Button onClick={clearFilters} variant="outline" size="sm">
-              <FontAwesomeIcon icon={faFilter} className="mr-2" />
-              Clear Filters
-            </Button>
-          </div>
-        </div>
-
-        {/* Results */}
-        {loading && (
-          <div className="text-center py-8">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p className="mt-2 text-gray-600">Loading reports...</p>
-          </div>
-        )}
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <p className="text-red-800">
-              Error:{" "}
-              {error instanceof Error ? error.message : "An error occurred"}
+      {/* Hero Search Section */}
+      <div className="bg-gradient-to-r from-gray-900 to-gray-700 text-white py-12 relative">
+        <StripedBackground />
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="max-w-4xl mx-auto text-center">
+            <h1 className="text-4xl font-bold mb-4">Find Local Businesses</h1>
+            <p className="text-xl mb-8 text-white">
+              Discover hiring practices and make informed decisions about
+              Canadian businesses
             </p>
+
+            {/* Main Search Bar */}
+            <div className="bg-white rounded-lg p-4 flex flex-col md:flex-row gap-4 shadow-lg">
+              <div className="flex-1 relative">
+                <FontAwesomeIcon
+                  icon={faSearch}
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                />
+                <Input
+                  placeholder="coffee, restaurants, retail..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 text-lg py-3 border-0 focus:ring-2 focus:ring-red-500"
+                />
+              </div>
+              <div className="flex-1 relative">
+                <FontAwesomeIcon
+                  icon={faMapMarkerAlt}
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                />
+                <Input
+                  placeholder="Toronto, ON"
+                  value={cityFilter}
+                  onChange={(e) => setCityFilter(e.target.value)}
+                  className="pl-10 text-lg py-3 border-0 focus:ring-2 focus:ring-red-500"
+                />
+              </div>
+              <Button onClick={handleSearch} size="lg">
+                <FontAwesomeIcon icon={faSearch} className="mr-2" />
+                Search
+              </Button>
+            </div>
           </div>
-        )}
+        </div>
+      </div>
 
-        {!loading && !error && (
-          <>
-            <div className="mb-4 text-sm text-gray-600">
-              Showing {reports.length} of {total} reports
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Sidebar Filters */}
+          <div className="lg:w-1/4">
+            <Card className="sticky top-4">
+              <CardContent className="p-6">
+                <h3 className="font-bold text-lg mb-4 flex items-center">
+                  <FontAwesomeIcon icon={faFilter} className="mr-2" />
+                  Filters
+                </h3>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Province
+                    </label>
+                    <Input
+                      placeholder="All Provinces"
+                      value={provinceFilter}
+                      onChange={(e) => setProvinceFilter(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Verification Status
+                    </label>
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="">All Statuses</option>
+                      <option value="approved">Verified</option>
+                      <option value="pending">Under Review</option>
+                      <option value="rejected">Unverified</option>
+                      <option value="flagged">Flagged</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Report Year
+                    </label>
+                    <select
+                      value={yearFilter}
+                      onChange={(e) => setYearFilter(e.target.value)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="">All Years</option>
+                      {yearOptions.map((year) => (
+                        <option key={year} value={year.toString()}>
+                          {year}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <Button
+                    onClick={clearFilters}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Clear All Filters
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Main Content */}
+          <div className="lg:w-3/4">
+            {/* Results Header */}
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="text-2xl font-bold">Business Directory</h2>
+              </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm border mb-8">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Business Name</TableHead>
-                    <TableHead>Address</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Confidence</TableHead>
-                    <TableHead>Source</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Notes</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {reports.map((report) => (
-                    <TableRow key={report.id}>
-                      <TableCell className="font-medium">
-                        {report.business_name}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center text-sm">
-                          <FontAwesomeIcon
-                            icon={faMapMarkerAlt}
-                            className="mr-1 text-gray-400"
-                          />
-                          <span className="truncate max-w-xs">
-                            {report.business_address}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          className={getStatusColor(report.status)}
-                          variant="outline"
-                        >
-                          {getStatusLabel(report.status)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {report.confidence_level ? (
-                          <span className="font-medium">
-                            {report.confidence_level}/10
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <span className="capitalize">
-                          {report.report_source.replace('_', ' ')}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-gray-600">
-                          {new Date(report.created_at).toLocaleDateString()}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        {report.additional_notes ? (
-                          <span className="text-sm text-gray-600 truncate max-w-xs block">
-                            {report.additional_notes}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex justify-center items-center space-x-2">
-                <Button
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                  variant="outline"
-                  size="sm"
-                >
-                  Previous
-                </Button>
-
-                <span className="text-sm text-gray-600">
-                  Page {currentPage} of {totalPages}
-                </span>
-
-                <Button
-                  onClick={() =>
-                    setCurrentPage(Math.min(totalPages, currentPage + 1))
-                  }
-                  disabled={currentPage === totalPages}
-                  variant="outline"
-                  size="sm"
-                >
-                  Next
-                </Button>
+            {/* Loading State */}
+            {loading && (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+                <p className="mt-4 text-gray-600 text-lg">
+                  Finding businesses...
+                </p>
               </div>
             )}
-          </>
-        )}
 
-        {!loading && !error && reports.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">
-              No reports found matching your criteria.
-            </p>
-            <Button onClick={clearFilters} className="mt-4" variant="outline">
-              Clear filters to see all reports
-            </Button>
+            {/* Error State */}
+            {error && (
+              <Card className="border-red-200 bg-red-50">
+                <CardContent className="p-6">
+                  <p className="text-red-800">
+                    Error:{" "}
+                    {error instanceof Error
+                      ? error.message
+                      : "An error occurred"}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Business Cards */}
+            {!loading && !error && (
+              <>
+                <div className="space-y-4 mb-8">
+                  {reports.map((report) => {
+                    const tfwRating = getTFWRating(
+                      report.confidence_level || 0,
+                    );
+                    return (
+                      <Card
+                        key={report.id}
+                        className="hover:shadow-lg transition-shadow cursor-pointer"
+                      >
+                        <CardContent className="p-6">
+                          <div className="flex flex-col md:flex-row gap-4">
+                            {/* Business Photo Placeholder */}
+                            <div className="w-full md:w-48 h-48 bg-gray-200 rounded-lg flex items-center justify-center">
+                              <FontAwesomeIcon
+                                icon={faBuilding}
+                                className="text-gray-400 text-4xl"
+                              />
+                            </div>
+
+                            {/* Business Info */}
+                            <div className="flex-1">
+                              <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-2">
+                                <div>
+                                  <h3 className="text-xl font-bold text-gray-900 mb-1">
+                                    {report.business_name}
+                                  </h3>
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <div className="flex items-center">
+                                      {renderStars(tfwRating.rating)}
+                                    </div>
+                                    <span
+                                      className={`font-medium ${tfwRating.color}`}
+                                    >
+                                      {tfwRating.label}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <Badge
+                                  className={getStatusColor(report.status)}
+                                  variant="outline"
+                                >
+                                  {getStatusLabel(report.status)}
+                                </Badge>
+                              </div>
+
+                              <div className="flex items-center text-gray-600 mb-3">
+                                <FontAwesomeIcon
+                                  icon={faMapMarkerAlt}
+                                  className="mr-2"
+                                />
+                                <span>{report.business_address}</span>
+                              </div>
+
+                              {report.additional_notes && (
+                                <p className="text-gray-700 mb-3 line-clamp-2">
+                                  "{report.additional_notes}"
+                                </p>
+                              )}
+
+                              <div className="flex items-center justify-between text-sm text-gray-500">
+                                <div className="flex items-center gap-4">
+                                  <span className="flex items-center">
+                                    <FontAwesomeIcon
+                                      icon={faUser}
+                                      className="mr-1"
+                                    />
+                                    {report.report_source.replace("_", " ")}
+                                  </span>
+                                  <span className="flex items-center">
+                                    <FontAwesomeIcon
+                                      icon={faCalendar}
+                                      className="mr-1"
+                                    />
+                                    {new Date(
+                                      report.created_at,
+                                    ).toLocaleDateString()}
+                                  </span>
+                                </div>
+
+                                {report.confidence_level && (
+                                  <span className="font-medium">
+                                    Confidence: {report.confidence_level}/10
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex justify-center items-center space-x-4 bg-white p-6 rounded-lg border">
+                    <Button
+                      onClick={() =>
+                        setCurrentPage(Math.max(1, currentPage - 1))
+                      }
+                      disabled={currentPage === 1}
+                      variant="outline"
+                    >
+                      Previous
+                    </Button>
+
+                    <div className="flex items-center space-x-2">
+                      {Array.from(
+                        { length: Math.min(5, totalPages) },
+                        (_, i) => {
+                          const pageNum = i + 1;
+                          return (
+                            <Button
+                              key={pageNum}
+                              onClick={() => setCurrentPage(pageNum)}
+                              variant={
+                                currentPage === pageNum ? "default" : "outline"
+                              }
+                              size="sm"
+                            >
+                              {pageNum}
+                            </Button>
+                          );
+                        },
+                      )}
+                      {totalPages > 5 && (
+                        <span className="text-gray-500">...</span>
+                      )}
+                    </div>
+
+                    <Button
+                      onClick={() =>
+                        setCurrentPage(Math.min(totalPages, currentPage + 1))
+                      }
+                      disabled={currentPage === totalPages}
+                      variant="outline"
+                    >
+                      Next
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Empty State */}
+            {!loading && !error && reports.length === 0 && (
+              <Card className="text-center py-12">
+                <CardContent>
+                  <FontAwesomeIcon
+                    icon={faSearch}
+                    className="text-gray-300 text-6xl mb-4"
+                  />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    No businesses found
+                  </h3>
+                  <p className="text-gray-500 mb-4">
+                    Try adjusting your search criteria or location
+                  </p>
+                  <Button onClick={clearFilters} variant="outline">
+                    Clear all filters
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </section>
   );

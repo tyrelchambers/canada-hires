@@ -61,6 +61,10 @@ func registerProviders(c *dig.Container) error {
 		return err
 	}
 
+	if err := c.Provide(NewLMIAStatisticsRepository); err != nil {
+		return err
+	}
+
 	// Service providers
 	if err := c.Provide(NewEmailService); err != nil {
 		return err
@@ -114,6 +118,10 @@ func registerProviders(c *dig.Container) error {
 		return err
 	}
 
+	if err := c.Provide(NewLMIAStatisticsService); err != nil {
+		return err
+	}
+
 	// Controller providers
 	if err := c.Provide(NewAuthController); err != nil {
 		return err
@@ -137,6 +145,10 @@ func registerProviders(c *dig.Container) error {
 	}
 
 	if err := c.Provide(NewSubredditController); err != nil {
+		return err
+	}
+
+	if err := c.Provide(NewLMIAStatisticsController); err != nil {
 		return err
 	}
 
@@ -278,8 +290,8 @@ func NewJobService(repo repos.JobBankRepository, redditService services.RedditSe
 }
 
 // NewJobController creates a new Job controller
-func NewJobController(repo repos.JobBankRepository, jobService services.JobService, redditService services.RedditService) *controllers.JobController {
-	return controllers.NewJobController(repo, jobService, redditService)
+func NewJobController(repo repos.JobBankRepository, jobService services.JobService, redditService services.RedditService, scraperCronService *services.ScraperCronService) *controllers.JobController {
+	return controllers.NewJobController(repo, jobService, redditService, scraperCronService)
 }
 
 // NewScraperJobRepository creates a new scraper job repository
@@ -288,9 +300,9 @@ func NewScraperJobRepository(database db.Database) repos.ScraperJobRepository {
 }
 
 // NewScraperCronService creates a new scraper cron service
-func NewScraperCronService(scraperService services.ScraperService, scraperJobRepo repos.ScraperJobRepository) *services.ScraperCronService {
+func NewScraperCronService(scraperService services.ScraperService, scraperJobRepo repos.ScraperJobRepository, statisticsService services.LMIAStatisticsService) *services.ScraperCronService {
 	logger := log.Default()
-	return services.NewScraperCronService(logger, scraperService, scraperJobRepo)
+	return services.NewScraperCronService(logger, scraperService, scraperJobRepo, statisticsService)
 }
 
 // NewRedditService creates a new Reddit service
@@ -318,4 +330,19 @@ func NewSubredditController(subredditRepo repos.SubredditRepository) *controller
 // NewJobSubredditPostRepository creates a new job subreddit post repository
 func NewJobSubredditPostRepository(database db.Database) repos.JobSubredditPostRepository {
 	return repos.NewJobSubredditPostRepository(database.GetDB())
+}
+
+// NewLMIAStatisticsRepository creates a new LMIA statistics repository
+func NewLMIAStatisticsRepository(database db.Database) repos.LMIAStatisticsRepository {
+	return repos.NewLMIAStatisticsRepository(database.GetDB())
+}
+
+// NewLMIAStatisticsService creates a new LMIA statistics service
+func NewLMIAStatisticsService(repo repos.LMIAStatisticsRepository) services.LMIAStatisticsService {
+	return services.NewLMIAStatisticsService(repo)
+}
+
+// NewLMIAStatisticsController creates a new LMIA statistics controller
+func NewLMIAStatisticsController(service services.LMIAStatisticsService) controllers.LMIAStatisticsController {
+	return controllers.NewLMIAStatisticsController(service)
 }

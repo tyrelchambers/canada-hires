@@ -192,11 +192,6 @@ export interface BulkRejectionRequest {
   reason?: string;
 }
 
-export interface RedditApprovalStats {
-  pending_count: number;
-  approved_count: number;
-  rejected_count: number;
-}
 
 export interface Subreddit {
   id: string;

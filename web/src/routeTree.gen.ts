@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TrendsRouteImport } from './routes/trends'
 import { Route as LmiaRouteImport } from './routes/lmia'
 import { Route as JobsRouteImport } from './routes/jobs'
 import { Route as FeedbackRouteImport } from './routes/feedback'
@@ -20,6 +21,11 @@ import { Route as ResearchWageSubsidiesImmigrantsRouteImport } from './routes/re
 import { Route as ReportsCreateRouteImport } from './routes/reports/create'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 
+const TrendsRoute = TrendsRouteImport.update({
+  id: '/trends',
+  path: '/trends',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LmiaRoute = LmiaRouteImport.update({
   id: '/lmia',
   path: '/lmia',
@@ -79,6 +85,7 @@ export interface FileRoutesByFullPath {
   '/feedback': typeof FeedbackRoute
   '/jobs': typeof JobsRoute
   '/lmia': typeof LmiaRoute
+  '/trends': typeof TrendsRoute
   '/auth/login': typeof AuthLoginRoute
   '/reports/create': typeof ReportsCreateRoute
   '/research/wage-subsidies-immigrants': typeof ResearchWageSubsidiesImmigrantsRoute
@@ -91,6 +98,7 @@ export interface FileRoutesByTo {
   '/feedback': typeof FeedbackRoute
   '/jobs': typeof JobsRoute
   '/lmia': typeof LmiaRoute
+  '/trends': typeof TrendsRoute
   '/auth/login': typeof AuthLoginRoute
   '/reports/create': typeof ReportsCreateRoute
   '/research/wage-subsidies-immigrants': typeof ResearchWageSubsidiesImmigrantsRoute
@@ -104,6 +112,7 @@ export interface FileRoutesById {
   '/feedback': typeof FeedbackRoute
   '/jobs': typeof JobsRoute
   '/lmia': typeof LmiaRoute
+  '/trends': typeof TrendsRoute
   '/auth/login': typeof AuthLoginRoute
   '/reports/create': typeof ReportsCreateRoute
   '/research/wage-subsidies-immigrants': typeof ResearchWageSubsidiesImmigrantsRoute
@@ -118,6 +127,7 @@ export interface FileRouteTypes {
     | '/feedback'
     | '/jobs'
     | '/lmia'
+    | '/trends'
     | '/auth/login'
     | '/reports/create'
     | '/research/wage-subsidies-immigrants'
@@ -130,6 +140,7 @@ export interface FileRouteTypes {
     | '/feedback'
     | '/jobs'
     | '/lmia'
+    | '/trends'
     | '/auth/login'
     | '/reports/create'
     | '/research/wage-subsidies-immigrants'
@@ -142,6 +153,7 @@ export interface FileRouteTypes {
     | '/feedback'
     | '/jobs'
     | '/lmia'
+    | '/trends'
     | '/auth/login'
     | '/reports/create'
     | '/research/wage-subsidies-immigrants'
@@ -155,6 +167,7 @@ export interface RootRouteChildren {
   FeedbackRoute: typeof FeedbackRoute
   JobsRoute: typeof JobsRoute
   LmiaRoute: typeof LmiaRoute
+  TrendsRoute: typeof TrendsRoute
   AuthLoginRoute: typeof AuthLoginRoute
   ReportsCreateRoute: typeof ReportsCreateRoute
   ResearchWageSubsidiesImmigrantsRoute: typeof ResearchWageSubsidiesImmigrantsRoute
@@ -163,6 +176,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/trends': {
+      id: '/trends'
+      path: '/trends'
+      fullPath: '/trends'
+      preLoaderRoute: typeof TrendsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/lmia': {
       id: '/lmia'
       path: '/lmia'
@@ -243,6 +263,7 @@ const rootRouteChildren: RootRouteChildren = {
   FeedbackRoute: FeedbackRoute,
   JobsRoute: JobsRoute,
   LmiaRoute: LmiaRoute,
+  TrendsRoute: TrendsRoute,
   AuthLoginRoute: AuthLoginRoute,
   ReportsCreateRoute: ReportsCreateRoute,
   ResearchWageSubsidiesImmigrantsRoute: ResearchWageSubsidiesImmigrantsRoute,

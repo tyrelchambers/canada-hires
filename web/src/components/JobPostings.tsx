@@ -33,7 +33,6 @@ export function JobPostings() {
   const [searchQuery, setSearchQuery] = useState("");
   const [employer, setEmployer] = useState("");
   const [city, setCity] = useState("");
-  const [province, setProvince] = useState("");
   const [title, setTitle] = useState("");
   const [salaryMin, setSalaryMin] = useState("");
   const [sortBy, setSortBy] = useState("posting_date");
@@ -74,7 +73,6 @@ export function JobPostings() {
     if (debouncedSearchQuery.trim()) f.search = debouncedSearchQuery.trim();
     if (debouncedEmployer.trim()) f.employer = debouncedEmployer.trim();
     if (debouncedCity.trim()) f.city = debouncedCity.trim();
-    if (province.trim()) f.province = province.trim(); // Province is dropdown, no debounce needed
     if (debouncedTitle.trim()) f.title = debouncedTitle.trim();
     if (debouncedSalaryMin.trim()) {
       const parsed = parseFloat(debouncedSalaryMin);
@@ -86,7 +84,6 @@ export function JobPostings() {
     debouncedSearchQuery,
     debouncedEmployer,
     debouncedCity,
-    province,
     debouncedTitle,
     debouncedSalaryMin,
     sortBy,
@@ -115,7 +112,6 @@ export function JobPostings() {
     debouncedSearchQuery,
     debouncedEmployer,
     debouncedCity,
-    province,
     debouncedTitle,
     debouncedSalaryMin,
     sortBy,
@@ -135,7 +131,6 @@ export function JobPostings() {
     setSearchQuery("");
     setEmployer("");
     setCity("");
-    setProvince("");
     setTitle("");
     setSalaryMin("");
     setSortBy("posting_date");
@@ -183,21 +178,6 @@ export function JobPostings() {
     return new Date(dateString).toLocaleDateString("en-CA");
   };
 
-  const canadianProvinces = [
-    "AB",
-    "BC",
-    "MB",
-    "NB",
-    "NL",
-    "NT",
-    "NS",
-    "NU",
-    "ON",
-    "PE",
-    "QC",
-    "SK",
-    "YT",
-  ];
 
   // Skeleton loading component
   const SkeletonTable = () => (
@@ -385,20 +365,6 @@ export function JobPostings() {
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
                 />
-              </div>
-              <div>
-                <select
-                  value={province}
-                  onChange={(e) => setProvince(e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <option value="">All Provinces</option>
-                  {canadianProvinces.map((prov) => (
-                    <option key={prov} value={prov}>
-                      {prov}
-                    </option>
-                  ))}
-                </select>
               </div>
               <div>
                 <Input

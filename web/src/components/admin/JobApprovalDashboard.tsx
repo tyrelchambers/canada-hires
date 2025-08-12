@@ -4,13 +4,11 @@ import { User } from "@/types";
 import {
   usePendingJobs,
   usePostedJobs,
-  useRedditApprovalStats,
 } from "@/hooks/useAdminJobs";
 import { PendingJobsList } from "./PendingJobsList";
 import { PostedJobsList } from "./PostedJobsList";
-import { ApprovalStats } from "./ApprovalStats";
-import { AnalyticsDashboard } from "./AnalyticsDashboard";
 import { SubredditManager } from "./SubredditManager";
+import { ScraperManager } from "./ScraperManager";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -50,7 +48,6 @@ export function JobApprovalDashboard({
     error: postedError,
   } = usePostedJobs(postedPageSize, postedCurrentPage * postedPageSize);
 
-  const { data: stats, isLoading: statsLoading } = useRedditApprovalStats();
 
   const handleJobSelect = (jobId: string, selected: boolean) => {
     if (selected) {
@@ -181,9 +178,8 @@ export function JobApprovalDashboard({
         <TabsList>
           <TabsTrigger value="pending">Pending Jobs</TabsTrigger>
           <TabsTrigger value="posted">Posted Jobs</TabsTrigger>
+          <TabsTrigger value="scraper">Scraper</TabsTrigger>
           <TabsTrigger value="subreddits">Subreddits</TabsTrigger>
-          <TabsTrigger value="stats">Statistics</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
 
         <TabsContent value="pending" className="space-y-4">
@@ -252,17 +248,14 @@ export function JobApprovalDashboard({
           </section>
         </TabsContent>
 
+        <TabsContent value="scraper" className="space-y-4">
+          <ScraperManager />
+        </TabsContent>
+
         <TabsContent value="subreddits" className="space-y-4">
           <SubredditManager />
         </TabsContent>
 
-        <TabsContent value="stats" className="space-y-4">
-          <ApprovalStats stats={stats} isLoading={statsLoading} />
-        </TabsContent>
-
-        <TabsContent value="analytics" className="space-y-4">
-          <AnalyticsDashboard />
-        </TabsContent>
       </Tabs>
     </div>
   );

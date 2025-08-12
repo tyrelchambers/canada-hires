@@ -17,16 +17,18 @@ import (
 )
 
 type JobController struct {
-	jobBankRepo   repos.JobBankRepository
-	jobService    services.JobService
-	redditService services.RedditService
+	jobBankRepo      repos.JobBankRepository
+	jobService       services.JobService
+	redditService    services.RedditService
+	scraperCronService *services.ScraperCronService
 }
 
-func NewJobController(jobBankRepo repos.JobBankRepository, jobService services.JobService, redditService services.RedditService) *JobController {
+func NewJobController(jobBankRepo repos.JobBankRepository, jobService services.JobService, redditService services.RedditService, scraperCronService *services.ScraperCronService) *JobController {
 	return &JobController{
-		jobBankRepo:   jobBankRepo,
-		jobService:    jobService,
-		redditService: redditService,
+		jobBankRepo:        jobBankRepo,
+		jobService:         jobService,
+		redditService:      redditService,
+		scraperCronService: scraperCronService,
 	}
 }
 
@@ -645,16 +647,45 @@ func (jc *JobController) BulkRejectJobsForReddit(w http.ResponseWriter, r *http.
 	json.NewEncoder(w).Encode(response)
 }
 
-// GetRedditApprovalStats returns statistics about Reddit approval workflow
-func (jc *JobController) GetRedditApprovalStats(w http.ResponseWriter, r *http.Request) {
-	// This would need to be implemented in the repository
-	// For now, return basic stats
-	stats := map[string]interface{}{
-		"pending_count":  0, // TODO: Implement in repository
-		"approved_count": 0, // TODO: Implement in repository
-		"rejected_count": 0, // TODO: Implement in repository
+
+// TriggerScraper manually triggers the scraper and statistics aggregation
+func (jc *JobController) TriggerScraper(w http.ResponseWriter, r *http.Request) {
+	log.Info("Manual scraper trigger requested")
+
+	// Trigger the scraper execution
+	err := jc.scraperCronService.RunNow()
+	if err != nil {
+		log.Error("Failed to trigger scraper", "error", err)
+		http.Error(w, "Failed to trigger scraper: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string]interface{}{
+		"message": "Scraper job triggered successfully",
+		"status":  "started",
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(stats)
+	json.NewEncoder(w).Encode(response)
+}
+
+// TriggerStatisticsAggregation manually triggers the statistics aggregation
+func (jc *JobController) TriggerStatisticsAggregation(w http.ResponseWriter, r *http.Request) {
+	log.Info("Manual statistics aggregation trigger requested")
+
+	// Trigger the statistics aggregation
+	err := jc.scraperCronService.RunStatisticsAggregationNow()
+	if err != nil {
+		log.Error("Failed to trigger statistics aggregation", "error", err)
+		http.Error(w, "Failed to trigger statistics aggregation: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string]interface{}{
+		"message": "Statistics aggregation triggered successfully",
+		"status":  "started",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
