@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useApiClient } from "./useApiClient";
+import { ReportsByAddress, ReportsByAddressResponse } from "@/types";
 
 interface Report {
   id: string;
@@ -86,8 +87,43 @@ export function useCreateReport() {
     onSuccess: async () => {
       // Invalidate reports queries to refetch data
       await queryClient.invalidateQueries({ queryKey: ["reports"] });
+      await queryClient.invalidateQueries({ queryKey: ["reportsGroupedByAddress"] });
     },
   });
 }
 
-export type { Report, ReportsResponse, ReportFilters, CreateReportRequest };
+export function useReportsGroupedByAddress(limit: number = 50, offset: number = 0) {
+  const apiClient = useApiClient();
+
+  return useQuery({
+    queryKey: ["reportsGroupedByAddress", limit, offset],
+    queryFn: async (): Promise<ReportsByAddressResponse> => {
+      const params = new URLSearchParams();
+      params.append("limit", limit.toString());
+      params.append("offset", offset.toString());
+
+      const response = await apiClient.get<ReportsByAddressResponse>(`/reports/grouped-by-address?${params}`);
+      return response.data;
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+export function useAddressReports(address: string) {
+  const apiClient = useApiClient();
+
+  return useQuery({
+    queryKey: ["addressReports", address],
+    queryFn: async (): Promise<ReportsResponse> => {
+      const params = new URLSearchParams();
+      params.append("address", address);
+
+      const response = await apiClient.get<ReportsResponse>(`/reports/address?${params}`);
+      return response.data;
+    },
+    enabled: !!address, // Only run query if address is provided
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+export type { Report, ReportsResponse, ReportFilters, CreateReportRequest, ReportsByAddress, ReportsByAddressResponse };

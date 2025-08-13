@@ -18,12 +18,23 @@ type CreateReportRequest struct {
 	IPAddress       *string `json:"ip_address"`
 }
 
+type ReportFilters struct {
+	Query    string
+	City     string
+	Province string
+	Status   string
+	Year     string
+}
+
 type ReportService interface {
 	CreateReport(req *CreateReportRequest) (*models.Report, error)
 	GetReportByID(id string) (*models.Report, error)
 	GetAllReports(limit, offset int) ([]*models.Report, error)
+	GetReportsWithFilters(filters ReportFilters, limit, offset int) ([]*models.Report, error)
 	GetUserReports(userID string, limit, offset int) ([]*models.Report, error)
 	GetBusinessReports(businessName string, limit, offset int) ([]*models.Report, error)
+	GetAddressReports(address string) ([]*models.Report, error)
+	GetReportsGroupedByAddress(limit, offset int) ([]*models.ReportsByAddress, error)
 	GetReportsByStatus(status models.ReportStatus, limit, offset int) ([]*models.Report, error)
 	UpdateReport(report *models.Report) error
 	ApproveReport(reportID, moderatorID string, notes *string) error
@@ -118,6 +129,34 @@ func (s *reportService) GetAllReports(limit, offset int) ([]*models.Report, erro
 	reports, err := s.repo.GetAll(limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get reports: %w", err)
+	}
+
+	return reports, nil
+}
+
+func (s *reportService) GetReportsWithFilters(filters ReportFilters, limit, offset int) ([]*models.Report, error) {
+	if limit <= 0 {
+		limit = 50 // Default limit
+	}
+	if limit > 100 {
+		limit = 100 // Max limit
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	// Convert service filters to repository filters
+	repoFilters := repos.ReportFilters{
+		Query:    filters.Query,
+		City:     filters.City,
+		Province: filters.Province,
+		Status:   models.ReportStatus(filters.Status),
+		Year:     filters.Year,
+	}
+
+	reports, err := s.repo.GetWithFilters(repoFilters, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get reports with filters: %w", err)
 	}
 
 	return reports, nil
@@ -297,4 +336,36 @@ func (s *reportService) DeleteReport(reportID, userID string, isAdmin bool) erro
 	}
 
 	return nil
+}
+
+func (s *reportService) GetAddressReports(address string) ([]*models.Report, error) {
+	if strings.TrimSpace(address) == "" {
+		return nil, fmt.Errorf("address is required")
+	}
+
+	reports, err := s.repo.GetByAddress(strings.TrimSpace(address))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get reports by address: %w", err)
+	}
+
+	return reports, nil
+}
+
+func (s *reportService) GetReportsGroupedByAddress(limit, offset int) ([]*models.ReportsByAddress, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	grouped, err := s.repo.GetReportsGroupedByAddress(limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get reports grouped by address: %w", err)
+	}
+
+	return grouped, nil
 }

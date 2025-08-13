@@ -260,3 +260,18 @@ export interface ReportFilters {
 export interface ModerationRequest {
   notes?: string;
 }
+
+export interface ReportsByAddress {
+  business_name: string;
+  business_address: string;
+  report_count: number;
+  confidence_level: number;
+  latest_report: string;
+}
+
+export interface ReportsByAddressResponse {
+  data: ReportsByAddress[];
+  limit: number;
+  offset: number;
+  count: number;
+}

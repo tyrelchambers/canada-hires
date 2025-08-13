@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS idx_reports_business_address ON reports(business_address);

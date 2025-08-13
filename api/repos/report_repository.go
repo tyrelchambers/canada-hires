@@ -9,6 +9,14 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+type ReportFilters struct {
+	Query    string
+	City     string
+	Province string
+	Status   models.ReportStatus
+	Year     string
+}
+
 type ReportRepository interface {
 	Create(report *models.Report) error
 	GetByID(id string) (*models.Report, error)
@@ -16,6 +24,9 @@ type ReportRepository interface {
 	GetByBusinessName(businessName string, limit, offset int) ([]*models.Report, error)
 	GetByStatus(status models.ReportStatus, limit, offset int) ([]*models.Report, error)
 	GetAll(limit, offset int) ([]*models.Report, error)
+	GetWithFilters(filters ReportFilters, limit, offset int) ([]*models.Report, error)
+	GetByAddress(address string) ([]*models.Report, error)
+	GetReportsGroupedByAddress(limit, offset int) ([]*models.ReportsByAddress, error)
 	Update(report *models.Report) error
 	UpdateStatus(id string, status models.ReportStatus, moderatorID *string, notes *string) error
 	Delete(id string) error
@@ -125,6 +136,72 @@ func (r *reportRepository) GetByStatus(status models.ReportStatus, limit, offset
 	return reports, nil
 }
 
+func (r *reportRepository) GetWithFilters(filters ReportFilters, limit, offset int) ([]*models.Report, error) {
+	var reports []*models.Report
+	var args []interface{}
+	var conditions []string
+	argCount := 0
+
+	// Base query
+	query := `SELECT * FROM reports WHERE 1=1`
+
+	// Add business name/query filter
+	if filters.Query != "" {
+		argCount++
+		conditions = append(conditions, fmt.Sprintf("business_name ILIKE $%d", argCount))
+		args = append(args, "%"+filters.Query+"%")
+	}
+
+	// Add city filter (search in business_address)
+	if filters.City != "" {
+		argCount++
+		conditions = append(conditions, fmt.Sprintf("business_address ILIKE $%d", argCount))
+		args = append(args, "%"+filters.City+"%")
+	}
+
+	// Add province filter (search in business_address)
+	if filters.Province != "" {
+		argCount++
+		conditions = append(conditions, fmt.Sprintf("business_address ILIKE $%d", argCount))
+		args = append(args, "%"+filters.Province+"%")
+	}
+
+	// Add status filter
+	if filters.Status != "" {
+		argCount++
+		conditions = append(conditions, fmt.Sprintf("status = $%d", argCount))
+		args = append(args, filters.Status)
+	}
+
+	// Add year filter
+	if filters.Year != "" {
+		argCount++
+		conditions = append(conditions, fmt.Sprintf("EXTRACT(YEAR FROM created_at) = $%d", argCount))
+		args = append(args, filters.Year)
+	}
+
+	// Combine conditions
+	for _, condition := range conditions {
+		query += " AND " + condition
+	}
+
+	// Add ordering and pagination
+	argCount++
+	query += fmt.Sprintf(" ORDER BY created_at DESC LIMIT $%d", argCount)
+	args = append(args, limit)
+
+	argCount++
+	query += fmt.Sprintf(" OFFSET $%d", argCount)
+	args = append(args, offset)
+
+	err := r.db.Select(&reports, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get reports with filters: %w", err)
+	}
+
+	return reports, nil
+}
+
 func (r *reportRepository) Update(report *models.Report) error {
 	tx, err := r.db.Beginx()
 	if err != nil {
@@ -204,4 +281,40 @@ func (r *reportRepository) Delete(id string) error {
 	}
 
 	return nil
+}
+
+func (r *reportRepository) GetByAddress(address string) ([]*models.Report, error) {
+	var reports []*models.Report
+	query := `SELECT * FROM reports WHERE business_address = $1 AND status = 'approved' ORDER BY created_at DESC`
+
+	err := r.db.Select(&reports, query, address)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get reports by address: %w", err)
+	}
+
+	return reports, nil
+}
+
+func (r *reportRepository) GetReportsGroupedByAddress(limit, offset int) ([]*models.ReportsByAddress, error) {
+	var grouped []*models.ReportsByAddress
+	query := `
+		SELECT 
+			business_name,
+			business_address,
+			COUNT(*) as report_count,
+			AVG(COALESCE(confidence_level, 5)) as confidence_level,
+			MAX(created_at) as latest_report
+		FROM reports 
+		WHERE status = 'approved'
+		GROUP BY business_address, business_name
+		ORDER BY report_count DESC, latest_report DESC
+		LIMIT $1 OFFSET $2
+	`
+
+	err := r.db.Select(&grouped, query, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get reports grouped by address: %w", err)
+	}
+
+	return grouped, nil
 }

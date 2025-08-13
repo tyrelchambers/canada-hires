@@ -46,6 +46,8 @@ func (rr *reportRouter) Init(r chi.Router) {
 		r.Get("/", rr.reportController.GetAllReports)
 		r.Get("/{id}", rr.reportController.GetReportByID)
 		r.Get("/business/{businessName}", rr.reportController.GetBusinessReports)
+		r.Get("/address", rr.reportController.GetAddressReports)
+		r.Get("/grouped-by-address", rr.reportController.GetReportsGroupedByAddress)
 		
 		// Protected routes - authentication required
 		r.Group(func(r chi.Router) {

@@ -184,10 +184,6 @@ function DirectoryPage() {
                   className="pl-10 text-lg py-3 border-0 focus:ring-2 focus:ring-red-500"
                 />
               </div>
-              <Button onClick={handleSearch} size="lg">
-                <FontAwesomeIcon icon={faSearch} className="mr-2" />
-                Search
-              </Button>
             </div>
           </div>
         </div>
