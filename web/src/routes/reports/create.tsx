@@ -232,16 +232,6 @@ function CreateReportPage() {
                 </form>
               </CardContent>
             </Card>
-
-            {createReportMutation.isError && (
-              <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
-                <p className="text-red-800">
-                  {createReportMutation.error?.response?.status === 401
-                    ? "Please sign in to submit a report."
-                    : "Error submitting report. Please try again."}
-                </p>
-              </div>
-            )}
           </div>
 
           {/* Sidebar Cards */}

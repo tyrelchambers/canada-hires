@@ -6,6 +6,7 @@ import {
   RedditRejectionRequest,
   BulkApprovalRequest,
   BulkRejectionRequest,
+  RedditApprovalStats,
 } from "@/types";
 
 // Get pending jobs for Reddit approval
@@ -41,6 +42,21 @@ export const usePostedJobs = (limit = 50, offset = 0) => {
       return response.data;
     },
     staleTime: 60 * 1000, // 1 minute
+  });
+};
+
+// Get Reddit approval stats
+export const useRedditApprovalStats = () => {
+  const api = useApiClient();
+  return useQuery<RedditApprovalStats>({
+    queryKey: ["admin", "jobs", "reddit", "stats"],
+    queryFn: async (): Promise<RedditApprovalStats> => {
+      const response = await api.get<RedditApprovalStats>(
+        "/admin/jobs/reddit/stats",
+      );
+      return response.data;
+    },
+    staleTime: 30 * 1000, // 30 seconds
   });
 };
 

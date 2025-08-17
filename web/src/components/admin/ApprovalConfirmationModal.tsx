@@ -11,11 +11,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCheck, faTimes, faGear } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { faReddit } from "@fortawesome/free-brands-svg-icons";
-import { Subreddit } from "@/types";
 
 interface ApprovalConfirmationModalProps {
   isOpen: boolean;

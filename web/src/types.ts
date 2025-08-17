@@ -278,6 +278,12 @@ export interface ReportsByAddressResponse {
   count: number;
 }
 
+export interface RedditApprovalStats {
+  pending_count: number;
+  approved_count: number;
+  rejected_count: number;
+}
+
 export interface LMIAEmployersByResourceResponse {
   employers: LMIAEmployer[];
   count: number;

@@ -12,7 +12,7 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart'
 import { RegionData } from '@/hooks/useLMIATrends'
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
+import { Bar, BarChart, CartesianGrid, XAxis } from 'recharts'
 
 interface LMIARegionalChartProps {
   data: RegionData[]
