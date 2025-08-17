@@ -373,7 +373,8 @@ func (jc *JobController) ApproveJobForReddit(w http.ResponseWriter, r *http.Requ
 	}
 
 	var body struct {
-		ApprovedBy string `json:"approved_by"`
+		ApprovedBy   string   `json:"approved_by"`
+		SubredditIDs []string `json:"subreddit_ids,omitempty"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -409,17 +410,19 @@ func (jc *JobController) ApproveJobForReddit(w http.ResponseWriter, r *http.Requ
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
-		if err := jc.redditService.PostJob(ctx, job); err != nil {
+		if err := jc.redditService.PostJob(ctx, job, body.SubredditIDs); err != nil {
 			log.Error("Failed to post approved job to Reddit",
 				"error", err,
 				"job_id", job.ID,
 				"job_title", job.Title,
+				"subreddit_ids", body.SubredditIDs,
 			)
 		} else {
 			log.Info("Successfully posted approved job to Reddit",
 				"job_id", job.ID,
 				"job_title", job.Title,
 				"approved_by", body.ApprovedBy,
+				"subreddit_ids", body.SubredditIDs,
 			)
 		}
 	}()
@@ -492,8 +495,9 @@ func (jc *JobController) RejectJobForReddit(w http.ResponseWriter, r *http.Reque
 // BulkApproveJobsForReddit approves multiple jobs for Reddit posting
 func (jc *JobController) BulkApproveJobsForReddit(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		JobIDs     []string `json:"job_ids"`
-		ApprovedBy string   `json:"approved_by"`
+		JobIDs       []string `json:"job_ids"`
+		ApprovedBy   string   `json:"approved_by"`
+		SubredditIDs []string `json:"subreddit_ids,omitempty"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -536,17 +540,19 @@ func (jc *JobController) BulkApproveJobsForReddit(w http.ResponseWriter, r *http
 				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 				defer cancel()
 
-				if err := jc.redditService.PostJob(ctx, job); err != nil {
+				if err := jc.redditService.PostJob(ctx, job, body.SubredditIDs); err != nil {
 					log.Error("Failed to post bulk approved job to Reddit",
 						"error", err,
 						"job_id", job.ID,
 						"job_title", job.Title,
+						"subreddit_ids", body.SubredditIDs,
 					)
 				} else {
 					log.Info("Successfully posted bulk approved job to Reddit",
 						"job_id", job.ID,
 						"job_title", job.Title,
 						"approved_by", body.ApprovedBy,
+						"subreddit_ids", body.SubredditIDs,
 					)
 				}
 			}(jobID)

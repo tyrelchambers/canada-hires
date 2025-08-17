@@ -34,7 +34,7 @@ type ReportService interface {
 	GetUserReports(userID string, limit, offset int) ([]*models.Report, error)
 	GetBusinessReports(businessName string, limit, offset int) ([]*models.Report, error)
 	GetAddressReports(address string) ([]*models.Report, error)
-	GetReportsGroupedByAddress(limit, offset int) ([]*models.ReportsByAddress, error)
+	GetReportsGroupedByAddress(filters *ReportFilters, limit, offset int) ([]*models.ReportsByAddress, error)
 	GetReportsByStatus(status models.ReportStatus, limit, offset int) ([]*models.Report, error)
 	UpdateReport(report *models.Report) error
 	ApproveReport(reportID, moderatorID string, notes *string) error
@@ -95,7 +95,6 @@ func (s *reportService) validateCreateRequest(req *CreateReportRequest) error {
 	}
 	return nil
 }
-
 
 func isValidReportSource(source string) bool {
 	validSources := []string{"employment", "observation", "public_record"}
@@ -351,7 +350,7 @@ func (s *reportService) GetAddressReports(address string) ([]*models.Report, err
 	return reports, nil
 }
 
-func (s *reportService) GetReportsGroupedByAddress(limit, offset int) ([]*models.ReportsByAddress, error) {
+func (s *reportService) GetReportsGroupedByAddress(filters *ReportFilters, limit, offset int) ([]*models.ReportsByAddress, error) {
 	if limit <= 0 {
 		limit = 50
 	}
@@ -362,7 +361,19 @@ func (s *reportService) GetReportsGroupedByAddress(limit, offset int) ([]*models
 		offset = 0
 	}
 
-	grouped, err := s.repo.GetReportsGroupedByAddress(limit, offset)
+	// Convert service filters to repo filters if provided
+	var repoFilters *repos.ReportFilters
+	if filters != nil {
+		repoFilters = &repos.ReportFilters{
+			Query:    filters.Query,
+			City:     filters.City,
+			Province: filters.Province,
+			Status:   models.ReportStatus(filters.Status),
+			Year:     filters.Year,
+		}
+	}
+
+	grouped, err := s.repo.GetReportsGroupedByAddress(repoFilters, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get reports grouped by address: %w", err)
 	}

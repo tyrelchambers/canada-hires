@@ -3,6 +3,7 @@ package repos
 import (
 	"canada-hires/models"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -26,7 +27,7 @@ type ReportRepository interface {
 	GetAll(limit, offset int) ([]*models.Report, error)
 	GetWithFilters(filters ReportFilters, limit, offset int) ([]*models.Report, error)
 	GetByAddress(address string) ([]*models.Report, error)
-	GetReportsGroupedByAddress(limit, offset int) ([]*models.ReportsByAddress, error)
+	GetReportsGroupedByAddress(filters *ReportFilters, limit, offset int) ([]*models.ReportsByAddress, error)
 	Update(report *models.Report) error
 	UpdateStatus(id string, status models.ReportStatus, moderatorID *string, notes *string) error
 	Delete(id string) error
@@ -48,18 +49,18 @@ func (r *reportRepository) Create(report *models.Report) error {
 	defer tx.Rollback()
 
 	query := `
-		INSERT INTO reports (id, user_id, business_name, business_address, report_source, 
-			confidence_level, additional_notes, status, moderated_by, moderation_notes, 
+		INSERT INTO reports (id, user_id, business_name, business_address, report_source,
+			confidence_level, additional_notes, status, moderated_by, moderation_notes,
 			ip_address, created_at, updated_at)
-		VALUES (:id, :user_id, :business_name, :business_address, :report_source, 
-			:confidence_level, :additional_notes, :status, :moderated_by, :moderation_notes, 
+		VALUES (:id, :user_id, :business_name, :business_address, :report_source,
+			:confidence_level, :additional_notes, :status, :moderated_by, :moderation_notes,
 			:ip_address, :created_at, :updated_at)
 	`
 
 	report.ID = uuid.New().String()
 	report.CreatedAt = time.Now().UTC()
 	report.UpdatedAt = time.Now().UTC()
-	
+
 	if report.Status == "" {
 		report.Status = models.ReportPending
 	}
@@ -210,7 +211,7 @@ func (r *reportRepository) Update(report *models.Report) error {
 	defer tx.Rollback()
 
 	query := `
-		UPDATE reports SET 
+		UPDATE reports SET
 			business_name = :business_name,
 			business_address = :business_address,
 			report_source = :report_source,
@@ -243,7 +244,7 @@ func (r *reportRepository) UpdateStatus(id string, status models.ReportStatus, m
 	defer tx.Rollback()
 
 	query := `
-		UPDATE reports SET 
+		UPDATE reports SET
 			status = $1,
 			moderated_by = $2,
 			moderation_notes = $3,
@@ -285,7 +286,7 @@ func (r *reportRepository) Delete(id string) error {
 
 func (r *reportRepository) GetByAddress(address string) ([]*models.Report, error) {
 	var reports []*models.Report
-	query := `SELECT * FROM reports WHERE business_address = $1 AND status = 'approved' ORDER BY created_at DESC`
+	query := `SELECT * FROM reports WHERE business_address = $1 AND status = 'pending' ORDER BY created_at DESC`
 
 	err := r.db.Select(&reports, query, address)
 	if err != nil {
@@ -295,26 +296,70 @@ func (r *reportRepository) GetByAddress(address string) ([]*models.Report, error
 	return reports, nil
 }
 
-func (r *reportRepository) GetReportsGroupedByAddress(limit, offset int) ([]*models.ReportsByAddress, error) {
+func (r *reportRepository) GetReportsGroupedByAddress(filters *ReportFilters, limit, offset int) ([]*models.ReportsByAddress, error) {
 	var grouped []*models.ReportsByAddress
-	query := `
-		SELECT 
+
+	// Build the WHERE conditions
+	conditions := []string{"status = 'pending'"}
+	args := []interface{}{}
+	argCount := 0
+
+	// Apply filters only if filters is not nil
+	if filters != nil {
+		// Add search query filter (searches business name)
+		if filters.Query != "" {
+			argCount++
+			conditions = append(conditions, fmt.Sprintf("LOWER(business_name) LIKE LOWER($%d)", argCount))
+			args = append(args, "%"+filters.Query+"%")
+		}
+
+		// Add city filter (searches business address)
+		if filters.City != "" {
+			argCount++
+			conditions = append(conditions, fmt.Sprintf("LOWER(business_address) LIKE LOWER($%d)", argCount))
+			args = append(args, "%"+filters.City+"%")
+		}
+
+		// Add province filter (searches business address)
+		if filters.Province != "" {
+			argCount++
+			conditions = append(conditions, fmt.Sprintf("LOWER(business_address) LIKE LOWER($%d)", argCount))
+			args = append(args, "%"+filters.Province+"%")
+		}
+
+		// Add year filter
+		if filters.Year != "" {
+			argCount++
+			conditions = append(conditions, fmt.Sprintf("EXTRACT(YEAR FROM created_at) = $%d", argCount))
+			args = append(args, filters.Year)
+		}
+	}
+
+	// Build the final query
+	whereClause := strings.Join(conditions, " AND ")
+	query := fmt.Sprintf(`
+		SELECT
 			business_name,
 			business_address,
 			COUNT(*) as report_count,
 			AVG(COALESCE(confidence_level, 5)) as confidence_level,
 			MAX(created_at) as latest_report
-		FROM reports 
-		WHERE status = 'approved'
+		FROM reports
+		WHERE %s
 		GROUP BY business_address, business_name
 		ORDER BY report_count DESC, latest_report DESC
-		LIMIT $1 OFFSET $2
-	`
+		LIMIT $%d OFFSET $%d
+	`, whereClause, argCount+1, argCount+2)
 
-	err := r.db.Select(&grouped, query, limit, offset)
+	// Add limit and offset to args
+	args = append(args, limit, offset)
+
+	err := r.db.Select(&grouped, query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get reports grouped by address: %w", err)
+		return nil, fmt.Errorf("failed to get filtered reports grouped by address: %w", err)
 	}
+
+	fmt.Println(grouped)
 
 	return grouped, nil
 }

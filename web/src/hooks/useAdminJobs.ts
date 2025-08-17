@@ -53,12 +53,15 @@ export const useApproveJob = () => {
     mutationFn: async ({
       jobId,
       approvedBy,
+      subredditIds,
     }: {
       jobId: string;
       approvedBy: string;
+      subredditIds?: string[];
     }) => {
       const response = await api.post(`/admin/jobs/reddit/approve/${jobId}`, {
         approved_by: approvedBy,
+        subreddit_ids: subredditIds,
       } as RedditApprovalRequest);
       return response;
     },
@@ -117,14 +120,17 @@ export const useBulkApproveJobs = () => {
     mutationFn: async ({
       jobIds,
       approvedBy,
+      subredditIds,
     }: {
       jobIds: string[];
       approvedBy: string;
+      subredditIds?: string[];
     }) => {
       return api
         .post<BulkApprovalRequest>("/admin/jobs/reddit/bulk-approve", {
           job_ids: jobIds,
           approved_by: approvedBy,
+          subreddit_ids: subredditIds,
         })
         .then((res) => res.data);
     },

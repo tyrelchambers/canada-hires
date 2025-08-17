@@ -43,11 +43,11 @@ func (rr *reportRouter) InjectReportRoutes(r chi.Router) {
 func (rr *reportRouter) Init(r chi.Router) {
 	r.Route("/reports", func(r chi.Router) {
 		// Public routes - no authentication required
-		r.Get("/", rr.reportController.GetAllReports)
+		r.Get("/", rr.reportController.GetReports)
 		r.Get("/{id}", rr.reportController.GetReportByID)
-		r.Get("/business/{businessName}", rr.reportController.GetBusinessReports)
-		r.Get("/address", rr.reportController.GetAddressReports)
-		r.Get("/grouped-by-address", rr.reportController.GetReportsGroupedByAddress)
+		r.Get("/business/{businessName}", rr.reportController.GetReports)
+		r.Get("/address", rr.reportController.GetReports)
+		r.Get("/grouped-by-address", rr.reportController.GetReportsGrouped)
 		
 		// Protected routes - authentication required
 		r.Group(func(r chi.Router) {
@@ -67,7 +67,7 @@ func (rr *reportRouter) Init(r chi.Router) {
 			r.Use(rr.authMW)
 			// Apply admin requirement middleware
 			r.Use(middleware.RequireAdmin)
-			r.Get("/status/{status}", rr.reportController.GetReportsByStatus)
+			r.Get("/status/{status}", rr.reportController.GetReports)
 			r.Post("/{id}/approve", rr.reportController.ApproveReport)
 			r.Post("/{id}/reject", rr.reportController.RejectReport)
 			r.Post("/{id}/flag", rr.reportController.FlagReport)

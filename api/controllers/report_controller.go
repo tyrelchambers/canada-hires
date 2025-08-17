@@ -18,18 +18,15 @@ type ReportController interface {
 	// Public routes
 	CreateReport(w http.ResponseWriter, r *http.Request)
 	GetReportByID(w http.ResponseWriter, r *http.Request)
-	GetAllReports(w http.ResponseWriter, r *http.Request)
-	GetBusinessReports(w http.ResponseWriter, r *http.Request)
-	GetAddressReports(w http.ResponseWriter, r *http.Request)
-	GetReportsGroupedByAddress(w http.ResponseWriter, r *http.Request)
-	
+	GetReports(w http.ResponseWriter, r *http.Request)
+	GetReportsGrouped(w http.ResponseWriter, r *http.Request)
+
 	// Protected routes (auth required)
 	GetUserReports(w http.ResponseWriter, r *http.Request)
 	UpdateReport(w http.ResponseWriter, r *http.Request)
 	DeleteReport(w http.ResponseWriter, r *http.Request)
-	
+
 	// Admin routes
-	GetReportsByStatus(w http.ResponseWriter, r *http.Request)
 	ApproveReport(w http.ResponseWriter, r *http.Request)
 	RejectReport(w http.ResponseWriter, r *http.Request)
 	FlagReport(w http.ResponseWriter, r *http.Request)
@@ -101,15 +98,63 @@ func (c *reportController) GetReportByID(w http.ResponseWriter, r *http.Request)
 	json.NewEncoder(w).Encode(response)
 }
 
-func (c *reportController) GetAllReports(w http.ResponseWriter, r *http.Request) {
+func (c *reportController) GetReports(w http.ResponseWriter, r *http.Request) {
 	limit, offset := getPaginationParams(r)
 
-	// Get search/filter parameters
+	// Get search/filter parameters from query string
 	query := r.URL.Query().Get("query")
 	city := r.URL.Query().Get("city")
 	province := r.URL.Query().Get("province")
 	status := r.URL.Query().Get("status")
 	year := r.URL.Query().Get("year")
+	address := r.URL.Query().Get("address")
+
+	// Get URL parameters for specific filters
+	businessName := chi.URLParam(r, "businessName")
+	statusParam := chi.URLParam(r, "status")
+
+	// Handle business name from URL parameter
+	if businessName != "" {
+		reports, err := c.service.GetBusinessReports(businessName, limit, offset)
+		if err != nil {
+			log.Error("Failed to get business reports", "error", err, "business_name", businessName)
+			http.Error(w, "Failed to get business reports", http.StatusInternalServerError)
+			return
+		}
+		response := dto.ToReportListResponse(reports, limit, offset)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// Handle status from URL parameter (admin route)
+	if statusParam != "" {
+		reportStatus := models.ReportStatus(statusParam)
+		reports, err := c.service.GetReportsByStatus(reportStatus, limit, offset)
+		if err != nil {
+			log.Error("Failed to get reports by status", "error", err, "status", reportStatus)
+			http.Error(w, "Failed to get reports", http.StatusInternalServerError)
+			return
+		}
+		response := dto.ToReportListResponse(reports, limit, offset)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// Handle address filter
+	if address != "" {
+		reports, err := c.service.GetAddressReports(address)
+		if err != nil {
+			log.Error("Failed to get address reports", "error", err, "address", address)
+			http.Error(w, "Failed to get address reports", http.StatusInternalServerError)
+			return
+		}
+		response := dto.ToReportListResponse(reports, len(reports), 0)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+		return
+	}
 
 	// If any filters are provided, use the filtered search
 	if query != "" || city != "" || province != "" || status != "" || year != "" {
@@ -139,27 +184,6 @@ func (c *reportController) GetAllReports(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		log.Error("Failed to get reports", "error", err)
 		http.Error(w, "Failed to get reports", http.StatusInternalServerError)
-		return
-	}
-
-	response := dto.ToReportListResponse(reports, limit, offset)
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
-}
-
-func (c *reportController) GetBusinessReports(w http.ResponseWriter, r *http.Request) {
-	businessName := chi.URLParam(r, "businessName")
-	if businessName == "" {
-		http.Error(w, "Business name is required", http.StatusBadRequest)
-		return
-	}
-
-	limit, offset := getPaginationParams(r)
-
-	reports, err := c.service.GetBusinessReports(businessName, limit, offset)
-	if err != nil {
-		log.Error("Failed to get business reports", "error", err, "business_name", businessName)
-		http.Error(w, "Failed to get business reports", http.StatusInternalServerError)
 		return
 	}
 
@@ -267,28 +291,6 @@ func (c *reportController) DeleteReport(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (c *reportController) GetReportsByStatus(w http.ResponseWriter, r *http.Request) {
-	statusStr := chi.URLParam(r, "status")
-	if statusStr == "" {
-		http.Error(w, "Status is required", http.StatusBadRequest)
-		return
-	}
-
-	status := models.ReportStatus(statusStr)
-	limit, offset := getPaginationParams(r)
-
-	reports, err := c.service.GetReportsByStatus(status, limit, offset)
-	if err != nil {
-		log.Error("Failed to get reports by status", "error", err, "status", status)
-		http.Error(w, "Failed to get reports", http.StatusInternalServerError)
-		return
-	}
-
-	response := dto.ToReportListResponse(reports, limit, offset)
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
-}
-
 func (c *reportController) ApproveReport(w http.ResponseWriter, r *http.Request) {
 	c.handleModerationAction(w, r, c.service.ApproveReport)
 }
@@ -333,31 +335,32 @@ func (c *reportController) handleModerationAction(w http.ResponseWriter, r *http
 	})
 }
 
-func (c *reportController) GetAddressReports(w http.ResponseWriter, r *http.Request) {
-	address := r.URL.Query().Get("address")
-	if address == "" {
-		http.Error(w, "Address parameter is required", http.StatusBadRequest)
-		return
-	}
-
-	reports, err := c.service.GetAddressReports(address)
-	if err != nil {
-		log.Error("Failed to get address reports", "error", err, "address", address)
-		http.Error(w, "Failed to get address reports", http.StatusInternalServerError)
-		return
-	}
-
-	response := dto.ToReportListResponse(reports, len(reports), 0)
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
-}
-
-func (c *reportController) GetReportsGroupedByAddress(w http.ResponseWriter, r *http.Request) {
+func (c *reportController) GetReportsGrouped(w http.ResponseWriter, r *http.Request) {
 	limit, offset := getPaginationParams(r)
 
-	grouped, err := c.service.GetReportsGroupedByAddress(limit, offset)
+	// Get search/filter parameters
+	query := r.URL.Query().Get("query")
+	city := r.URL.Query().Get("city")
+	province := r.URL.Query().Get("province")
+	status := r.URL.Query().Get("status")
+	year := r.URL.Query().Get("year")
+
+	// Build filters if any are provided
+	var filters *services.ReportFilters
+	if query != "" || city != "" || province != "" || status != "" || year != "" {
+		filters = &services.ReportFilters{
+			Query:    query,
+			City:     city,
+			Province: province,
+			Status:   status,
+			Year:     year,
+		}
+	}
+
+	// Use the single consolidated method
+	grouped, err := c.service.GetReportsGroupedByAddress(filters, limit, offset)
 	if err != nil {
-		log.Error("Failed to get reports grouped by address", "error", err)
+		log.Error("Failed to get reports grouped by address", "error", err, "filters", filters)
 		http.Error(w, "Failed to get grouped reports", http.StatusInternalServerError)
 		return
 	}
@@ -393,4 +396,3 @@ func getPaginationParams(r *http.Request) (limit, offset int) {
 
 	return limit, offset
 }
-

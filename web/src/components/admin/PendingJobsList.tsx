@@ -83,7 +83,7 @@ export function PendingJobsList({
     });
   };
 
-  const handleConfirmApproval = async () => {
+  const handleConfirmApproval = async (selectedSubredditIds: string[]) => {
     if (!approvalConfirmation) return;
 
     try {
@@ -91,11 +91,13 @@ export function PendingJobsList({
         await approveJobMutation.mutateAsync({
           jobId: approvalConfirmation.jobIds[0],
           approvedBy: user.email,
+          subredditIds: selectedSubredditIds,
         });
       } else {
         await bulkApproveMutation.mutateAsync({
           jobIds: approvalConfirmation.jobIds,
           approvedBy: user.email,
+          subredditIds: selectedSubredditIds,
         });
         onClearSelection();
       }

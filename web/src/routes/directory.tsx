@@ -2,96 +2,17 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faSearch,
   faMapMarkerAlt,
   faFilter,
-  faStar,
-  faStarHalfAlt,
-  faBuilding,
-  faCalendar,
-  faUser,
 } from "@fortawesome/free-solid-svg-icons";
-import { faStar as faStarEmpty } from "@fortawesome/free-regular-svg-icons";
-import { useReports } from "@/hooks/useReports";
+import { useReportsGroupedByAddress } from "@/hooks/useReports";
 import { AuthNav } from "@/components/AuthNav";
 import { StripedBackground } from "@/components/StripedBackground";
-
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case "approved":
-      return "bg-green-100 text-green-800 border-green-200";
-    case "pending":
-      return "bg-yellow-100 text-yellow-800 border-yellow-200";
-    case "rejected":
-      return "bg-red-100 text-red-800 border-red-200";
-    case "flagged":
-      return "bg-orange-100 text-orange-800 border-orange-200";
-    default:
-      return "bg-gray-100 text-gray-800 border-gray-200";
-  }
-};
-
-const getStatusLabel = (status: string) => {
-  switch (status) {
-    case "approved":
-      return "Verified";
-    case "pending":
-      return "Under Review";
-    case "rejected":
-      return "Unverified";
-    case "flagged":
-      return "Flagged";
-    default:
-      return "Unknown";
-  }
-};
-
-const renderStars = (rating: number) => {
-  const stars = [];
-  const fullStars = Math.floor(rating);
-  const hasHalfStar = rating % 1 !== 0;
-
-  for (let i = 0; i < fullStars; i++) {
-    stars.push(
-      <FontAwesomeIcon key={i} icon={faStar} className="text-yellow-400" />,
-    );
-  }
-
-  if (hasHalfStar) {
-    stars.push(
-      <FontAwesomeIcon
-        key="half"
-        icon={faStarHalfAlt}
-        className="text-yellow-400"
-      />,
-    );
-  }
-
-  const emptyStars = 5 - Math.ceil(rating);
-  for (let i = 0; i < emptyStars; i++) {
-    stars.push(
-      <FontAwesomeIcon
-        key={`empty-${i}`}
-        icon={faStarEmpty}
-        className="text-gray-300"
-      />,
-    );
-  }
-
-  return stars;
-};
-
-const getTFWRating = (confidenceLevel: number) => {
-  if (confidenceLevel >= 8)
-    return { rating: 2, color: "text-red-600", label: "High TFW Usage" };
-  if (confidenceLevel >= 5)
-    return { rating: 3, color: "text-yellow-600", label: "Moderate TFW Usage" };
-  return { rating: 4, color: "text-green-600", label: "Low TFW Usage" };
-};
+import { BusinessCard } from "@/components/BusinessCard";
 
 function DirectoryPage() {
   // Search and filter state
@@ -103,12 +24,12 @@ function DirectoryPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [limit] = useState(20);
 
-  // Use the reports hook
+  // Always use grouped reports with filters
   const {
-    data: reportsData,
+    data: groupedData,
     isLoading: loading,
     error,
-  } = useReports({
+  } = useReportsGroupedByAddress({
     query: searchQuery,
     city: cityFilter,
     province: provinceFilter,
@@ -118,8 +39,8 @@ function DirectoryPage() {
     offset: (currentPage - 1) * limit,
   });
 
-  const reports = reportsData?.reports || [];
-  const total = reportsData?.pagination?.total || 0;
+  const businesses = groupedData?.data || [];
+  const total = groupedData?.count || 0;
 
   // Generate year options (current year back to 2015)
   const currentYear = new Date().getFullYear();
@@ -127,10 +48,6 @@ function DirectoryPage() {
     { length: currentYear - 2014 },
     (_, i) => currentYear - i,
   );
-
-  const handleSearch = () => {
-    setCurrentPage(1);
-  };
 
   const clearFilters = () => {
     setSearchQuery("");
@@ -263,9 +180,7 @@ function DirectoryPage() {
           <div className="lg:w-3/4">
             {/* Results Header */}
             <div className="flex justify-between items-center mb-6">
-              <div>
-                <h2 className="text-2xl font-bold">Business Directory</h2>
-              </div>
+              <h2 className="text-2xl font-bold">Business Directory</h2>
             </div>
 
             {/* Loading State */}
@@ -296,98 +211,12 @@ function DirectoryPage() {
             {!loading && !error && (
               <>
                 <div className="space-y-4 mb-8">
-                  {reports.map((report) => {
-                    const tfwRating = getTFWRating(
-                      report.confidence_level || 0,
-                    );
-                    return (
-                      <Card
-                        key={report.id}
-                        className="hover:shadow-lg transition-shadow cursor-pointer"
-                      >
-                        <CardContent className="p-6">
-                          <div className="flex flex-col md:flex-row gap-4">
-                            {/* Business Photo Placeholder */}
-                            <div className="w-full md:w-48 h-48 bg-gray-200 rounded-lg flex items-center justify-center">
-                              <FontAwesomeIcon
-                                icon={faBuilding}
-                                className="text-gray-400 text-4xl"
-                              />
-                            </div>
-
-                            {/* Business Info */}
-                            <div className="flex-1">
-                              <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-2">
-                                <div>
-                                  <h3 className="text-xl font-bold text-gray-900 mb-1">
-                                    {report.business_name}
-                                  </h3>
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <div className="flex items-center">
-                                      {renderStars(tfwRating.rating)}
-                                    </div>
-                                    <span
-                                      className={`font-medium ${tfwRating.color}`}
-                                    >
-                                      {tfwRating.label}
-                                    </span>
-                                  </div>
-                                </div>
-
-                                <Badge
-                                  className={getStatusColor(report.status)}
-                                  variant="outline"
-                                >
-                                  {getStatusLabel(report.status)}
-                                </Badge>
-                              </div>
-
-                              <div className="flex items-center text-gray-600 mb-3">
-                                <FontAwesomeIcon
-                                  icon={faMapMarkerAlt}
-                                  className="mr-2"
-                                />
-                                <span>{report.business_address}</span>
-                              </div>
-
-                              {report.additional_notes && (
-                                <p className="text-gray-700 mb-3 line-clamp-2">
-                                  "{report.additional_notes}"
-                                </p>
-                              )}
-
-                              <div className="flex items-center justify-between text-sm text-gray-500">
-                                <div className="flex items-center gap-4">
-                                  <span className="flex items-center">
-                                    <FontAwesomeIcon
-                                      icon={faUser}
-                                      className="mr-1"
-                                    />
-                                    {report.report_source.replace("_", " ")}
-                                  </span>
-                                  <span className="flex items-center">
-                                    <FontAwesomeIcon
-                                      icon={faCalendar}
-                                      className="mr-1"
-                                    />
-                                    {new Date(
-                                      report.created_at,
-                                    ).toLocaleDateString()}
-                                  </span>
-                                </div>
-
-                                {report.confidence_level && (
-                                  <span className="font-medium">
-                                    Confidence: {report.confidence_level}/10
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
+                  {businesses.map((business, index) => (
+                    <BusinessCard
+                      key={`${business.business_address}-${index}`}
+                      business={business}
+                    />
+                  ))}
                 </div>
 
                 {/* Pagination */}
@@ -442,7 +271,7 @@ function DirectoryPage() {
             )}
 
             {/* Empty State */}
-            {!loading && !error && reports.length === 0 && (
+            {!loading && !error && businesses.length === 0 && (
               <Card className="text-center py-12">
                 <CardContent>
                   <FontAwesomeIcon

@@ -174,6 +174,7 @@ export interface JobStats {
 // Admin interfaces for Reddit approval
 export interface RedditApprovalRequest {
   approved_by: string;
+  subreddit_ids?: string[];
 }
 
 export interface RedditRejectionRequest {
@@ -184,6 +185,7 @@ export interface RedditRejectionRequest {
 export interface BulkApprovalRequest {
   job_ids: string[];
   approved_by: string;
+  subreddit_ids?: string[];
 }
 
 export interface BulkRejectionRequest {

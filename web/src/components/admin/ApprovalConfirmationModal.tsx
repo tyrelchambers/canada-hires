@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useActiveSubreddits } from "@/hooks/useSubreddits";
 import {
   Dialog,
@@ -9,14 +10,17 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCheck, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faTimes, faGear } from "@fortawesome/free-solid-svg-icons";
 import { faReddit } from "@fortawesome/free-brands-svg-icons";
+import { Subreddit } from "@/types";
 
 interface ApprovalConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: (selectedSubredditIds: string[]) => void;
   jobCount: number;
   isLoading?: boolean;
 }
@@ -32,6 +36,30 @@ export function ApprovalConfirmationModal({
     useActiveSubreddits();
 
   const activeSubredditsList = activeSubreddits?.subreddits || [];
+  
+  // State for per-post subreddit selection
+  const [selectedSubreddits, setSelectedSubreddits] = useState<string[]>([]);
+
+  // Initialize selected subreddits with all active ones when modal opens
+  useEffect(() => {
+    if (isOpen && activeSubredditsList.length > 0) {
+      setSelectedSubreddits(activeSubredditsList.map(s => s.id));
+    }
+  }, [isOpen, activeSubredditsList]);
+
+  const handleSubredditToggle = (subredditId: string) => {
+    setSelectedSubreddits(prev => 
+      prev.includes(subredditId)
+        ? prev.filter(id => id !== subredditId)
+        : [...prev, subredditId]
+    );
+  };
+
+  const handleConfirm = () => {
+    onConfirm(selectedSubreddits);
+  };
+
+  const selectedSubredditCount = selectedSubreddits.length;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -59,8 +87,16 @@ export function ApprovalConfirmationModal({
           </div>
 
           {/* Subreddits */}
-          <div className="space-y-2">
-            <h4 className="font-medium text-gray-900">Will be posted to:</h4>
+          <div className="space-y-3">
+            <div>
+              <h4 className="font-medium text-gray-900">
+                Will be posted to ({selectedSubredditCount} subreddit{selectedSubredditCount !== 1 ? 's' : ''}):
+              </h4>
+              <p className="text-sm text-gray-600 mt-1">
+                💡 Toggle subreddits on/off for this batch of jobs
+              </p>
+            </div>
+
             {subredditsLoading ? (
               <div className="flex items-center space-x-2 text-gray-600">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
@@ -68,25 +104,46 @@ export function ApprovalConfirmationModal({
               </div>
             ) : activeSubredditsList.length > 0 ? (
               <div className="space-y-2">
-                {activeSubredditsList.map((subreddit) => (
-                  <div
-                    key={subreddit.id}
-                    className="flex items-center justify-between p-2 bg-gray-50 rounded"
-                  >
-                    <span className="font-mono text-sm">
-                      r/{subreddit.name}
-                    </span>
-                    <Badge variant="outline" className="text-xs">
-                      {subreddit.post_count} posts
-                    </Badge>
-                  </div>
-                ))}
+                {activeSubredditsList.map((subreddit) => {
+                  const isSelected = selectedSubreddits.includes(subreddit.id);
+                  return (
+                    <div
+                      key={subreddit.id}
+                      className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                        isSelected 
+                          ? 'bg-green-50 border-green-200' 
+                          : 'bg-gray-50 border-gray-200'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <span className="font-mono text-sm font-medium">
+                          r/{subreddit.name}
+                        </span>
+                        <Badge variant="outline" className="text-xs">
+                          {subreddit.post_count} posts
+                        </Badge>
+                      </div>
+                      <Switch
+                        checked={isSelected}
+                        onCheckedChange={() => handleSubredditToggle(subreddit.id)}
+                      />
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <p className="text-sm text-yellow-800">
                   ⚠️ No active subreddits configured. Jobs will be approved but
                   not posted to Reddit.
+                </p>
+              </div>
+            )}
+
+            {selectedSubredditCount === 0 && activeSubredditsList.length > 0 && (
+              <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                <p className="text-sm text-orange-800">
+                  ⚠️ No subreddits selected. Jobs will be approved but not posted to Reddit.
                 </p>
               </div>
             )}
@@ -110,7 +167,7 @@ export function ApprovalConfirmationModal({
             Cancel
           </Button>
           <Button
-            onClick={onConfirm}
+            onClick={handleConfirm}
             disabled={isLoading}
             className="flex-1 bg-green-600 hover:bg-green-700"
           >

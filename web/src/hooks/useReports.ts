@@ -92,15 +92,22 @@ export function useCreateReport() {
   });
 }
 
-export function useReportsGroupedByAddress(limit: number = 50, offset: number = 0) {
+export function useReportsGroupedByAddress(filters: ReportFilters) {
   const apiClient = useApiClient();
 
   return useQuery({
-    queryKey: ["reportsGroupedByAddress", limit, offset],
+    queryKey: ["reportsGroupedByAddress", filters],
     queryFn: async (): Promise<ReportsByAddressResponse> => {
       const params = new URLSearchParams();
-      params.append("limit", limit.toString());
-      params.append("offset", offset.toString());
+
+      if (filters.query) params.append("query", filters.query);
+      if (filters.city) params.append("city", filters.city);
+      if (filters.province) params.append("province", filters.province);
+      if (filters.status) params.append("status", filters.status);
+      if (filters.year) params.append("year", filters.year);
+
+      if (filters.limit) params.append("limit", filters.limit.toString());
+      if (filters.offset) params.append("offset", filters.offset.toString());
 
       const response = await apiClient.get<ReportsByAddressResponse>(`/reports/grouped-by-address?${params}`);
       return response.data;
