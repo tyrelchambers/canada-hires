@@ -4,53 +4,27 @@ import canadaHires from "@/assets/canada hires.svg";
 import { useCurrentUser, useLogout } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faFileAlt,
+  faSignOutAlt,
+  faChevronDown,
+} from "@fortawesome/free-solid-svg-icons";
 
 const navigationLinks = [
   { to: "/lmia", label: "LMIA Search" },
-  { to: "/jobs", label: "Job Postings" },
+  { to: "/trends", label: "Trends" },
   { to: "/research", label: "Research" },
   { to: "/feedback", label: "Feedback" },
 ];
-
-const adminNavigationLinks = [
-  { to: "/admin", label: "Admin Dashboard" },
-];
-
-interface NavLinksProps {
-  onLinkClick?: () => void;
-  className?: string;
-  isAdmin?: boolean;
-}
-
-function NavLinks({ onLinkClick, className = "", isAdmin = false }: NavLinksProps) {
-  const links = isAdmin ? [...navigationLinks, ...adminNavigationLinks] : navigationLinks;
-  
-  return (
-    <>
-      {links.map((link) => (
-        <Link
-          key={link.to}
-          to={link.to}
-          className={`text-sm hover:text-primary px-4 py-2 rounded-full transition-colors ${className} ${
-            link.to === "/admin" ? "relative" : ""
-          }`}
-          activeProps={{
-            className:
-              "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
-          }}
-          onClick={onLinkClick}
-        >
-          {link.label}
-          {link.to === "/admin" && (
-            <Badge className="ml-2 text-xs bg-red-100 text-red-800 hover:bg-red-100">
-              Admin
-            </Badge>
-          )}
-        </Link>
-      ))}
-    </>
-  );
-}
 
 export function AuthNav() {
   const { data: user } = useCurrentUser();
@@ -59,7 +33,7 @@ export function AuthNav() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const isAuthenticated = !!user;
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === "admin";
 
   const handleLogin = () => {
     void navigate({ to: "/auth/login" });
@@ -73,44 +47,122 @@ export function AuthNav() {
     });
   };
 
+  const handleCreateReport = () => {
+    void navigate({ to: "/reports/create" });
+  };
+
+  // Generate initials from email for avatar fallback
+  const getInitials = (email: string) => {
+    return email.slice(0, 2).toUpperCase();
+  };
+
   return (
-    <div className="border-b">
+    <div className="border-b bg-white">
       <div className="flex items-center justify-between p-4">
         <Link to="/" className="font-bold text-lg">
           <img src={canadaHires} className="h-10" />
         </Link>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex gap-4">
-          <NavLinks isAdmin={isAdmin} />
-        </nav>
-
-        {/* Desktop Auth */}
-        <div className="hidden md:flex items-center gap-4">
-          {isAuthenticated ? (
-            <>
-              <div className="text-right">
-                <p className="text-sm font-medium">{user.email}</p>
-                <div className="flex items-center gap-2">
-                  <Badge variant={isAdmin ? "destructive" : "secondary"} className="text-xs">
-                    {isAdmin ? "Admin" : "User"}
-                  </Badge>
-                  <span className="text-xs text-gray-600">Logged in</span>
-                </div>
-              </div>
-              <Button variant="outline" onClick={handleLogout}>
-                Sign Out
-              </Button>
-            </>
-          ) : (
-            <>
-              <div className="text-right">
-                <p className="text-sm font-medium">JobWatch Canada</p>
-                <p className="text-xs text-gray-600">Sign in to access admin features</p>
-              </div>
+        <div className="flex gap-4">
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex gap-4">
+            <Link
+              to="/jobs"
+              className="text-sm hover:text-primary px-4 py-2 rounded-full transition-colors"
+              activeProps={{
+                className:
+                  "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
+              }}
+            >
+              Job Postings
+            </Link>
+            <Link
+              to="/directory"
+              className="text-sm hover:text-primary px-4 py-2 rounded-full transition-colors"
+              activeProps={{
+                className:
+                  "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
+              }}
+            >
+              Reports
+            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-1">
+                  Explore
+                  <FontAwesomeIcon icon={faChevronDown} className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                {navigationLinks.map((link) => (
+                  <DropdownMenuItem key={link.to} asChild>
+                    <Link to={link.to} className="flex items-center">
+                      {link.label}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </nav>
+          {/* Desktop Auth */}
+          <div className="hidden md:flex items-center gap-4">
+            {isAuthenticated ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="flex items-center gap-2 p-2"
+                  >
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                        {getInitials(user.email)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="hidden sm:block text-left">
+                      <p className="text-sm font-medium">{user.email}</p>
+                    </div>
+                    <FontAwesomeIcon icon={faChevronDown} className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem onClick={handleCreateReport}>
+                    <FontAwesomeIcon
+                      icon={faFileAlt}
+                      className="mr-2 h-4 w-4"
+                    />
+                    Create Report
+                  </DropdownMenuItem>
+                  {isAdmin && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link
+                          to="/admin"
+                          search={{ tab: undefined }}
+                          className="flex items-center"
+                        >
+                          Admin Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    disabled={logoutMutation.isPending}
+                  >
+                    <FontAwesomeIcon
+                      icon={faSignOutAlt}
+                      className="mr-2 h-4 w-4"
+                    />
+                    {logoutMutation.isPending ? "Logging out..." : "Log out"}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
               <Button onClick={handleLogin}>Sign In</Button>
-            </>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Mobile Menu Button */}
@@ -147,26 +199,96 @@ export function AuthNav() {
       {isMobileMenuOpen && (
         <div className="md:hidden border-t bg-white">
           <nav className="flex flex-col p-4 space-y-3">
-            <NavLinks onLinkClick={() => setIsMobileMenuOpen(false)} isAdmin={isAdmin} />
+            <Link
+              to="/jobs"
+              className="text-sm hover:text-primary px-4 py-2 rounded-full transition-colors"
+              activeProps={{
+                className:
+                  "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
+              }}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Job Postings
+            </Link>
+            <Link
+              to="/directory"
+              className="text-sm hover:text-primary px-4 py-2 rounded-full transition-colors"
+              activeProps={{
+                className:
+                  "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
+              }}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Reports
+            </Link>
+            {navigationLinks.map((link) => (
+              <Link
+                key={link.to}
+                to={link.to}
+                className="text-sm hover:text-primary px-4 py-2 rounded-full transition-colors"
+                activeProps={{
+                  className:
+                    "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
+                }}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                {link.label}
+              </Link>
+            ))}
             <div className="border-t pt-3 mt-3 text-center">
               {isAuthenticated ? (
                 <>
                   <p className="text-sm font-medium mb-1">{user.email}</p>
                   <div className="flex items-center justify-center gap-2 mb-3">
-                    <Badge variant={isAdmin ? "destructive" : "secondary"} className="text-xs">
+                    <Badge
+                      variant={isAdmin ? "destructive" : "secondary"}
+                      className="text-xs"
+                    >
                       {isAdmin ? "Admin" : "User"}
                     </Badge>
                   </div>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      handleLogout();
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className="w-full"
-                  >
-                    Sign Out
-                  </Button>
+                  <div className="space-y-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        handleCreateReport();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="w-full"
+                    >
+                      <FontAwesomeIcon icon={faFileAlt} className="mr-2" />
+                      Create Report
+                    </Button>
+                    {isAdmin && (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          void navigate({
+                            to: "/admin",
+                            search: { tab: undefined },
+                          });
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="w-full"
+                      >
+                        Admin Dashboard
+                        <Badge className="ml-2 text-xs bg-red-100 text-red-800">
+                          Admin
+                        </Badge>
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        handleLogout();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="w-full"
+                    >
+                      <FontAwesomeIcon icon={faSignOutAlt} className="mr-2" />
+                      {logoutMutation.isPending ? "Logging out..." : "Log out"}
+                    </Button>
+                  </div>
                 </>
               ) : (
                 <>

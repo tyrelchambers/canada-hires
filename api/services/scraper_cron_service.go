@@ -15,18 +15,20 @@ type ScraperCronService struct {
 	logger            *log.Logger
 	scraperService    ScraperService
 	scraperJobRepo    repos.ScraperJobRepository
+	statisticsService LMIAStatisticsService
 	jobType           string
 }
 
-func NewScraperCronService(logger *log.Logger, scraperService ScraperService, scraperJobRepo repos.ScraperJobRepository) *ScraperCronService {
+func NewScraperCronService(logger *log.Logger, scraperService ScraperService, scraperJobRepo repos.ScraperJobRepository, statisticsService LMIAStatisticsService) *ScraperCronService {
 	c := cron.New(cron.WithLocation(time.UTC))
 
 	return &ScraperCronService{
-		cron:           c,
-		logger:         logger,
-		scraperService: scraperService,
-		scraperJobRepo: scraperJobRepo,
-		jobType:        "lmia_scraper",
+		cron:              c,
+		logger:            logger,
+		scraperService:    scraperService,
+		scraperJobRepo:    scraperJobRepo,
+		statisticsService: statisticsService,
+		jobType:           "lmia_scraper",
 	}
 }
 
@@ -91,6 +93,15 @@ func (scs *ScraperCronService) runScraper() {
 		scs.logger.Error("Failed to update next scheduled run", "error", err)
 	}
 
+	// Run LMIA statistics aggregation after successful scraping
+	scs.logger.Info("Starting LMIA statistics aggregation after successful scraping")
+	if err := scs.statisticsService.RunDailyAggregation(); err != nil {
+		scs.logger.Error("Failed to run daily LMIA statistics aggregation", "error", err)
+		// Don't fail the entire cron job if statistics fail - just log the error
+	} else {
+		scs.logger.Info("LMIA statistics aggregation completed successfully")
+	}
+
 	scs.logger.Info("Scraper execution completed successfully", "timestamp", now)
 }
 
@@ -146,4 +157,10 @@ func (scs *ScraperCronService) GetLastRunTime() (*time.Time, error) {
 func (scs *ScraperCronService) RunNow() error {
 	scs.logger.Info("Manual scraper execution triggered")
 	return scs.executeScraper()
+}
+
+// RunStatisticsAggregationNow manually triggers the statistics aggregation (useful for testing/admin)
+func (scs *ScraperCronService) RunStatisticsAggregationNow() error {
+	scs.logger.Info("Manual LMIA statistics aggregation triggered")
+	return scs.statisticsService.RunDailyAggregation()
 }

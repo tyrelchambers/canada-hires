@@ -55,7 +55,12 @@ func (ar *adminRouter) Init(r chi.Router) {
 			r.Post("/reject/{job_id}", ar.jobController.RejectJobForReddit)
 			r.Post("/bulk-approve", ar.jobController.BulkApproveJobsForReddit)
 			r.Post("/bulk-reject", ar.jobController.BulkRejectJobsForReddit)
-			r.Get("/stats", ar.jobController.GetRedditApprovalStats)
+		})
+
+		// Scraper and statistics endpoints
+		r.Route("/scraper", func(r chi.Router) {
+			r.Post("/run", ar.jobController.TriggerScraper)
+			r.Post("/statistics", ar.jobController.TriggerStatisticsAggregation)
 		})
 	})
 }

@@ -45,6 +45,21 @@ export const usePostedJobs = (limit = 50, offset = 0) => {
   });
 };
 
+// Get Reddit approval stats
+export const useRedditApprovalStats = () => {
+  const api = useApiClient();
+  return useQuery<RedditApprovalStats>({
+    queryKey: ["admin", "jobs", "reddit", "stats"],
+    queryFn: async (): Promise<RedditApprovalStats> => {
+      const response = await api.get<RedditApprovalStats>(
+        "/admin/jobs/reddit/stats",
+      );
+      return response.data;
+    },
+    staleTime: 30 * 1000, // 30 seconds
+  });
+};
+
 // Approve a job for Reddit posting
 export const useApproveJob = () => {
   const api = useApiClient();
@@ -54,12 +69,15 @@ export const useApproveJob = () => {
     mutationFn: async ({
       jobId,
       approvedBy,
+      subredditIds,
     }: {
       jobId: string;
       approvedBy: string;
+      subredditIds?: string[];
     }) => {
       const response = await api.post(`/admin/jobs/reddit/approve/${jobId}`, {
         approved_by: approvedBy,
+        subreddit_ids: subredditIds,
       } as RedditApprovalRequest);
       return response;
     },
@@ -70,9 +88,6 @@ export const useApproveJob = () => {
       });
       await queryClient.invalidateQueries({
         queryKey: ["admin", "jobs", "reddit", "posted"],
-      });
-      await queryClient.invalidateQueries({
-        queryKey: ["admin", "jobs", "reddit", "stats"],
       });
     },
   });
@@ -108,9 +123,6 @@ export const useRejectJob = () => {
       await queryClient.invalidateQueries({
         queryKey: ["admin", "jobs", "reddit", "posted"],
       });
-      await queryClient.invalidateQueries({
-        queryKey: ["admin", "jobs", "reddit", "stats"],
-      });
     },
   });
 };
@@ -124,14 +136,17 @@ export const useBulkApproveJobs = () => {
     mutationFn: async ({
       jobIds,
       approvedBy,
+      subredditIds,
     }: {
       jobIds: string[];
       approvedBy: string;
+      subredditIds?: string[];
     }) => {
       return api
         .post<BulkApprovalRequest>("/admin/jobs/reddit/bulk-approve", {
           job_ids: jobIds,
           approved_by: approvedBy,
+          subreddit_ids: subredditIds,
         })
         .then((res) => res.data);
     },
@@ -142,9 +157,6 @@ export const useBulkApproveJobs = () => {
       });
       await queryClient.invalidateQueries({
         queryKey: ["admin", "jobs", "reddit", "posted"],
-      });
-      await queryClient.invalidateQueries({
-        queryKey: ["admin", "jobs", "reddit", "stats"],
       });
     },
   });
@@ -181,24 +193,7 @@ export const useBulkRejectJobs = () => {
       await queryClient.invalidateQueries({
         queryKey: ["admin", "jobs", "reddit", "posted"],
       });
-      await queryClient.invalidateQueries({
-        queryKey: ["admin", "jobs", "reddit", "stats"],
-      });
     },
   });
 };
 
-// Get Reddit approval statistics
-export const useRedditApprovalStats = () => {
-  const api = useApiClient();
-  return useQuery({
-    queryKey: ["admin", "jobs", "reddit", "stats"],
-    queryFn: async (): Promise<RedditApprovalStats> => {
-      const response = await api.get<RedditApprovalStats>(
-        "/admin/jobs/reddit/stats",
-      );
-      return response.data;
-    },
-    staleTime: 60 * 1000, // 1 minute
-  });
-};

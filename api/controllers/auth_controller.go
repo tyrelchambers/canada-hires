@@ -2,12 +2,11 @@ package controllers
 
 import (
 	"canada-hires/dto"
+	"canada-hires/helpers"
 	"canada-hires/services"
 	"encoding/json"
-	"net"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/charmbracelet/log"
 	"github.com/go-chi/chi/v5"
@@ -41,7 +40,7 @@ func (c *authController) SendLoginLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clientIP := getClientIP(r)
+	clientIP := helpers.GetClientIP(r)
 
 	if err := c.authService.SendLoginLink(req.Email, clientIP); err != nil {
 		log.Error("Failed to send login link", "error", err, "email", req.Email)
@@ -64,7 +63,7 @@ func (c *authController) VerifyLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clientIP := getClientIP(r)
+	clientIP := helpers.GetClientIP(r)
 	userAgent := r.Header.Get("User-Agent")
 
 	session, _, err := c.authService.VerifyLoginToken(token, clientIP, userAgent)
@@ -119,38 +118,3 @@ func (c *authController) Logout(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func getClientIP(r *http.Request) string {
-	// Check X-Forwarded-For header
-	xForwardedFor := r.Header.Get("X-Forwarded-For")
-	if xForwardedFor != "" {
-		ips := strings.Split(xForwardedFor, ",")
-		if len(ips) > 0 {
-			ip := strings.TrimSpace(ips[0])
-			if isValidIP(ip) {
-				return ip
-			}
-		}
-	}
-
-	// Check X-Real-IP header
-	xRealIP := r.Header.Get("X-Real-IP")
-	if xRealIP != "" && isValidIP(xRealIP) {
-		return xRealIP
-	}
-
-	// Fall back to RemoteAddr
-	ip, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return r.RemoteAddr
-	}
-
-	if isValidIP(ip) {
-		return ip
-	}
-
-	return "127.0.0.1"
-}
-
-func isValidIP(ip string) bool {
-	return net.ParseIP(ip) != nil
-}

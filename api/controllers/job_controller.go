@@ -17,16 +17,18 @@ import (
 )
 
 type JobController struct {
-	jobBankRepo   repos.JobBankRepository
-	jobService    services.JobService
-	redditService services.RedditService
+	jobBankRepo      repos.JobBankRepository
+	jobService       services.JobService
+	redditService    services.RedditService
+	scraperCronService *services.ScraperCronService
 }
 
-func NewJobController(jobBankRepo repos.JobBankRepository, jobService services.JobService, redditService services.RedditService) *JobController {
+func NewJobController(jobBankRepo repos.JobBankRepository, jobService services.JobService, redditService services.RedditService, scraperCronService *services.ScraperCronService) *JobController {
 	return &JobController{
-		jobBankRepo:   jobBankRepo,
-		jobService:    jobService,
-		redditService: redditService,
+		jobBankRepo:        jobBankRepo,
+		jobService:         jobService,
+		redditService:      redditService,
+		scraperCronService: scraperCronService,
 	}
 }
 
@@ -371,7 +373,8 @@ func (jc *JobController) ApproveJobForReddit(w http.ResponseWriter, r *http.Requ
 	}
 
 	var body struct {
-		ApprovedBy string `json:"approved_by"`
+		ApprovedBy   string   `json:"approved_by"`
+		SubredditIDs []string `json:"subreddit_ids,omitempty"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -407,17 +410,19 @@ func (jc *JobController) ApproveJobForReddit(w http.ResponseWriter, r *http.Requ
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
-		if err := jc.redditService.PostJob(ctx, job); err != nil {
+		if err := jc.redditService.PostJob(ctx, job, body.SubredditIDs); err != nil {
 			log.Error("Failed to post approved job to Reddit",
 				"error", err,
 				"job_id", job.ID,
 				"job_title", job.Title,
+				"subreddit_ids", body.SubredditIDs,
 			)
 		} else {
 			log.Info("Successfully posted approved job to Reddit",
 				"job_id", job.ID,
 				"job_title", job.Title,
 				"approved_by", body.ApprovedBy,
+				"subreddit_ids", body.SubredditIDs,
 			)
 		}
 	}()
@@ -490,8 +495,9 @@ func (jc *JobController) RejectJobForReddit(w http.ResponseWriter, r *http.Reque
 // BulkApproveJobsForReddit approves multiple jobs for Reddit posting
 func (jc *JobController) BulkApproveJobsForReddit(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		JobIDs     []string `json:"job_ids"`
-		ApprovedBy string   `json:"approved_by"`
+		JobIDs       []string `json:"job_ids"`
+		ApprovedBy   string   `json:"approved_by"`
+		SubredditIDs []string `json:"subreddit_ids,omitempty"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -534,17 +540,19 @@ func (jc *JobController) BulkApproveJobsForReddit(w http.ResponseWriter, r *http
 				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 				defer cancel()
 
-				if err := jc.redditService.PostJob(ctx, job); err != nil {
+				if err := jc.redditService.PostJob(ctx, job, body.SubredditIDs); err != nil {
 					log.Error("Failed to post bulk approved job to Reddit",
 						"error", err,
 						"job_id", job.ID,
 						"job_title", job.Title,
+						"subreddit_ids", body.SubredditIDs,
 					)
 				} else {
 					log.Info("Successfully posted bulk approved job to Reddit",
 						"job_id", job.ID,
 						"job_title", job.Title,
 						"approved_by", body.ApprovedBy,
+						"subreddit_ids", body.SubredditIDs,
 					)
 				}
 			}(jobID)
@@ -645,16 +653,45 @@ func (jc *JobController) BulkRejectJobsForReddit(w http.ResponseWriter, r *http.
 	json.NewEncoder(w).Encode(response)
 }
 
-// GetRedditApprovalStats returns statistics about Reddit approval workflow
-func (jc *JobController) GetRedditApprovalStats(w http.ResponseWriter, r *http.Request) {
-	// This would need to be implemented in the repository
-	// For now, return basic stats
-	stats := map[string]interface{}{
-		"pending_count":  0, // TODO: Implement in repository
-		"approved_count": 0, // TODO: Implement in repository
-		"rejected_count": 0, // TODO: Implement in repository
+
+// TriggerScraper manually triggers the scraper and statistics aggregation
+func (jc *JobController) TriggerScraper(w http.ResponseWriter, r *http.Request) {
+	log.Info("Manual scraper trigger requested")
+
+	// Trigger the scraper execution
+	err := jc.scraperCronService.RunNow()
+	if err != nil {
+		log.Error("Failed to trigger scraper", "error", err)
+		http.Error(w, "Failed to trigger scraper: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string]interface{}{
+		"message": "Scraper job triggered successfully",
+		"status":  "started",
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(stats)
+	json.NewEncoder(w).Encode(response)
+}
+
+// TriggerStatisticsAggregation manually triggers the statistics aggregation
+func (jc *JobController) TriggerStatisticsAggregation(w http.ResponseWriter, r *http.Request) {
+	log.Info("Manual statistics aggregation trigger requested")
+
+	// Trigger the statistics aggregation
+	err := jc.scraperCronService.RunStatisticsAggregationNow()
+	if err != nil {
+		log.Error("Failed to trigger statistics aggregation", "error", err)
+		http.Error(w, "Failed to trigger statistics aggregation: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string]interface{}{
+		"message": "Statistics aggregation triggered successfully",
+		"status":  "started",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }

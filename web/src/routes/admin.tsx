@@ -2,10 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCurrentUser } from "@/hooks/useAuth";
 import { JobApprovalDashboard } from "@/components/admin/JobApprovalDashboard";
 
+interface Search {
+  tab?: string;
+}
+
 export const Route = createFileRoute("/admin")({
   component: AdminPage,
-  validateSearch: (search) => ({
-    tab: (search.tab as string) || "pending",
+  validateSearch: (search: Search) => ({
+    tab: search?.tab,
   }),
 });
 
@@ -83,7 +87,7 @@ function AdminPage() {
 
       <div className="py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <JobApprovalDashboard user={user} activeTab={tab} />
+          <JobApprovalDashboard user={user} activeTab={tab || "pending"} />
         </div>
       </div>
     </div>

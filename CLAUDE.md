@@ -14,7 +14,6 @@ Key features include:
 - Community reporting system for TFW usage
 - Confidence scoring algorithm based on user verification tiers
 - Public business ratings (Green/Yellow/Red) based on TFW percentage
-- Anti-gaming measures and moderation system
 - Feedback system for data accuracy and platform improvements
 
 See `docs/FUNCTIONAL_OUTLINE.md` and `docs/BUSINESS_DEMOGRAPHICS_FEATURE_SPEC.md` for detailed project requirements and goals.
@@ -66,7 +65,8 @@ This is a full-stack application with separate Go backend API and React frontend
 ## Required Setup
 
 ### Environment Variables
-Create a `.env` file in the `api/` directory with:
+
+#### API Environment (.env in api/ directory)
 ```
 DATABASE_URL=postgres://username:password@localhost/dbname?sslmode=disable
 EMAIL_SMTP_HOST=your_smtp_host
@@ -75,6 +75,13 @@ EMAIL_SMTP_USER=your_email@domain.com
 EMAIL_SMTP_PASSWORD=your_app_password
 JWT_SECRET=your_jwt_secret_key
 ```
+
+#### Frontend Environment (.env in web/ directory)
+```
+VITE_MAPBOX_ACCESS_TOKEN=your_mapbox_access_token_here
+```
+
+**Mapbox Setup**: Create a free account at [mapbox.com](https://mapbox.com) and get an access token for address search functionality. Without this token, the address search will fall back to a regular text input.
 
 ### Database Setup
 1. Install and start PostgreSQL
@@ -142,16 +149,17 @@ JWT_SECRET=your_jwt_secret_key
 - Responsive UI with TailwindCSS and Shadcn/ui
 - API client with authentication headers
 
+✅ **Reporting System**
+- Report model and repository with full CRUD operations
+- Complete report submission endpoints
+- Frontend report submission forms and management
+- Report listing and filtering functionality
+
 ### In Development
 🔄 **Business Directory**
 - Business model and repository (structure exists)
 - Basic business controller and service
 - Frontend business directory page
-
-🔄 **Reporting System**
-- Report model and repository (structure exists)
-- Report submission endpoints
-- Frontend report submission forms
 
 ### Planned (Phase 2)
 📋 **Advanced Features**

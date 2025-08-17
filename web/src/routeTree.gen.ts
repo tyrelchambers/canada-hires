@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TrendsRouteImport } from './routes/trends'
 import { Route as LmiaRouteImport } from './routes/lmia'
 import { Route as JobsRouteImport } from './routes/jobs'
 import { Route as FeedbackRouteImport } from './routes/feedback'
@@ -17,8 +18,15 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ResearchIndexRouteImport } from './routes/research/index'
 import { Route as ResearchWageSubsidiesImmigrantsRouteImport } from './routes/research/wage-subsidies-immigrants'
+import { Route as ReportsCreateRouteImport } from './routes/reports/create'
+import { Route as BusinessAddressRouteImport } from './routes/business/$address'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 
+const TrendsRoute = TrendsRouteImport.update({
+  id: '/trends',
+  path: '/trends',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LmiaRoute = LmiaRouteImport.update({
   id: '/lmia',
   path: '/lmia',
@@ -60,6 +68,16 @@ const ResearchWageSubsidiesImmigrantsRoute =
     path: '/research/wage-subsidies-immigrants',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ReportsCreateRoute = ReportsCreateRouteImport.update({
+  id: '/reports/create',
+  path: '/reports/create',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BusinessAddressRoute = BusinessAddressRouteImport.update({
+  id: '/business/$address',
+  path: '/business/$address',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthLoginRoute = AuthLoginRouteImport.update({
   id: '/auth/login',
   path: '/auth/login',
@@ -73,7 +91,10 @@ export interface FileRoutesByFullPath {
   '/feedback': typeof FeedbackRoute
   '/jobs': typeof JobsRoute
   '/lmia': typeof LmiaRoute
+  '/trends': typeof TrendsRoute
   '/auth/login': typeof AuthLoginRoute
+  '/business/$address': typeof BusinessAddressRoute
+  '/reports/create': typeof ReportsCreateRoute
   '/research/wage-subsidies-immigrants': typeof ResearchWageSubsidiesImmigrantsRoute
   '/research': typeof ResearchIndexRoute
 }
@@ -84,7 +105,10 @@ export interface FileRoutesByTo {
   '/feedback': typeof FeedbackRoute
   '/jobs': typeof JobsRoute
   '/lmia': typeof LmiaRoute
+  '/trends': typeof TrendsRoute
   '/auth/login': typeof AuthLoginRoute
+  '/business/$address': typeof BusinessAddressRoute
+  '/reports/create': typeof ReportsCreateRoute
   '/research/wage-subsidies-immigrants': typeof ResearchWageSubsidiesImmigrantsRoute
   '/research': typeof ResearchIndexRoute
 }
@@ -96,7 +120,10 @@ export interface FileRoutesById {
   '/feedback': typeof FeedbackRoute
   '/jobs': typeof JobsRoute
   '/lmia': typeof LmiaRoute
+  '/trends': typeof TrendsRoute
   '/auth/login': typeof AuthLoginRoute
+  '/business/$address': typeof BusinessAddressRoute
+  '/reports/create': typeof ReportsCreateRoute
   '/research/wage-subsidies-immigrants': typeof ResearchWageSubsidiesImmigrantsRoute
   '/research/': typeof ResearchIndexRoute
 }
@@ -109,7 +136,10 @@ export interface FileRouteTypes {
     | '/feedback'
     | '/jobs'
     | '/lmia'
+    | '/trends'
     | '/auth/login'
+    | '/business/$address'
+    | '/reports/create'
     | '/research/wage-subsidies-immigrants'
     | '/research'
   fileRoutesByTo: FileRoutesByTo
@@ -120,7 +150,10 @@ export interface FileRouteTypes {
     | '/feedback'
     | '/jobs'
     | '/lmia'
+    | '/trends'
     | '/auth/login'
+    | '/business/$address'
+    | '/reports/create'
     | '/research/wage-subsidies-immigrants'
     | '/research'
   id:
@@ -131,7 +164,10 @@ export interface FileRouteTypes {
     | '/feedback'
     | '/jobs'
     | '/lmia'
+    | '/trends'
     | '/auth/login'
+    | '/business/$address'
+    | '/reports/create'
     | '/research/wage-subsidies-immigrants'
     | '/research/'
   fileRoutesById: FileRoutesById
@@ -143,13 +179,23 @@ export interface RootRouteChildren {
   FeedbackRoute: typeof FeedbackRoute
   JobsRoute: typeof JobsRoute
   LmiaRoute: typeof LmiaRoute
+  TrendsRoute: typeof TrendsRoute
   AuthLoginRoute: typeof AuthLoginRoute
+  BusinessAddressRoute: typeof BusinessAddressRoute
+  ReportsCreateRoute: typeof ReportsCreateRoute
   ResearchWageSubsidiesImmigrantsRoute: typeof ResearchWageSubsidiesImmigrantsRoute
   ResearchIndexRoute: typeof ResearchIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/trends': {
+      id: '/trends'
+      path: '/trends'
+      fullPath: '/trends'
+      preLoaderRoute: typeof TrendsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/lmia': {
       id: '/lmia'
       path: '/lmia'
@@ -206,6 +252,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResearchWageSubsidiesImmigrantsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reports/create': {
+      id: '/reports/create'
+      path: '/reports/create'
+      fullPath: '/reports/create'
+      preLoaderRoute: typeof ReportsCreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/business/$address': {
+      id: '/business/$address'
+      path: '/business/$address'
+      fullPath: '/business/$address'
+      preLoaderRoute: typeof BusinessAddressRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/login': {
       id: '/auth/login'
       path: '/auth/login'
@@ -223,7 +283,10 @@ const rootRouteChildren: RootRouteChildren = {
   FeedbackRoute: FeedbackRoute,
   JobsRoute: JobsRoute,
   LmiaRoute: LmiaRoute,
+  TrendsRoute: TrendsRoute,
   AuthLoginRoute: AuthLoginRoute,
+  BusinessAddressRoute: BusinessAddressRoute,
+  ReportsCreateRoute: ReportsCreateRoute,
   ResearchWageSubsidiesImmigrantsRoute: ResearchWageSubsidiesImmigrantsRoute,
   ResearchIndexRoute: ResearchIndexRoute,
 }

@@ -2,77 +2,45 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card, CardContent } from "@/components/ui/card";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faSearch,
   faMapMarkerAlt,
   faFilter,
-  faExternalLinkAlt,
 } from "@fortawesome/free-solid-svg-icons";
-import { useBusinesses } from "@/hooks/useBusinesses";
-
-const getRatingColor = (rating: string) => {
-  switch (rating) {
-    case "green":
-      return "bg-green-100 text-green-800 border-green-200";
-    case "yellow":
-      return "bg-yellow-100 text-yellow-800 border-yellow-200";
-    case "red":
-      return "bg-red-100 text-red-800 border-red-200";
-    default:
-      return "bg-gray-100 text-gray-800 border-gray-200";
-  }
-};
-
-const getRatingLabel = (rating: string) => {
-  switch (rating) {
-    case "green":
-      return "🟢 Canadian-First";
-    case "yellow":
-      return "🟡 Mixed";
-    case "red":
-      return "🔴 TFW-Heavy";
-    default:
-      return "⚪ Unverified";
-  }
-};
+import { useReportsGroupedByAddress } from "@/hooks/useReports";
+import { AuthNav } from "@/components/AuthNav";
+import { StripedBackground } from "@/components/StripedBackground";
+import { BusinessCard } from "@/components/BusinessCard";
 
 function DirectoryPage() {
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState("");
   const [cityFilter, setCityFilter] = useState("");
   const [provinceFilter, setProvinceFilter] = useState("");
-  const [ratingFilter, setRatingFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const [yearFilter, setYearFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [limit] = useState(20);
 
-  // Use the businesses hook
+  // Always use grouped reports with filters
   const {
-    data: directoryData,
+    data: groupedData,
     isLoading: loading,
     error,
-  } = useBusinesses({
+  } = useReportsGroupedByAddress({
     query: searchQuery,
     city: cityFilter,
     province: provinceFilter,
-    rating: ratingFilter,
+    status: statusFilter,
     year: yearFilter,
     limit,
     offset: (currentPage - 1) * limit,
   });
 
-  const businesses = directoryData?.businesses || [];
-  const total = directoryData?.total || 0;
+  const businesses = groupedData?.data || [];
+  const total = groupedData?.count || 0;
 
   // Generate year options (current year back to 2015)
   const currentYear = new Date().getFullYear();
@@ -81,15 +49,11 @@ function DirectoryPage() {
     (_, i) => currentYear - i,
   );
 
-  const handleSearch = () => {
-    setCurrentPage(1);
-  };
-
   const clearFilters = () => {
     setSearchQuery("");
     setCityFilter("");
     setProvinceFilter("");
-    setRatingFilter("");
+    setStatusFilter("");
     setYearFilter("");
     setCurrentPage(1);
   };
@@ -97,249 +61,239 @@ function DirectoryPage() {
   const totalPages = Math.ceil(total / limit);
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Business Directory</h1>
-        <p className="text-gray-600">
-          Community-verified information about business hiring practices in
-          Canada
-        </p>
-      </div>
+    <section className="bg-gray-50 min-h-screen">
+      <AuthNav />
 
-      {/* Search and Filters */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
-          <div className="relative">
-            <FontAwesomeIcon
-              icon={faSearch}
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-            />
-            <Input
-              placeholder="Search businesses..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+      {/* Hero Search Section */}
+      <div className="bg-gradient-to-r from-gray-900 to-gray-700 text-white py-12 relative">
+        <StripedBackground />
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="max-w-4xl mx-auto text-center">
+            <h1 className="text-4xl font-bold mb-4">Find Local Businesses</h1>
+            <p className="text-xl mb-8 text-white">
+              Discover hiring practices and make informed decisions about
+              Canadian businesses
+            </p>
 
-          <Input
-            placeholder="City"
-            value={cityFilter}
-            onChange={(e) => setCityFilter(e.target.value)}
-          />
-
-          <Input
-            placeholder="Province"
-            value={provinceFilter}
-            onChange={(e) => setProvinceFilter(e.target.value)}
-          />
-
-          <select
-            value={ratingFilter}
-            onChange={(e) => setRatingFilter(e.target.value)}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <option value="">All Ratings</option>
-            <option value="green">🟢 Canadian-First</option>
-            <option value="yellow">🟡 Mixed</option>
-            <option value="red">🔴 TFW-Heavy</option>
-            <option value="unverified">⚪ Unverified</option>
-          </select>
-
-          <select
-            value={yearFilter}
-            onChange={(e) => setYearFilter(e.target.value)}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <option value="">All Years</option>
-            {yearOptions.map((year) => (
-              <option key={year} value={year.toString()}>
-                {year}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="flex gap-2">
-          <Button onClick={handleSearch} size="sm">
-            <FontAwesomeIcon icon={faSearch} className="mr-2" />
-            Search
-          </Button>
-          <Button onClick={clearFilters} variant="outline" size="sm">
-            <FontAwesomeIcon icon={faFilter} className="mr-2" />
-            Clear Filters
-          </Button>
-        </div>
-      </div>
-
-      {/* Results */}
-      {loading && (
-        <div className="text-center py-8">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="mt-2 text-gray-600">Loading businesses...</p>
-        </div>
-      )}
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-          <p className="text-red-800">
-            Error:{" "}
-            {error instanceof Error ? error.message : "An error occurred"}
-          </p>
-        </div>
-      )}
-
-      {!loading && !error && (
-        <>
-          <div className="mb-4 text-sm text-gray-600">
-            Showing {businesses.length} of {total} businesses
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm border mb-8">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Business Name</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Rating</TableHead>
-                  <TableHead>Confidence</TableHead>
-                  <TableHead>Reports</TableHead>
-                  <TableHead>TFW Usage</TableHead>
-                  <TableHead>Website</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {businesses.map((business) => (
-                  <TableRow key={business.id}>
-                    <TableCell className="font-medium">
-                      {business.name}
-                    </TableCell>
-                    <TableCell>
-                      {business.address ? (
-                        <div className="flex items-center text-sm">
-                          <FontAwesomeIcon
-                            icon={faMapMarkerAlt}
-                            className="mr-1 text-gray-400"
-                          />
-                          <span>
-                            {business.city && `${business.city}`}
-                            {business.province && `, ${business.province}`}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {business.rating ? (
-                        <Badge
-                          className={getRatingColor(
-                            business.rating.current_rating,
-                          )}
-                          variant="outline"
-                        >
-                          {getRatingLabel(business.rating.current_rating)}
-                        </Badge>
-                      ) : (
-                        <Badge
-                          variant="outline"
-                          className="bg-gray-100 text-gray-800 border-gray-200"
-                        >
-                          ⚪ Unverified
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {business.rating ? (
-                        <span className="font-medium">
-                          {business.rating.confidence_score.toFixed(1)}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {business.rating ? (
-                        business.rating.report_count
-                      ) : (
-                        <span className="text-gray-400">0</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {business.rating &&
-                      business.rating.avg_tfw_percentage !== undefined ? (
-                        <span>
-                          {business.rating.avg_tfw_percentage.toFixed(1)}%
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {business.website ? (
-                        <a
-                          href={business.website}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 inline-flex items-center"
-                        >
-                          <FontAwesomeIcon
-                            icon={faExternalLinkAlt}
-                            className="w-3 h-3"
-                          />
-                        </a>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex justify-center items-center space-x-2">
-              <Button
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-                variant="outline"
-                size="sm"
-              >
-                Previous
-              </Button>
-
-              <span className="text-sm text-gray-600">
-                Page {currentPage} of {totalPages}
-              </span>
-
-              <Button
-                onClick={() =>
-                  setCurrentPage(Math.min(totalPages, currentPage + 1))
-                }
-                disabled={currentPage === totalPages}
-                variant="outline"
-                size="sm"
-              >
-                Next
-              </Button>
+            {/* Main Search Bar */}
+            <div className="bg-white rounded-lg p-4 flex flex-col md:flex-row gap-4 shadow-lg">
+              <div className="flex-1 relative">
+                <FontAwesomeIcon
+                  icon={faSearch}
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                />
+                <Input
+                  placeholder="coffee, restaurants, retail..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 text-lg py-3 border-0 focus:ring-2 focus:ring-red-500"
+                />
+              </div>
+              <div className="flex-1 relative">
+                <FontAwesomeIcon
+                  icon={faMapMarkerAlt}
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                />
+                <Input
+                  placeholder="Toronto, ON"
+                  value={cityFilter}
+                  onChange={(e) => setCityFilter(e.target.value)}
+                  className="pl-10 text-lg py-3 border-0 focus:ring-2 focus:ring-red-500"
+                />
+              </div>
             </div>
-          )}
-        </>
-      )}
-
-      {!loading && !error && businesses.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">
-            No businesses found matching your criteria.
-          </p>
-          <Button onClick={clearFilters} className="mt-4" variant="outline">
-            Clear filters to see all businesses
-          </Button>
+          </div>
         </div>
-      )}
-    </div>
+      </div>
+
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Sidebar Filters */}
+          <div className="lg:w-1/4">
+            <Card className="sticky top-4">
+              <CardContent className="p-6">
+                <h3 className="font-bold text-lg mb-4 flex items-center">
+                  <FontAwesomeIcon icon={faFilter} className="mr-2" />
+                  Filters
+                </h3>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Province
+                    </label>
+                    <Input
+                      placeholder="All Provinces"
+                      value={provinceFilter}
+                      onChange={(e) => setProvinceFilter(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Verification Status
+                    </label>
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="">All Statuses</option>
+                      <option value="approved">Verified</option>
+                      <option value="pending">Under Review</option>
+                      <option value="rejected">Unverified</option>
+                      <option value="flagged">Flagged</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Report Year
+                    </label>
+                    <select
+                      value={yearFilter}
+                      onChange={(e) => setYearFilter(e.target.value)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="">All Years</option>
+                      {yearOptions.map((year) => (
+                        <option key={year} value={year.toString()}>
+                          {year}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <Button
+                    onClick={clearFilters}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Clear All Filters
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Main Content */}
+          <div className="lg:w-3/4">
+            {/* Results Header */}
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">Business Directory</h2>
+            </div>
+
+            {/* Loading State */}
+            {loading && (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+                <p className="mt-4 text-gray-600 text-lg">
+                  Finding businesses...
+                </p>
+              </div>
+            )}
+
+            {/* Error State */}
+            {error && (
+              <Card className="border-red-200 bg-red-50">
+                <CardContent className="p-6">
+                  <p className="text-red-800">
+                    Error:{" "}
+                    {error instanceof Error
+                      ? error.message
+                      : "An error occurred"}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Business Cards */}
+            {!loading && !error && (
+              <>
+                <div className="space-y-4 mb-8">
+                  {businesses.map((business, index) => (
+                    <BusinessCard
+                      key={`${business.business_address}-${index}`}
+                      business={business}
+                    />
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex justify-center items-center space-x-4 bg-white p-6 rounded-lg border">
+                    <Button
+                      onClick={() =>
+                        setCurrentPage(Math.max(1, currentPage - 1))
+                      }
+                      disabled={currentPage === 1}
+                      variant="outline"
+                    >
+                      Previous
+                    </Button>
+
+                    <div className="flex items-center space-x-2">
+                      {Array.from(
+                        { length: Math.min(5, totalPages) },
+                        (_, i) => {
+                          const pageNum = i + 1;
+                          return (
+                            <Button
+                              key={pageNum}
+                              onClick={() => setCurrentPage(pageNum)}
+                              variant={
+                                currentPage === pageNum ? "default" : "outline"
+                              }
+                              size="sm"
+                            >
+                              {pageNum}
+                            </Button>
+                          );
+                        },
+                      )}
+                      {totalPages > 5 && (
+                        <span className="text-gray-500">...</span>
+                      )}
+                    </div>
+
+                    <Button
+                      onClick={() =>
+                        setCurrentPage(Math.min(totalPages, currentPage + 1))
+                      }
+                      disabled={currentPage === totalPages}
+                      variant="outline"
+                    >
+                      Next
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Empty State */}
+            {!loading && !error && businesses.length === 0 && (
+              <Card className="text-center py-12">
+                <CardContent>
+                  <FontAwesomeIcon
+                    icon={faSearch}
+                    className="text-gray-300 text-6xl mb-4"
+                  />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    No businesses found
+                  </h3>
+                  <p className="text-gray-500 mb-4">
+                    Try adjusting your search criteria or location
+                  </p>
+                  <Button onClick={clearFilters} variant="outline">
+                    Clear all filters
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 

@@ -23,7 +23,7 @@ type RedditPostInfo struct {
 }
 
 type RedditService interface {
-	PostJob(ctx context.Context, job *models.JobPosting) error
+	PostJob(ctx context.Context, job *models.JobPosting, subredditIDs ...[]string) error
 	PostJobWithConfig(ctx context.Context, job *models.JobPosting, config *models.RedditConfig, subreddit *models.Subreddit) (*RedditPostInfo, error)
 	TestConnection(ctx context.Context) error
 	GetDefaultConfig() *models.RedditConfig
@@ -77,21 +77,40 @@ func NewRedditService(logger *log.Logger, jobRepo repos.JobBankRepository, subre
 	return service, nil
 }
 
-// PostJob posts a job to all active subreddits
-func (rs *redditService) PostJob(ctx context.Context, job *models.JobPosting) error {
-	// Get all active subreddits
-	subreddits, err := rs.subredditRepo.GetActive()
-	if err != nil {
-		return fmt.Errorf("failed to get active subreddits: %w", err)
+// PostJob posts a job to subreddits (specific IDs if provided, otherwise all active)
+func (rs *redditService) PostJob(ctx context.Context, job *models.JobPosting, subredditIDs ...[]string) error {
+	var subreddits []*models.Subreddit
+	var err error
+
+	// If specific subreddit IDs are provided, use those
+	if len(subredditIDs) > 0 && len(subredditIDs[0]) > 0 {
+		subreddits, err = rs.subredditRepo.GetByIDs(subredditIDs[0])
+		if err != nil {
+			return fmt.Errorf("failed to get subreddits by IDs: %w", err)
+		}
+		rs.logger.Info("Posting to specific subreddits", "subreddit_ids", subredditIDs[0])
+	} else {
+		// Default behavior: get all active subreddits
+		subreddits, err = rs.subredditRepo.GetActive()
+		if err != nil {
+			return fmt.Errorf("failed to get active subreddits: %w", err)
+		}
+		rs.logger.Info("Posting to all active subreddits")
 	}
 
 	if len(subreddits) == 0 {
-		rs.logger.Warn("No active subreddits found for posting")
+		rs.logger.Warn("No subreddits found for posting")
 		return nil
 	}
 
-	// Post to each active subreddit
+	// Post to each subreddit
 	for _, subreddit := range subreddits {
+		// Skip inactive subreddits when using specific IDs
+		if len(subredditIDs) > 0 && len(subredditIDs[0]) > 0 && !subreddit.IsActive {
+			rs.logger.Debug("Skipping inactive subreddit", "subreddit", subreddit.Name, "subreddit_id", subreddit.ID)
+			continue
+		}
+
 		// Create a config for this specific subreddit
 		config := rs.config
 

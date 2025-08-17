@@ -174,6 +174,7 @@ export interface JobStats {
 // Admin interfaces for Reddit approval
 export interface RedditApprovalRequest {
   approved_by: string;
+  subreddit_ids?: string[];
 }
 
 export interface RedditRejectionRequest {
@@ -184,6 +185,7 @@ export interface RedditRejectionRequest {
 export interface BulkApprovalRequest {
   job_ids: string[];
   approved_by: string;
+  subreddit_ids?: string[];
 }
 
 export interface BulkRejectionRequest {
@@ -192,11 +194,6 @@ export interface BulkRejectionRequest {
   reason?: string;
 }
 
-export interface RedditApprovalStats {
-  pending_count: number;
-  approved_count: number;
-  rejected_count: number;
-}
 
 export interface Subreddit {
   id: string;
@@ -219,4 +216,75 @@ export interface UpdateSubredditRequest {
 
 export interface SubredditsResponse {
   subreddits: Subreddit[];
+}
+
+// Report Types
+export interface Report {
+  id: string;
+  user_id: string;
+  business_name: string;
+  business_address: string;
+  report_source: 'employment' | 'observation' | 'public_record';
+  confidence_level?: number; // 1-10 scale
+  additional_notes?: string;
+  status: 'pending' | 'approved' | 'rejected' | 'flagged';
+  moderated_by?: string;
+  moderation_notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Request Types
+export interface CreateReportRequest {
+  business_name: string;
+  business_address: string;
+  report_source: 'employment' | 'observation' | 'public_record';
+  confidence_level?: number;
+  additional_notes?: string;
+}
+
+export interface UpdateReportRequest extends CreateReportRequest {}
+
+export interface ReportListResponse {
+  reports: Report[];
+  pagination: {
+    limit: number;
+    offset: number;
+    total?: number;
+  };
+}
+
+export interface ReportFilters {
+  limit?: number;
+  offset?: number;
+}
+
+export interface ModerationRequest {
+  notes?: string;
+}
+
+export interface ReportsByAddress {
+  business_name: string;
+  business_address: string;
+  report_count: number;
+  confidence_level: number;
+  latest_report: string;
+}
+
+export interface ReportsByAddressResponse {
+  data: ReportsByAddress[];
+  limit: number;
+  offset: number;
+  count: number;
+}
+
+export interface RedditApprovalStats {
+  pending_count: number;
+  approved_count: number;
+  rejected_count: number;
+}
+
+export interface LMIAEmployersByResourceResponse {
+  employers: LMIAEmployer[];
+  count: number;
 }

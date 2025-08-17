@@ -7,11 +7,10 @@ CREATE TABLE IF NOT EXISTS job_subreddit_posts (
     reddit_post_url TEXT, -- Full URL to the Reddit post
     posted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    
+
     -- Foreign key constraints
-    FOREIGN KEY (job_posting_id) REFERENCES job_postings(id) ON DELETE CASCADE,
     FOREIGN KEY (subreddit_id) REFERENCES subreddits(id) ON DELETE CASCADE,
-    
+
     -- Unique constraint to prevent duplicate posts
     UNIQUE(job_posting_id, subreddit_id)
 );

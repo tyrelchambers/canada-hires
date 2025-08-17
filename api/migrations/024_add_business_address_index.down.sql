@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS idx_reports_business_address;

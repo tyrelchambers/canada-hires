@@ -13,6 +13,7 @@ type SubredditRepository interface {
 	GetAll() ([]*models.Subreddit, error)
 	GetActive() ([]*models.Subreddit, error)
 	GetByID(id string) (*models.Subreddit, error)
+	GetByIDs(ids []string) ([]*models.Subreddit, error)
 	GetByName(name string) (*models.Subreddit, error)
 	Create(subreddit *models.Subreddit) error
 	Update(id string, updates *models.UpdateSubredditRequest) error
@@ -85,6 +86,35 @@ func (r *subredditRepository) GetByID(id string) (*models.Subreddit, error) {
 	}
 	
 	return subreddit, nil
+}
+
+func (r *subredditRepository) GetByIDs(ids []string) ([]*models.Subreddit, error) {
+	if len(ids) == 0 {
+		return []*models.Subreddit{}, nil
+	}
+
+	subreddits := []*models.Subreddit{}
+	query, args, err := sqlx.In(`
+		SELECT id, name, is_active, post_count, 
+		       last_posted_at, created_at, updated_at
+		FROM subreddits 
+		WHERE id IN (?)
+		ORDER BY created_at ASC
+	`, ids)
+	
+	if err != nil {
+		log.Error("Failed to build IN query for subreddits", "error", err)
+		return nil, err
+	}
+	
+	query = r.db.Rebind(query)
+	err = r.db.Select(&subreddits, query, args...)
+	if err != nil {
+		log.Error("Failed to get subreddits by IDs", "error", err, "ids", ids)
+		return nil, err
+	}
+	
+	return subreddits, nil
 }
 
 func (r *subredditRepository) GetByName(name string) (*models.Subreddit, error) {
