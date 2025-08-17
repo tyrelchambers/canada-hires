@@ -112,7 +112,6 @@ func InitDB() Database {
 	return db
 }
 
-
 // GetInstance returns the global database instance
 // This can be called from any package to get access to the database
 func GetInstance() Database {

@@ -20,6 +20,7 @@ import (
 
 func main() {
 	godotenv.Load()
+	log.SetLevel(log.DebugLevel)
 
 	database := db.InitDB()
 	defer database.Close()
