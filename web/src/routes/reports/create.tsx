@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { AddressSearch } from "@/components/AddressSearch";
 import { useCreateReport } from "@/hooks/useReports";
+import { useCurrentUser } from "@/hooks/useAuth";
 import { CreateReportRequest } from "@/types";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -19,6 +20,7 @@ import {
 
 function CreateReportPage() {
   const navigate = useNavigate();
+  const { data: user, isLoading, error } = useCurrentUser();
   const createReportMutation = useCreateReport();
 
   const [formData, setFormData] = useState<CreateReportRequest>({
@@ -51,6 +53,40 @@ function CreateReportPage() {
       [field]: value,
     }));
   };
+
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect to login if not authenticated
+  if (error || !user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            Sign In Required
+          </h1>
+          <p className="text-gray-600 mb-4">
+            Please sign in to submit a business report.
+          </p>
+          <a
+            href="/auth/login"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+          >
+            Go to Sign In
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -200,7 +236,9 @@ function CreateReportPage() {
             {createReportMutation.isError && (
               <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
                 <p className="text-red-800">
-                  Error submitting report. Please try again.
+                  {createReportMutation.error?.response?.status === 401
+                    ? "Please sign in to submit a report."
+                    : "Error submitting report. Please try again."}
                 </p>
               </div>
             )}

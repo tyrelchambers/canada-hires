@@ -17,6 +17,18 @@ export function useApiClient(): AxiosInstance {
       return config;
     });
 
+    // Add response interceptor to handle 401 errors
+    client.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401) {
+          // Redirect to login on 401 Unauthorized
+          window.location.href = "/auth/login";
+        }
+        return Promise.reject(error);
+      }
+    );
+
     return client;
   }, []);
 
