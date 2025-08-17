@@ -38,19 +38,6 @@ function BusinessDetailPage() {
 
   const reports = reportsData?.reports || [];
 
-  const getRatingColor = (rating: string) => {
-    switch (rating) {
-      case "green":
-        return "bg-green-500";
-      case "yellow":
-        return "bg-yellow-500";
-      case "red":
-        return "bg-red-500";
-      default:
-        return "bg-gray-500";
-    }
-  };
-
   const getConfidenceColor = (confidence: number) => {
     if (confidence >= 80) return "text-green-600";
     if (confidence >= 60) return "text-yellow-600";
@@ -230,22 +217,9 @@ function BusinessDetailPage() {
                     </div>
                     <div className="flex items-center space-x-4">
                       <Badge variant="secondary">Business</Badge>
-                      <Badge
-                        variant={
-                          businessRating.rating === "green"
-                            ? "default"
-                            : businessRating.rating === "yellow"
-                              ? "secondary"
-                              : "destructive"
-                        }
-                      >
-                        {businessRating.label}
-                      </Badge>
+                      <Badge>{businessRating.label}</Badge>
                     </div>
                   </div>
-                  <div
-                    className={`w-6 h-6 rounded-full ${getRatingColor(businessRating.rating)}`}
-                  ></div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -368,17 +342,17 @@ function BusinessDetailPage() {
             </Card>
 
             {/* Community Reports */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
+            <div>
+              <header>
+                <h3 className="flex font-bold items-center space-x-2">
                   <FontAwesomeIcon icon={faUsers} className="w-5 h-5" />
                   <span>Community Reports</span>
-                </CardTitle>
-                <CardDescription>
+                </h3>
+                <p className="text-muted-foreground">
                   Reports from verified and unverified community members
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+                </p>
+              </header>
+              <div className="space-y-4 mt-6">
                 {reports.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-slate-500">
@@ -395,7 +369,7 @@ function BusinessDetailPage() {
                     return (
                       <div
                         key={report.id}
-                        className="border rounded-lg p-4 space-y-3"
+                        className="border rounded-lg p-4 space-y-3 bg-white"
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex items-center space-x-3">
@@ -443,8 +417,8 @@ function BusinessDetailPage() {
                     );
                   })
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
 
           {/* Sidebar */}
@@ -457,14 +431,6 @@ function BusinessDetailPage() {
               <CardContent className="space-y-3">
                 <Button className="w-full" asChild>
                   <Link to="/reports/create">Submit Report</Link>
-                </Button>
-                <Button variant="outline" className="w-full bg-transparent">
-                  <FontAwesomeIcon icon={faShare} className="mr-2" />
-                  Share Business
-                </Button>
-                <Button variant="outline" className="w-full bg-transparent">
-                  <FontAwesomeIcon icon={faFlag} className="mr-2" />
-                  Flag Inaccuracy
                 </Button>
               </CardContent>
             </Card>
