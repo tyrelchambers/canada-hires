@@ -3,8 +3,6 @@ import {
   useDailyTrends,
   useTrendsSummary,
   useRegionalStats,
-  LMIAStatistics,
-  RegionData,
 } from "@/hooks/useLMIATrends";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -95,9 +93,9 @@ function TrendsPage() {
   return (
     <section>
       <AuthNav />
-      <div className="container mx-auto py-6 space-y-6">
+      <div className="container mx-auto py-6 space-y-6 px-4">
         {/* Header */}
-        <div className="space-y-2">
+        <div className="space-y-2 my-10">
           <h1 className="text-3xl font-bold tracking-tight">LMIA Job Trends</h1>
           <p className="text-muted-foreground">
             Track Temporary Foreign Worker (TFW) job posting trends across
@@ -107,7 +105,7 @@ function TrendsPage() {
 
         {/* Summary Stats */}
         {trendsSummary.data && (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-8 grid-cols-2 lg:grid-cols-4 my-10">
             <Stat
               label="Jobs Today"
               value={String(trendsSummary.data.total_jobs_today)}
@@ -153,17 +151,6 @@ function TrendsPage() {
               <SelectItem value="year">Past Year</SelectItem>
             </SelectContent>
           </Select>
-
-          <Button
-            variant="outline"
-            onClick={() => {
-              void dailyTrends.refetch();
-              void trendsSummary.refetch();
-              void regionalStats.refetch();
-            }}
-          >
-            Refresh Data
-          </Button>
         </div>
 
         {/* Job Trends Section */}
