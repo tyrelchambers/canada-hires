@@ -34,7 +34,8 @@ export function AddressSearch({
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Initialize Mapbox client
-  const mapboxToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN as string;
+  const mapboxToken =
+    "pk.eyJ1IjoidHlyZWxjaGFtYmVycyIsImEiOiJjbGRrdGczcXcwcWdyM29tc2o0ZDJiNnk3In0.HoN1yA76prPJwxBpDuaRLw";
   const geocodingClient = mapboxToken
     ? mbxGeocoding({ accessToken: mapboxToken })
     : null;
