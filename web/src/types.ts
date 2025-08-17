@@ -277,3 +277,8 @@ export interface ReportsByAddressResponse {
   offset: number;
   count: number;
 }
+
+export interface LMIAEmployersByResourceResponse {
+  employers: LMIAEmployer[];
+  count: number;
+}

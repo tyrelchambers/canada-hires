@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import {
-  useDailyTrends,
   useTrendsSummary,
   useRegionalStats,
+  useTrendsForPeriod,
 } from "@/hooks/useLMIATrends";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -12,7 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
 import { LMIATrendsChart } from "@/components/charts/LMIATrendsChart";
 import { LMIARegionalChart } from "@/components/charts/LMIARegionalChart";
 import { useState } from "react";
@@ -28,67 +27,34 @@ import { AuthNav } from "@/components/AuthNav";
 export const Route = createFileRoute("/trends")({
   component: TrendsPage,
   head: () => ({
+    title: "LMIA Job Trends - JobWatch Canada",
     meta: [
       {
-        title: "LMIA Job Trends - JobWatch Canada",
-        description:
+        name: "description",
+        content:
           "Track Temporary Foreign Worker (TFW) job posting trends across Canada with interactive charts and statistics.",
       },
     ],
   }),
 });
 
+type TimeRange = "week" | "month" | "quarter" | "year";
+
+const timeRangeMap: Record<TimeRange, string> = {
+  week: "Past Week",
+  month: "Past Month",
+  quarter: "Past Quarter",
+  year: "Past Year",
+};
+
 function TrendsPage() {
-  const [timeRange, setTimeRange] = useState<
-    "week" | "month" | "quarter" | "year"
-  >("month");
+  const [timeRange, setTimeRange] = useState<TimeRange>("month");
 
   const trendsSummary = useTrendsSummary();
-
-  // Get date ranges based on selected time range
-  const getDateRange = () => {
-    const now = new Date();
-    const endDate = now.toISOString().split("T")[0];
-    let startDate: Date;
-
-    switch (timeRange) {
-      case "week":
-        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        break;
-      case "month":
-        startDate = new Date(
-          now.getFullYear(),
-          now.getMonth() - 1,
-          now.getDate(),
-        );
-        break;
-      case "quarter":
-        startDate = new Date(
-          now.getFullYear(),
-          now.getMonth() - 3,
-          now.getDate(),
-        );
-        break;
-      case "year":
-        startDate = new Date(
-          now.getFullYear() - 1,
-          now.getMonth(),
-          now.getDate(),
-        );
-        break;
-    }
-
-    return {
-      start_date: startDate.toISOString().split("T")[0],
-      end_date: endDate,
-    };
-  };
-
-  const dateRange = getDateRange();
-  const dailyTrends = useDailyTrends(dateRange);
   const regionalStats = useRegionalStats(timeRange);
+  const currentTrends = useTrendsForPeriod(timeRange);
 
-  const currentTrends = dailyTrends;
+  const chartTitle = timeRangeMap[timeRange];
 
   return (
     <section>
@@ -137,7 +103,7 @@ function TrendsPage() {
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <Select
             value={timeRange}
-            onValueChange={(value: "week" | "month" | "quarter" | "year") =>
+            onValueChange={(value: TimeRange) =>
               setTimeRange(value)
             }
           >
@@ -157,14 +123,7 @@ function TrendsPage() {
         <div className="space-y-4">
           <div>
             <h2 className="text-2xl font-semibold tracking-tight">
-              Job Trends -{" "}
-              {timeRange === "week"
-                ? "Past Week"
-                : timeRange === "month"
-                  ? "Past Month"
-                  : timeRange === "quarter"
-                    ? "Past Quarter"
-                    : "Past Year"}
+              Job Trends - {chartTitle}
             </h2>
             <p className="text-sm text-muted-foreground">
               Daily LMIA job postings and employer trends over time
@@ -204,13 +163,7 @@ function TrendsPage() {
             </h2>
             <p className="text-sm text-muted-foreground">
               Top provinces and cities with the most LMIA job postings in the{" "}
-              {timeRange === "week"
-                ? "past week"
-                : timeRange === "month"
-                  ? "past month"
-                  : timeRange === "quarter"
-                    ? "past quarter"
-                    : "past year"}
+              {timeRangeMap[timeRange].toLowerCase()}
             </p>
           </div>
 
@@ -243,46 +196,14 @@ function TrendsPage() {
             <div className="grid md:grid-cols-2 gap-4">
               <LMIARegionalChart
                 data={regionalStats.data?.top_provinces || []}
-                title={`Top Provinces - ${
-                  timeRange === "week"
-                    ? "Past Week"
-                    : timeRange === "month"
-                      ? "Past Month"
-                      : timeRange === "quarter"
-                        ? "Past Quarter"
-                        : "Past Year"
-                }`}
-                description={`Provinces with the most LMIA job postings in the ${
-                  timeRange === "week"
-                    ? "past week"
-                    : timeRange === "month"
-                      ? "past month"
-                      : timeRange === "quarter"
-                        ? "past quarter"
-                        : "past year"
-                }`}
+                title={`Top Provinces - ${chartTitle}`}
+                description={`Provinces with the most LMIA job postings in the ${timeRangeMap[timeRange].toLowerCase()}`}
                 type="province"
               />
               <LMIARegionalChart
                 data={regionalStats.data?.top_cities || []}
-                title={`Top Cities - ${
-                  timeRange === "week"
-                    ? "Past Week"
-                    : timeRange === "month"
-                      ? "Past Month"
-                      : timeRange === "quarter"
-                        ? "Past Quarter"
-                        : "Past Year"
-                }`}
-                description={`Cities with the most LMIA job postings in the ${
-                  timeRange === "week"
-                    ? "past week"
-                    : timeRange === "month"
-                      ? "past month"
-                      : timeRange === "quarter"
-                        ? "past quarter"
-                        : "past year"
-                }`}
+                title={`Top Cities - ${chartTitle}`}
+                description={`Cities with the most LMIA job postings in the ${timeRangeMap[timeRange].toLowerCase()}`}
                 type="city"
               />
             </div>

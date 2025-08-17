@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, UseQueryResult } from "@tanstack/react-query";
 import { useApiClient } from "./useApiClient";
 
 export interface RegionData {
@@ -41,9 +41,9 @@ interface TrendsFilters {
   limit?: number;
 }
 
-export const useDailyTrends = (filters?: TrendsFilters) => {
+export const useDailyTrends = (filters?: TrendsFilters, enabled = true) => {
   const apiClient = useApiClient();
-  return useQuery({
+  return useQuery<TrendsResponse>({
     queryKey: ["lmia-daily-trends", filters],
     queryFn: async (): Promise<TrendsResponse> => {
       const params = new URLSearchParams();
@@ -58,13 +58,14 @@ export const useDailyTrends = (filters?: TrendsFilters) => {
       return response.data;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled,
   });
 };
 
-export const useMonthlyTrends = (filters?: TrendsFilters) => {
+export const useMonthlyTrends = (filters?: TrendsFilters, enabled = true) => {
   const apiClient = useApiClient();
 
-  return useQuery({
+  return useQuery<TrendsResponse>({
     queryKey: ["lmia-monthly-trends", filters],
     queryFn: async (): Promise<TrendsResponse> => {
       const params = new URLSearchParams();
@@ -79,13 +80,14 @@ export const useMonthlyTrends = (filters?: TrendsFilters) => {
       return response.data;
     },
     staleTime: 10 * 60 * 1000, // 10 minutes
+    enabled,
   });
 };
 
 export const useTrendsSummary = () => {
   const apiClient = useApiClient();
 
-  return useQuery({
+  return useQuery<TrendsSummary>({
     queryKey: ["lmia-trends-summary"],
     queryFn: async (): Promise<TrendsSummary> => {
       const response = await apiClient.get<TrendsSummary>(
@@ -101,7 +103,7 @@ export const useTrendsSummary = () => {
 export const useTrendsForPeriod = (
   period: "week" | "month" | "quarter" | "year",
   type: "daily" | "monthly" = "daily",
-) => {
+): UseQueryResult<TrendsResponse, Error> => {
   const getDateRange = () => {
     const now = new Date();
     const endDate = now.toISOString().split("T")[0]; // Today
@@ -142,23 +144,24 @@ export const useTrendsForPeriod = (
 
   const dateRange = getDateRange();
 
-  // Always call both hooks but only return the one we need
-  // This ensures we don't violate the Rules of Hooks
-  const dailyResult = useDailyTrends(type === "daily" ? dateRange : undefined);
-  const monthlyResult = useMonthlyTrends(
-    type === "monthly" ? dateRange : undefined,
-  );
+  const dailyResult = useDailyTrends(dateRange, type === "daily");
+  const monthlyResult = useMonthlyTrends(dateRange, type === "monthly");
 
   return type === "daily" ? dailyResult : monthlyResult;
 };
+
+export interface RegionalStatistics {
+  top_provinces: RegionData[];
+  top_cities: RegionData[];
+}
 
 // Hook to get regional statistics for a specific timeframe
 export const useRegionalStats = (timeframe: "week" | "month" | "quarter" | "year") => {
   const apiClient = useApiClient();
   
-  return useQuery({
+  return useQuery<RegionalStatistics>({
     queryKey: ["regional-stats", timeframe],
-    queryFn: async () => {
+    queryFn: async (): Promise<RegionalStatistics> => {
       const response = await apiClient.get(
         `/lmia/statistics/regional?timeframe=${timeframe}`,
       );
