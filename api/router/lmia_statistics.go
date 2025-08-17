@@ -15,6 +15,7 @@ func LMIAStatisticsRoutes(controller controllers.LMIAStatisticsController, authM
 			r.Get("/daily", controller.GetDailyTrends)
 			r.Get("/monthly", controller.GetMonthlyTrends)
 			r.Get("/summary", controller.GetTrendsSummary)
+			r.Get("/regional", controller.GetRegionalStats)
 
 			// Admin routes (require authentication)
 			r.Group(func(r chi.Router) {

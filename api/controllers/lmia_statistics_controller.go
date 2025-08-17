@@ -16,6 +16,7 @@ type LMIAStatisticsController interface {
 	GetDailyTrends(w http.ResponseWriter, r *http.Request)
 	GetMonthlyTrends(w http.ResponseWriter, r *http.Request)
 	GetTrendsSummary(w http.ResponseWriter, r *http.Request)
+	GetRegionalStats(w http.ResponseWriter, r *http.Request)
 
 	// Admin endpoints (for manual operations)
 	BackfillHistoricalStatistics(w http.ResponseWriter, r *http.Request)
@@ -204,6 +205,45 @@ func (c *lmiaStatisticsController) GenerateStatisticsForDateRange(w http.Respons
 	json.NewEncoder(w).Encode(map[string]string{
 		"message": "Statistics generated successfully for date range",
 	})
+}
+
+// GetRegionalStats returns regional statistics for a given timeframe
+func (c *lmiaStatisticsController) GetRegionalStats(w http.ResponseWriter, r *http.Request) {
+	// Parse timeframe parameter
+	timeframe := r.URL.Query().Get("timeframe")
+	if timeframe == "" {
+		http.Error(w, "timeframe parameter is required (week, month, quarter, year)", http.StatusBadRequest)
+		return
+	}
+
+	// Calculate date range based on timeframe
+	now := time.Now()
+	var startDate time.Time
+	
+	switch timeframe {
+	case "week":
+		startDate = now.AddDate(0, 0, -7)
+	case "month":
+		startDate = now.AddDate(0, -1, 0)
+	case "quarter":
+		startDate = now.AddDate(0, -3, 0)
+	case "year":
+		startDate = now.AddDate(-1, 0, 0)
+	default:
+		http.Error(w, "Invalid timeframe. Must be: week, month, quarter, or year", http.StatusBadRequest)
+		return
+	}
+
+	// Get regional statistics for the timeframe
+	regionalStats, err := c.service.GetRegionalStatsByTimeframe(startDate, now)
+	if err != nil {
+		log.Error("Failed to get regional statistics", "error", err, "timeframe", timeframe)
+		http.Error(w, "Failed to get regional statistics", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(regionalStats)
 }
 
 // RunDailyAggregation manually runs the daily aggregation job (admin only)

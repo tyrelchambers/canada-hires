@@ -22,6 +22,7 @@ type LMIAStatisticsService interface {
 	GetStatisticsByDateRange(startDate, endDate time.Time, periodType models.PeriodType) ([]*models.LMIAStatistics, error)
 	GetLatestStatistics(periodType models.PeriodType, limit int) ([]*models.LMIAStatistics, error)
 	GetTrendsSummary() (*TrendsSummary, error)
+	GetRegionalStatsByTimeframe(startDate, endDate time.Time) (*RegionalStats, error)
 	
 	// Daily aggregation job
 	RunDailyAggregation() error
@@ -35,6 +36,13 @@ type TrendsSummary struct {
 	TopProvincesToday   []models.RegionData   `json:"top_provinces_today"`
 	TopCitiesToday      []models.RegionData   `json:"top_cities_today"`
 	RecentTrends        []*models.LMIAStatistics `json:"recent_trends"`
+}
+
+type RegionalStats struct {
+	TopProvinces []models.RegionData `json:"top_provinces"`
+	TopCities    []models.RegionData `json:"top_cities"`
+	Timeframe    string              `json:"timeframe"`
+	TotalJobs    int                 `json:"total_jobs"`
 }
 
 type lmiaStatisticsService struct {
@@ -243,4 +251,63 @@ func (s *lmiaStatisticsService) RunDailyAggregation() error {
 
 	log.Info("Daily aggregation job completed successfully")
 	return nil
+}
+
+// GetRegionalStatsByTimeframe gets aggregated regional statistics for a specific timeframe
+func (s *lmiaStatisticsService) GetRegionalStatsByTimeframe(startDate, endDate time.Time) (*RegionalStats, error) {
+	// Get regional stats directly from job postings for the date range
+	provinceCounts, cityCounts, err := s.repo.GetRegionalStatsFromJobs(startDate, endDate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get regional stats from jobs: %w", err)
+	}
+
+	// Convert to sorted slices
+	topProvinces := make([]models.RegionData, 0, len(provinceCounts))
+	for name, count := range provinceCounts {
+		topProvinces = append(topProvinces, models.RegionData{
+			Name:  name,
+			Count: count,
+		})
+	}
+
+	topCities := make([]models.RegionData, 0, len(cityCounts))
+	for name, count := range cityCounts {
+		topCities = append(topCities, models.RegionData{
+			Name:  name,
+			Count: count,
+		})
+	}
+
+	// Calculate total jobs
+	totalJobs := 0
+	for _, count := range provinceCounts {
+		totalJobs += count
+	}
+
+	// Sort by count (descending) and limit to top 10
+	topProvinces = sortAndLimitRegions(topProvinces, 10)
+	topCities = sortAndLimitRegions(topCities, 10)
+
+	return &RegionalStats{
+		TopProvinces: topProvinces,
+		TopCities:    topCities,
+		TotalJobs:    totalJobs,
+	}, nil
+}
+
+// sortAndLimitRegions sorts regions by count (descending) and limits to specified count
+func sortAndLimitRegions(regions []models.RegionData, limit int) []models.RegionData {
+	// Simple bubble sort for small arrays
+	for i := 0; i < len(regions)-1; i++ {
+		for j := 0; j < len(regions)-i-1; j++ {
+			if regions[j].Count < regions[j+1].Count {
+				regions[j], regions[j+1] = regions[j+1], regions[j]
+			}
+		}
+	}
+	
+	if len(regions) > limit {
+		return regions[:limit]
+	}
+	return regions
 }

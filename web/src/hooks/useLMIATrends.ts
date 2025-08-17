@@ -151,3 +151,19 @@ export const useTrendsForPeriod = (
 
   return type === "daily" ? dailyResult : monthlyResult;
 };
+
+// Hook to get regional statistics for a specific timeframe
+export const useRegionalStats = (timeframe: "week" | "month" | "quarter" | "year") => {
+  const apiClient = useApiClient();
+  
+  return useQuery({
+    queryKey: ["regional-stats", timeframe],
+    queryFn: async () => {
+      const response = await apiClient.get(
+        `/lmia/statistics/regional?timeframe=${timeframe}`,
+      );
+      return response.data;
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};

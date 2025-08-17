@@ -160,15 +160,7 @@ export function AuthNav() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <>
-                <div className="text-right">
-                  <p className="text-sm font-medium">JobWatch Canada</p>
-                  <p className="text-xs text-gray-600">
-                    Sign in to access admin features
-                  </p>
-                </div>
-                <Button onClick={handleLogin}>Sign In</Button>
-              </>
+              <Button onClick={handleLogin}>Sign In</Button>
             )}
           </div>
         </div>

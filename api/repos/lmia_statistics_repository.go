@@ -3,6 +3,7 @@ package repos
 import (
 	"canada-hires/models"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -28,6 +29,9 @@ type LMIAStatisticsRepository interface {
 	// Utility
 	DeleteStatistics(id string) error
 	GetStatisticsByID(id string) (*models.LMIAStatistics, error)
+	
+	// Regional stats from raw job data
+	GetRegionalStatsFromJobs(startDate, endDate time.Time) (map[string]int, map[string]int, error)
 }
 
 type lmiaStatisticsRepository struct {
@@ -208,52 +212,38 @@ func (r *lmiaStatisticsRepository) GetJobStatisticsForDate(date time.Time) (*mod
 		return nil, fmt.Errorf("failed to get job statistics for date: %w", err)
 	}
 
-	// Get province counts
+	// Get province and city counts by parsing location strings
 	data.ProvincesCounts = make(map[string]int)
-	provinceQuery := `
-		SELECT province, COUNT(*) as count
-		FROM job_postings 
-		WHERE posting_date >= $1 AND posting_date <= $2
-		AND is_tfw = true AND has_lmia = true AND province IS NOT NULL
-		GROUP BY province
-	`
-	rows, err := r.db.Query(provinceQuery, startOfDay, endOfDay)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get province counts: %w", err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var province string
-		var count int
-		if err := rows.Scan(&province, &count); err != nil {
-			return nil, fmt.Errorf("failed to scan province count: %w", err)
-		}
-		data.ProvincesCounts[province] = count
-	}
-
-	// Get city counts
 	data.CitiesCounts = make(map[string]int)
-	cityQuery := `
-		SELECT city, COUNT(*) as count
+	
+	locationQuery := `
+		SELECT location, COUNT(*) as count
 		FROM job_postings 
 		WHERE posting_date >= $1 AND posting_date <= $2
-		AND is_tfw = true AND has_lmia = true AND city IS NOT NULL
-		GROUP BY city
+		AND is_tfw = true AND has_lmia = true AND location IS NOT NULL AND location != ''
+		GROUP BY location
 	`
-	rows, err = r.db.Query(cityQuery, startOfDay, endOfDay)
+	rows, err := r.db.Query(locationQuery, startOfDay, endOfDay)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get city counts: %w", err)
+		return nil, fmt.Errorf("failed to get location counts: %w", err)
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		var city string
+		var location string
 		var count int
-		if err := rows.Scan(&city, &count); err != nil {
-			return nil, fmt.Errorf("failed to scan city count: %w", err)
+		if err := rows.Scan(&location, &count); err != nil {
+			return nil, fmt.Errorf("failed to scan location count: %w", err)
 		}
-		data.CitiesCounts[city] = count
+		
+		// Parse province and city from location string (e.g., "Abbotsford British Columbia")
+		province, city := parseLocationString(location)
+		if province != "" {
+			data.ProvincesCounts[province] += count
+		}
+		if city != "" {
+			data.CitiesCounts[city] += count
+		}
 	}
 
 	return &data, nil
@@ -283,52 +273,38 @@ func (r *lmiaStatisticsRepository) GetJobStatisticsForMonth(year int, month int)
 		return nil, fmt.Errorf("failed to get job statistics for month: %w", err)
 	}
 
-	// Get province counts
+	// Get province and city counts by parsing location strings
 	data.ProvincesCounts = make(map[string]int)
-	provinceQuery := `
-		SELECT province, COUNT(*) as count
-		FROM job_postings 
-		WHERE posting_date >= $1 AND posting_date <= $2
-		AND is_tfw = true AND has_lmia = true AND province IS NOT NULL
-		GROUP BY province
-	`
-	rows, err := r.db.Query(provinceQuery, startOfMonth, endOfMonth)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get province counts: %w", err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var province string
-		var count int
-		if err := rows.Scan(&province, &count); err != nil {
-			return nil, fmt.Errorf("failed to scan province count: %w", err)
-		}
-		data.ProvincesCounts[province] = count
-	}
-
-	// Get city counts
 	data.CitiesCounts = make(map[string]int)
-	cityQuery := `
-		SELECT city, COUNT(*) as count
+	
+	locationQuery := `
+		SELECT location, COUNT(*) as count
 		FROM job_postings 
 		WHERE posting_date >= $1 AND posting_date <= $2
-		AND is_tfw = true AND has_lmia = true AND city IS NOT NULL
-		GROUP BY city
+		AND is_tfw = true AND has_lmia = true AND location IS NOT NULL AND location != ''
+		GROUP BY location
 	`
-	rows, err = r.db.Query(cityQuery, startOfMonth, endOfMonth)
+	rows, err := r.db.Query(locationQuery, startOfMonth, endOfMonth)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get city counts: %w", err)
+		return nil, fmt.Errorf("failed to get location counts: %w", err)
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		var city string
+		var location string
 		var count int
-		if err := rows.Scan(&city, &count); err != nil {
-			return nil, fmt.Errorf("failed to scan city count: %w", err)
+		if err := rows.Scan(&location, &count); err != nil {
+			return nil, fmt.Errorf("failed to scan location count: %w", err)
 		}
-		data.CitiesCounts[city] = count
+		
+		// Parse province and city from location string (e.g., "Abbotsford British Columbia")
+		province, city := parseLocationString(location)
+		if province != "" {
+			data.ProvincesCounts[province] += count
+		}
+		if city != "" {
+			data.CitiesCounts[city] += count
+		}
 	}
 
 	return &data, nil
@@ -370,4 +346,140 @@ func (r *lmiaStatisticsRepository) GetStatisticsByID(id string) (*models.LMIASta
 	}
 
 	return &stats, nil
+}
+
+// parseLocationString parses a location string like "Abbotsford British Columbia" 
+// and returns the province and city separately
+func parseLocationString(location string) (province, city string) {
+	if location == "" {
+		return "", ""
+	}
+
+	// Canadian provinces and territories (full names and common abbreviations)
+	provinces := map[string]string{
+		"alberta":                     "Alberta",
+		"british columbia":            "British Columbia",
+		"bc":                         "British Columbia", 
+		"manitoba":                   "Manitoba",
+		"new brunswick":              "New Brunswick",
+		"newfoundland and labrador":  "Newfoundland and Labrador",
+		"northwest territories":      "Northwest Territories",
+		"nova scotia":                "Nova Scotia",
+		"nunavut":                   "Nunavut",
+		"ontario":                   "Ontario",
+		"prince edward island":       "Prince Edward Island",
+		"pei":                       "Prince Edward Island",
+		"quebec":                    "Quebec",
+		"saskatchewan":              "Saskatchewan",
+		"yukon":                     "Yukon",
+		"yukon territory":           "Yukon",
+	}
+
+	// Clean and normalize the location string
+	location = strings.TrimSpace(location)
+	locationLower := strings.ToLower(location)
+
+	// Try to find a province in the location string
+	var foundProvince string
+	var provinceStart int = -1
+	
+	for abbr, fullName := range provinces {
+		if strings.Contains(locationLower, abbr) {
+			// Find the position of the province in the string
+			pos := strings.Index(locationLower, abbr)
+			if pos > provinceStart {
+				foundProvince = fullName
+				provinceStart = pos
+			}
+		}
+	}
+
+	if foundProvince != "" {
+		// Extract the city part (everything before the province)
+		provinceLower := strings.ToLower(foundProvince)
+		
+		// Handle abbreviations too
+		var provincePattern string
+		for abbr, full := range provinces {
+			if full == foundProvince {
+				if strings.Contains(locationLower, abbr) {
+					provincePattern = abbr
+					break
+				}
+			}
+		}
+		
+		if provincePattern == "" {
+			provincePattern = provinceLower
+		}
+		
+		parts := strings.Split(locationLower, provincePattern)
+		if len(parts) > 0 {
+			cityPart := strings.TrimSpace(parts[0])
+			if cityPart != "" {
+				// Convert back to proper case
+				words := strings.Fields(cityPart)
+				for i, word := range words {
+					if len(word) > 0 {
+						words[i] = strings.ToUpper(string(word[0])) + strings.ToLower(word[1:])
+					}
+				}
+				city = strings.Join(words, " ")
+			}
+		}
+		
+		province = foundProvince
+	} else {
+		// If no province found, treat the whole string as a city
+		words := strings.Fields(location)
+		for i, word := range words {
+			if len(word) > 0 {
+				words[i] = strings.ToUpper(string(word[0])) + strings.ToLower(word[1:])
+			}
+		}
+		city = strings.Join(words, " ")
+	}
+
+	return province, city
+}
+
+// GetRegionalStatsFromJobs gets regional statistics by parsing ALL job locations for a date range
+func (r *lmiaStatisticsRepository) GetRegionalStatsFromJobs(startDate, endDate time.Time) (map[string]int, map[string]int, error) {
+	provinceCounts := make(map[string]int)
+	cityCounts := make(map[string]int)
+	
+	// Query ALL job postings in the date range and get their locations
+	query := `
+		SELECT location, COUNT(*) as count
+		FROM job_postings 
+		WHERE posting_date >= $1 AND posting_date <= $2
+		AND is_tfw = true AND has_lmia = true 
+		AND location IS NOT NULL AND location != ''
+		GROUP BY location
+	`
+	
+	rows, err := r.db.Query(query, startDate, endDate)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to query job locations: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var location string
+		var count int
+		if err := rows.Scan(&location, &count); err != nil {
+			return nil, nil, fmt.Errorf("failed to scan location data: %w", err)
+		}
+		
+		// Parse each location string and aggregate the counts
+		province, city := parseLocationString(location)
+		if province != "" {
+			provinceCounts[province] += count
+		}
+		if city != "" {
+			cityCounts[city] += count
+		}
+	}
+
+	return provinceCounts, cityCounts, nil
 }

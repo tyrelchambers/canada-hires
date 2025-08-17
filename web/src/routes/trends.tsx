@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import {
   useDailyTrends,
-  useMonthlyTrends,
   useTrendsSummary,
+  useRegionalStats,
+  LMIAStatistics,
+  RegionData,
 } from "@/hooks/useLMIATrends";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -42,7 +44,6 @@ function TrendsPage() {
   const [timeRange, setTimeRange] = useState<
     "week" | "month" | "quarter" | "year"
   >("month");
-  const [chartType, setChartType] = useState<"daily" | "monthly">("daily");
 
   const trendsSummary = useTrendsSummary();
 
@@ -86,14 +87,10 @@ function TrendsPage() {
   };
 
   const dateRange = getDateRange();
-  const dailyTrends = useDailyTrends(
-    chartType === "daily" ? dateRange : undefined,
-  );
-  const monthlyTrends = useMonthlyTrends(
-    chartType === "monthly" ? dateRange : undefined,
-  );
+  const dailyTrends = useDailyTrends(dateRange);
+  const regionalStats = useRegionalStats(timeRange);
 
-  const currentTrends = chartType === "daily" ? dailyTrends : monthlyTrends;
+  const currentTrends = dailyTrends;
 
   return (
     <section>
@@ -140,46 +137,29 @@ function TrendsPage() {
 
         {/* Controls */}
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-          <div className="flex gap-2">
-            <Select
-              value={timeRange}
-              onValueChange={(value: "week" | "month" | "quarter" | "year") =>
-                setTimeRange(value)
-              }
-            >
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Select time range" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="week">Past Week</SelectItem>
-                <SelectItem value="month">Past Month</SelectItem>
-                <SelectItem value="quarter">Past Quarter</SelectItem>
-                <SelectItem value="year">Past Year</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={chartType}
-              onValueChange={(value: "daily" | "monthly") =>
-                setChartType(value)
-              }
-            >
-              <SelectTrigger className="w-[100px]">
-                <SelectValue placeholder="Select period" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="daily">Daily</SelectItem>
-                <SelectItem value="monthly">Monthly</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <Select
+            value={timeRange}
+            onValueChange={(value: "week" | "month" | "quarter" | "year") =>
+              setTimeRange(value)
+            }
+          >
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Select time range" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="week">Past Week</SelectItem>
+              <SelectItem value="month">Past Month</SelectItem>
+              <SelectItem value="quarter">Past Quarter</SelectItem>
+              <SelectItem value="year">Past Year</SelectItem>
+            </SelectContent>
+          </Select>
 
           <Button
             variant="outline"
             onClick={() => {
               void dailyTrends.refetch();
-              void monthlyTrends.refetch();
               void trendsSummary.refetch();
+              void regionalStats.refetch();
             }}
           >
             Refresh Data
@@ -200,8 +180,7 @@ function TrendsPage() {
                     : "Past Year"}
             </h2>
             <p className="text-sm text-muted-foreground">
-              {chartType === "daily" ? "Daily" : "Monthly"} LMIA job postings
-              and employer trends over time
+              Daily LMIA job postings and employer trends over time
             </p>
           </div>
 
@@ -224,8 +203,8 @@ function TrendsPage() {
           ) : (
             <LMIATrendsChart
               data={currentTrends.data?.data || []}
-              title={`${chartType === "daily" ? "Daily" : "Monthly"} Job Trends`}
-              description={`${chartType === "daily" ? "Daily" : "Monthly"} LMIA job postings and employer trends over time`}
+              title="Daily Job Trends"
+              description="Daily LMIA job postings and employer trends over time"
             />
           )}
         </div>
@@ -237,11 +216,18 @@ function TrendsPage() {
               Regional Breakdown
             </h2>
             <p className="text-sm text-muted-foreground">
-              Top provinces and cities with the most LMIA job postings today
+              Top provinces and cities with the most LMIA job postings in the{" "}
+              {timeRange === "week"
+                ? "past week"
+                : timeRange === "month"
+                  ? "past month"
+                  : timeRange === "quarter"
+                    ? "past quarter"
+                    : "past year"}
             </p>
           </div>
 
-          {trendsSummary.isLoading ? (
+          {regionalStats.isLoading ? (
             <div className="grid md:grid-cols-2 gap-4">
               <Card>
                 <CardContent className="p-6">
@@ -258,26 +244,58 @@ function TrendsPage() {
                 </CardContent>
               </Card>
             </div>
-          ) : trendsSummary.error ? (
+          ) : regionalStats.error ? (
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-center h-[400px] text-red-600">
-                  Error loading regional data: {trendsSummary.error.message}
+                  Error loading regional data: {regionalStats.error.message}
                 </div>
               </CardContent>
             </Card>
           ) : (
             <div className="grid md:grid-cols-2 gap-4">
               <LMIARegionalChart
-                data={trendsSummary.data?.top_provinces_today || []}
-                title="Top Provinces Today"
-                description="Provinces with the most LMIA job postings today"
+                data={regionalStats.data?.top_provinces || []}
+                title={`Top Provinces - ${
+                  timeRange === "week"
+                    ? "Past Week"
+                    : timeRange === "month"
+                      ? "Past Month"
+                      : timeRange === "quarter"
+                        ? "Past Quarter"
+                        : "Past Year"
+                }`}
+                description={`Provinces with the most LMIA job postings in the ${
+                  timeRange === "week"
+                    ? "past week"
+                    : timeRange === "month"
+                      ? "past month"
+                      : timeRange === "quarter"
+                        ? "past quarter"
+                        : "past year"
+                }`}
                 type="province"
               />
               <LMIARegionalChart
-                data={trendsSummary.data?.top_cities_today || []}
-                title="Top Cities Today"
-                description="Cities with the most LMIA job postings today"
+                data={regionalStats.data?.top_cities || []}
+                title={`Top Cities - ${
+                  timeRange === "week"
+                    ? "Past Week"
+                    : timeRange === "month"
+                      ? "Past Month"
+                      : timeRange === "quarter"
+                        ? "Past Quarter"
+                        : "Past Year"
+                }`}
+                description={`Cities with the most LMIA job postings in the ${
+                  timeRange === "week"
+                    ? "past week"
+                    : timeRange === "month"
+                      ? "past month"
+                      : timeRange === "quarter"
+                        ? "past quarter"
+                        : "past year"
+                }`}
                 type="city"
               />
             </div>
