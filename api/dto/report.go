@@ -22,18 +22,15 @@ type UpdateReportRequest struct {
 }
 
 type ReportResponse struct {
-	ID              string                 `json:"id"`
-	UserID          string                 `json:"user_id"`
-	BusinessName    string                 `json:"business_name"`
-	BusinessAddress string                 `json:"business_address"`
-	ReportSource    string                 `json:"report_source"`
-	ConfidenceLevel *int                   `json:"confidence_level"`
-	AdditionalNotes *string                `json:"additional_notes"`
-	Status          models.ReportStatus    `json:"status"`
-	ModeratedBy     *string                `json:"moderated_by,omitempty"`
-	ModerationNotes *string                `json:"moderation_notes,omitempty"`
-	CreatedAt       time.Time              `json:"created_at"`
-	UpdatedAt       time.Time              `json:"updated_at"`
+	ID              string    `json:"id"`
+	UserID          string    `json:"user_id"`
+	BusinessName    string    `json:"business_name"`
+	BusinessAddress string    `json:"business_address"`
+	ReportSource    string    `json:"report_source"`
+	ConfidenceLevel *int      `json:"confidence_level"`
+	AdditionalNotes *string   `json:"additional_notes"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
 }
 
 type ReportListResponse struct {
@@ -47,17 +44,6 @@ type PaginationInfo struct {
 	Total  int `json:"total,omitempty"` // Optional - can be expensive to calculate
 }
 
-type ModerationRequest struct {
-	Notes *string `json:"notes" validate:"omitempty,max=500"`
-}
-
-type ReportStatsResponse struct {
-	TotalReports    int `json:"total_reports"`
-	PendingReports  int `json:"pending_reports"`
-	ApprovedReports int `json:"approved_reports"`
-	RejectedReports int `json:"rejected_reports"`
-	FlaggedReports  int `json:"flagged_reports"`
-}
 
 // Helper function to convert model to DTO
 func ToReportResponse(report *models.Report) *ReportResponse {
@@ -69,9 +55,6 @@ func ToReportResponse(report *models.Report) *ReportResponse {
 		ReportSource:    report.ReportSource,
 		ConfidenceLevel: report.ConfidenceLevel,
 		AdditionalNotes: report.AdditionalNotes,
-		Status:          report.Status,
-		ModeratedBy:     report.ModeratedBy,
-		ModerationNotes: report.ModerationNotes,
 		CreatedAt:       report.CreatedAt,
 		UpdatedAt:       report.UpdatedAt,
 	}

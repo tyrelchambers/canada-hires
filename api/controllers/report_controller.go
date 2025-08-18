@@ -3,7 +3,6 @@ package controllers
 import (
 	"canada-hires/dto"
 	"canada-hires/helpers"
-	"canada-hires/models"
 	"canada-hires/services"
 	"encoding/json"
 	"net/http"
@@ -277,17 +276,15 @@ func (c *reportController) GetReportsGrouped(w http.ResponseWriter, r *http.Requ
 	query := r.URL.Query().Get("query")
 	city := r.URL.Query().Get("city")
 	province := r.URL.Query().Get("province")
-	status := r.URL.Query().Get("status")
 	year := r.URL.Query().Get("year")
 
 	// Build filters if any are provided
 	var filters *services.ReportFilters
-	if query != "" || city != "" || province != "" || status != "" || year != "" {
+	if query != "" || city != "" || province != "" || year != "" {
 		filters = &services.ReportFilters{
 			Query:    query,
 			City:     city,
 			Province: province,
-			Status:   status,
 			Year:     year,
 		}
 	}

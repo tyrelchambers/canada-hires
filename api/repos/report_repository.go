@@ -58,9 +58,6 @@ func (r *reportRepository) Create(report *models.Report) error {
 	report.CreatedAt = time.Now().UTC()
 	report.UpdatedAt = time.Now().UTC()
 
-	if report.Status == "" {
-		report.Status = models.ReportPending
-	}
 
 	_, err = tx.NamedExec(query, report)
 	if err != nil {
@@ -122,17 +119,6 @@ func (r *reportRepository) GetByBusinessName(businessName string, limit, offset 
 	return reports, nil
 }
 
-func (r *reportRepository) GetByStatus(status models.ReportStatus, limit, offset int) ([]*models.Report, error) {
-	var reports []*models.Report
-	query := `SELECT * FROM reports WHERE status = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`
-
-	err := r.db.Select(&reports, query, status, limit, offset)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get reports by status: %w", err)
-	}
-
-	return reports, nil
-}
 
 func (r *reportRepository) GetWithFilters(filters ReportFilters, limit, offset int) ([]*models.Report, error) {
 	var reports []*models.Report
@@ -164,12 +150,6 @@ func (r *reportRepository) GetWithFilters(filters ReportFilters, limit, offset i
 		args = append(args, "%"+filters.Province+"%")
 	}
 
-	// Add status filter
-	if filters.Status != "" {
-		argCount++
-		conditions = append(conditions, fmt.Sprintf("status = $%d", argCount))
-		args = append(args, filters.Status)
-	}
 
 	// Add year filter
 	if filters.Year != "" {
@@ -233,33 +213,6 @@ func (r *reportRepository) Update(report *models.Report) error {
 	return nil
 }
 
-func (r *reportRepository) UpdateStatus(id string, status models.ReportStatus, moderatorID *string, notes *string) error {
-	tx, err := r.db.Beginx()
-	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
-	}
-	defer tx.Rollback()
-
-	query := `
-		UPDATE reports SET
-			status = $1,
-			moderated_by = $2,
-			moderation_notes = $3,
-			updated_at = NOW()
-		WHERE id = $4
-	`
-
-	_, err = tx.Exec(query, status, moderatorID, notes, id)
-	if err != nil {
-		return fmt.Errorf("failed to update report status: %w", err)
-	}
-
-	if err = tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
-	}
-
-	return nil
-}
 
 func (r *reportRepository) Delete(id string) error {
 	tx, err := r.db.Beginx()
@@ -324,12 +277,6 @@ func (r *reportRepository) GetReportsGroupedByAddress(filters *ReportFilters, li
 			args = append(args, "%"+filters.Province+"%")
 		}
 
-		// Add status filter
-		if filters.Status != "" {
-			argCount++
-			conditions = append(conditions, fmt.Sprintf("status = $%d", argCount))
-			args = append(args, filters.Status)
-		}
 
 		// Add year filter
 		if filters.Year != "" {
