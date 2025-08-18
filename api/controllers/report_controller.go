@@ -25,11 +25,6 @@ type ReportController interface {
 	GetUserReports(w http.ResponseWriter, r *http.Request)
 	UpdateReport(w http.ResponseWriter, r *http.Request)
 	DeleteReport(w http.ResponseWriter, r *http.Request)
-
-	// Admin routes
-	ApproveReport(w http.ResponseWriter, r *http.Request)
-	RejectReport(w http.ResponseWriter, r *http.Request)
-	FlagReport(w http.ResponseWriter, r *http.Request)
 }
 
 type reportController struct {
@@ -105,13 +100,11 @@ func (c *reportController) GetReports(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("query")
 	city := r.URL.Query().Get("city")
 	province := r.URL.Query().Get("province")
-	status := r.URL.Query().Get("status")
 	year := r.URL.Query().Get("year")
 	address := r.URL.Query().Get("address")
 
 	// Get URL parameters for specific filters
 	businessName := chi.URLParam(r, "businessName")
-	statusParam := chi.URLParam(r, "status")
 
 	// Handle business name from URL parameter
 	if businessName != "" {
@@ -127,20 +120,6 @@ func (c *reportController) GetReports(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Handle status from URL parameter (admin route)
-	if statusParam != "" {
-		reportStatus := models.ReportStatus(statusParam)
-		reports, err := c.service.GetReportsByStatus(reportStatus, limit, offset)
-		if err != nil {
-			log.Error("Failed to get reports by status", "error", err, "status", reportStatus)
-			http.Error(w, "Failed to get reports", http.StatusInternalServerError)
-			return
-		}
-		response := dto.ToReportListResponse(reports, limit, offset)
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
-		return
-	}
 
 	// Handle address filter
 	if address != "" {
@@ -157,12 +136,11 @@ func (c *reportController) GetReports(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// If any filters are provided, use the filtered search
-	if query != "" || city != "" || province != "" || status != "" || year != "" {
+	if query != "" || city != "" || province != "" || year != "" {
 		filters := services.ReportFilters{
 			Query:    query,
 			City:     city,
 			Province: province,
-			Status:   status,
 			Year:     year,
 		}
 
@@ -291,49 +269,6 @@ func (c *reportController) DeleteReport(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (c *reportController) ApproveReport(w http.ResponseWriter, r *http.Request) {
-	c.handleModerationAction(w, r, c.service.ApproveReport)
-}
-
-func (c *reportController) RejectReport(w http.ResponseWriter, r *http.Request) {
-	c.handleModerationAction(w, r, c.service.RejectReport)
-}
-
-func (c *reportController) FlagReport(w http.ResponseWriter, r *http.Request) {
-	c.handleModerationAction(w, r, c.service.FlagReport)
-}
-
-func (c *reportController) handleModerationAction(w http.ResponseWriter, r *http.Request, action func(string, string, *string) error) {
-	id := chi.URLParam(r, "id")
-	if id == "" {
-		http.Error(w, "Report ID is required", http.StatusBadRequest)
-		return
-	}
-
-	user := helpers.GetUserFromContext(r.Context())
-	if user == nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	var req dto.ModerationRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	err := action(id, user.ID, req.Notes)
-	if err != nil {
-		log.Error("Failed to moderate report", "error", err, "report_id", id, "moderator_id", user.ID)
-		http.Error(w, "Failed to moderate report: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
-		"message": "Report moderated successfully",
-	})
-}
 
 func (c *reportController) GetReportsGrouped(w http.ResponseWriter, r *http.Request) {
 	limit, offset := getPaginationParams(r)

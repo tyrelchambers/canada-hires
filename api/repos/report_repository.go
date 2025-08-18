@@ -14,7 +14,6 @@ type ReportFilters struct {
 	Query    string
 	City     string
 	Province string
-	Status   models.ReportStatus
 	Year     string
 }
 
@@ -23,13 +22,11 @@ type ReportRepository interface {
 	GetByID(id string) (*models.Report, error)
 	GetByUserID(userID string, limit, offset int) ([]*models.Report, error)
 	GetByBusinessName(businessName string, limit, offset int) ([]*models.Report, error)
-	GetByStatus(status models.ReportStatus, limit, offset int) ([]*models.Report, error)
 	GetAll(limit, offset int) ([]*models.Report, error)
 	GetWithFilters(filters ReportFilters, limit, offset int) ([]*models.Report, error)
 	GetByAddress(address string) ([]*models.Report, error)
 	GetReportsGroupedByAddress(filters *ReportFilters, limit, offset int) ([]*models.ReportsByAddress, error)
 	Update(report *models.Report) error
-	UpdateStatus(id string, status models.ReportStatus, moderatorID *string, notes *string) error
 	Delete(id string) error
 }
 

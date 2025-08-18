@@ -1,6 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCurrentUser } from "@/hooks/useAuth";
 import { JobApprovalDashboard } from "@/components/admin/JobApprovalDashboard";
+import { ReportManagementDashboard } from "@/components/admin/ReportManagementDashboard";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Search {
   tab?: string;
@@ -16,6 +18,14 @@ export const Route = createFileRoute("/admin")({
 function AdminPage() {
   const { data: user, isLoading, error } = useCurrentUser();
   const { tab } = Route.useSearch();
+  const navigate = useNavigate();
+
+  const handleTabChange = async (value: string) => {
+    await navigate({
+      to: "/admin",
+      search: { tab: value },
+    });
+  };
 
   if (isLoading) {
     return (
@@ -79,7 +89,7 @@ function AdminPage() {
               Admin Dashboard
             </h1>
             <p className="mt-2 text-gray-600">
-              Manage Reddit job posting approvals
+              Manage job postings and business reports
             </p>
           </div>
         </div>
@@ -87,7 +97,20 @@ function AdminPage() {
 
       <div className="py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <JobApprovalDashboard user={user} activeTab={tab || "pending"} />
+          <Tabs value={tab || "jobs"} onValueChange={handleTabChange} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="jobs">Job Management</TabsTrigger>
+              <TabsTrigger value="reports">Report Management</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="jobs">
+              <JobApprovalDashboard user={user} activeTab="pending" />
+            </TabsContent>
+            
+            <TabsContent value="reports">
+              <ReportManagementDashboard />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>

@@ -10,9 +10,6 @@ interface Report {
   report_source: string;
   confidence_level?: number;
   additional_notes?: string;
-  status: "pending" | "approved" | "rejected" | "flagged";
-  moderated_by?: string;
-  moderation_notes?: string;
   ip_address?: string;
   created_at: string;
   updated_at: string;
@@ -33,13 +30,20 @@ interface ReportFilters {
   query?: string;
   city?: string;
   province?: string;
-  status?: string;
   year?: string;
   limit?: number;
   offset?: number;
 }
 
 interface CreateReportRequest {
+  business_name: string;
+  business_address: string;
+  report_source: string;
+  confidence_level?: number;
+  additional_notes?: string;
+}
+
+interface UpdateReportRequest {
   business_name: string;
   business_address: string;
   report_source: string;
@@ -58,7 +62,6 @@ export function useReports(filters: ReportFilters) {
       if (filters.query) params.append("query", filters.query);
       if (filters.city) params.append("city", filters.city);
       if (filters.province) params.append("province", filters.province);
-      if (filters.status) params.append("status", filters.status);
       if (filters.year) params.append("year", filters.year);
 
       if (filters.limit) params.append("limit", filters.limit.toString());
@@ -105,7 +108,6 @@ export function useReportsGroupedByAddress(filters: ReportFilters) {
       if (filters.query) params.append("query", filters.query);
       if (filters.city) params.append("city", filters.city);
       if (filters.province) params.append("province", filters.province);
-      if (filters.status) params.append("status", filters.status);
       if (filters.year) params.append("year", filters.year);
 
       if (filters.limit) params.append("limit", filters.limit.toString());
@@ -139,6 +141,43 @@ export function useAddressReports(address: string) {
   });
 }
 
+
+// Admin hooks for report management
+export function useUpdateReport() {
+  const apiClient = useApiClient();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: UpdateReportRequest }): Promise<Report> => {
+      const response = await apiClient.put<Report>(`/reports/${id}`, data);
+      return response.data;
+    },
+    onSuccess: async () => {
+      // Invalidate all report queries to refetch data
+      await queryClient.invalidateQueries({ queryKey: ["reports"] });
+      await queryClient.invalidateQueries({ queryKey: ["reportsGroupedByAddress"] });
+      await queryClient.invalidateQueries({ queryKey: ["addressReports"] });
+    },
+  });
+}
+
+export function useDeleteReport() {
+  const apiClient = useApiClient();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string): Promise<void> => {
+      await apiClient.delete(`/reports/${id}`);
+    },
+    onSuccess: async () => {
+      // Invalidate all report queries to refetch data
+      await queryClient.invalidateQueries({ queryKey: ["reports"] });
+      await queryClient.invalidateQueries({ queryKey: ["reportsGroupedByAddress"] });
+      await queryClient.invalidateQueries({ queryKey: ["addressReports"] });
+    },
+  });
+}
+
 export function useReportStats() {
   const apiClient = useApiClient();
 
@@ -146,7 +185,7 @@ export function useReportStats() {
     queryKey: ["reports", "stats"],
     queryFn: async (): Promise<{ total_reports: number }> => {
       // Get reports with minimal data to get total count
-      const response = await apiClient.get<ReportsResponse>("/reports");
+      const response = await apiClient.get<ReportsResponse>("/reports?limit=1");
       return {
         total_reports: response.data.reports.length || 0,
       };
@@ -160,6 +199,7 @@ export type {
   ReportsResponse,
   ReportFilters,
   CreateReportRequest,
+  UpdateReportRequest,
   ReportsByAddress,
   ReportsByAddressResponse,
 };

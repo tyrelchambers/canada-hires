@@ -227,9 +227,6 @@ export interface Report {
   report_source: 'employment' | 'observation' | 'public_record';
   confidence_level?: number; // 1-10 scale
   additional_notes?: string;
-  status: 'pending' | 'approved' | 'rejected' | 'flagged';
-  moderated_by?: string;
-  moderation_notes?: string;
   created_at: string;
   updated_at: string;
 }
@@ -259,9 +256,6 @@ export interface ReportFilters {
   offset?: number;
 }
 
-export interface ModerationRequest {
-  notes?: string;
-}
 
 export interface ReportsByAddress {
   business_name: string;

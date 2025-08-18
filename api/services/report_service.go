@@ -22,7 +22,6 @@ type ReportFilters struct {
 	Query    string
 	City     string
 	Province string
-	Status   string
 	Year     string
 }
 
@@ -35,11 +34,7 @@ type ReportService interface {
 	GetBusinessReports(businessName string, limit, offset int) ([]*models.Report, error)
 	GetAddressReports(address string) ([]*models.Report, error)
 	GetReportsGroupedByAddress(filters *ReportFilters, limit, offset int) ([]*models.ReportsByAddress, error)
-	GetReportsByStatus(status models.ReportStatus, limit, offset int) ([]*models.Report, error)
 	UpdateReport(report *models.Report) error
-	ApproveReport(reportID, moderatorID string, notes *string) error
-	RejectReport(reportID, moderatorID string, notes *string) error
-	FlagReport(reportID, moderatorID string, notes *string) error
 	DeleteReport(reportID, userID string, isAdmin bool) error
 }
 
@@ -64,7 +59,6 @@ func (s *reportService) CreateReport(req *CreateReportRequest) (*models.Report, 
 		ConfidenceLevel: req.ConfidenceLevel,
 		AdditionalNotes: req.AdditionalNotes,
 		IPAddress:       req.IPAddress,
-		Status:          models.ReportPending,
 	}
 
 	if err := s.repo.Create(report); err != nil {
@@ -149,7 +143,6 @@ func (s *reportService) GetReportsWithFilters(filters ReportFilters, limit, offs
 		Query:    filters.Query,
 		City:     filters.City,
 		Province: filters.Province,
-		Status:   models.ReportStatus(filters.Status),
 		Year:     filters.Year,
 	}
 
@@ -205,24 +198,6 @@ func (s *reportService) GetBusinessReports(businessName string, limit, offset in
 	return reports, nil
 }
 
-func (s *reportService) GetReportsByStatus(status models.ReportStatus, limit, offset int) ([]*models.Report, error) {
-	if limit <= 0 {
-		limit = 50
-	}
-	if limit > 100 {
-		limit = 100
-	}
-	if offset < 0 {
-		offset = 0
-	}
-
-	reports, err := s.repo.GetByStatus(status, limit, offset)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get reports by status: %w", err)
-	}
-
-	return reports, nil
-}
 
 func (s *reportService) UpdateReport(report *models.Report) error {
 	if report.ID == "" {
@@ -262,53 +237,6 @@ func (s *reportService) validateReport(report *models.Report) error {
 	return nil
 }
 
-func (s *reportService) ApproveReport(reportID, moderatorID string, notes *string) error {
-	if reportID == "" {
-		return fmt.Errorf("report ID is required")
-	}
-	if moderatorID == "" {
-		return fmt.Errorf("moderator ID is required")
-	}
-
-	err := s.repo.UpdateStatus(reportID, models.ReportApproved, &moderatorID, notes)
-	if err != nil {
-		return fmt.Errorf("failed to approve report: %w", err)
-	}
-
-	return nil
-}
-
-func (s *reportService) RejectReport(reportID, moderatorID string, notes *string) error {
-	if reportID == "" {
-		return fmt.Errorf("report ID is required")
-	}
-	if moderatorID == "" {
-		return fmt.Errorf("moderator ID is required")
-	}
-
-	err := s.repo.UpdateStatus(reportID, models.ReportRejected, &moderatorID, notes)
-	if err != nil {
-		return fmt.Errorf("failed to reject report: %w", err)
-	}
-
-	return nil
-}
-
-func (s *reportService) FlagReport(reportID, moderatorID string, notes *string) error {
-	if reportID == "" {
-		return fmt.Errorf("report ID is required")
-	}
-	if moderatorID == "" {
-		return fmt.Errorf("moderator ID is required")
-	}
-
-	err := s.repo.UpdateStatus(reportID, models.ReportFlagged, &moderatorID, notes)
-	if err != nil {
-		return fmt.Errorf("failed to flag report: %w", err)
-	}
-
-	return nil
-}
 
 func (s *reportService) DeleteReport(reportID, userID string, isAdmin bool) error {
 	if reportID == "" {
@@ -368,7 +296,6 @@ func (s *reportService) GetReportsGroupedByAddress(filters *ReportFilters, limit
 			Query:    filters.Query,
 			City:     filters.City,
 			Province: filters.Province,
-			Status:   models.ReportStatus(filters.Status),
 			Year:     filters.Year,
 		}
 	}

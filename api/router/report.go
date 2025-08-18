@@ -67,10 +67,7 @@ func (rr *reportRouter) Init(r chi.Router) {
 			r.Use(rr.authMW)
 			// Apply admin requirement middleware
 			r.Use(middleware.RequireAdmin)
-			r.Get("/status/{status}", rr.reportController.GetReports)
-			r.Post("/{id}/approve", rr.reportController.ApproveReport)
-			r.Post("/{id}/reject", rr.reportController.RejectReport)
-			r.Post("/{id}/flag", rr.reportController.FlagReport)
+			// Admin can access all reports without status filtering
 		})
 	})
 }
