@@ -31,12 +31,14 @@ function RouteComponent() {
 
         <div className="max-w-5xl mx-auto border-x border-border bg-gray-50 z-10 relative p-4 lg:p-20 h-full flex flex-col items-center justify-center">
           <h1 className="text-3xl lg:text-5xl -tracking-[0.015em] font-medium mb-6 text-center">
-            Make informed decisions about where you spend your money
+            Selling Out Canadian Jobs
           </h1>
-          <p className="md:text-xl text-gray-500 font-light  text-center mb-10">
-            JobWatch Canada provides transparent reporting on Canadian
-            businesses' use of the Temporary Foreign Worker program, helping you
-            support companies that prioritize hiring Canadians.
+          <p className="md:text-xl text-gray-500 font-light  text-center mb-10 max-w-3xl">
+            The Temporary Foreign Worker (TFW) program is meant to fill labour
+            shortages, but some companies exploit it to hire cheaper foreign
+            labour instead of Canadians. We track the data so you can see which
+            companies are abusing the system and choose where you spend your
+            money.
           </p>
 
           <div className="flex md:flex-row flex-col gap-6 justify-center">
