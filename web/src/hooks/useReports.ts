@@ -148,7 +148,7 @@ export function useReportStats() {
       // Get reports with minimal data to get total count
       const response = await apiClient.get<ReportsResponse>("/reports");
       return {
-        total_reports: response.data.reports.lengthX || 0,
+        total_reports: response.data.reports.length || 0,
       };
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
