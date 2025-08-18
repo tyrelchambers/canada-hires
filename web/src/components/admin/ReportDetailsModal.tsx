@@ -51,7 +51,7 @@ export function ReportDetailsModal({
       setFormData({
         business_name: report.business_name,
         business_address: report.business_address,
-        report_source: report.report_source,
+        report_source: report.report_source as "employment" | "observation" | "public_record",
         confidence_level: report.confidence_level,
         additional_notes: report.additional_notes || "",
       });
@@ -87,7 +87,7 @@ export function ReportDetailsModal({
       setFormData({
         business_name: report.business_name,
         business_address: report.business_address,
-        report_source: report.report_source,
+        report_source: report.report_source as "employment" | "observation" | "public_record",
         confidence_level: report.confidence_level,
         additional_notes: report.additional_notes || "",
       });

@@ -59,20 +59,6 @@ function BusinessDetailPage() {
     };
   };
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "approved":
-        return "Verified";
-      case "pending":
-        return "Under Review";
-      case "rejected":
-        return "Unverified";
-      case "flagged":
-        return "Flagged";
-      default:
-        return "Unknown";
-    }
-  };
 
   if (loading) {
     return (
@@ -154,7 +140,7 @@ function BusinessDetailPage() {
 
   const businessRating = getTFWRating(averageConfidence);
   const confidencePercentage = Math.round(averageConfidence * 10);
-  const verifiedReports = reports.filter((r) => r.status === "approved").length;
+  const verifiedReports = reports.length; // All reports are now automatically accepted
 
   // Calculate report distribution
   const highTFWReports = reports.filter(
@@ -356,7 +342,7 @@ function BusinessDetailPage() {
                     const reportRating = getTFWRating(
                       report.confidence_level || 0,
                     );
-                    const isVerified = report.status === "approved";
+                    const isVerified = true; // All reports are now automatically accepted
 
                     return (
                       <div
@@ -386,7 +372,7 @@ function BusinessDetailPage() {
                               </div>
                               <div className="text-xs text-slate-500">
                                 {report.report_source} •{" "}
-                                {getStatusLabel(report.status)}
+                                Verified
                               </div>
                             </div>
                           </div>

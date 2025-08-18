@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useReports, useReportStats } from "@/hooks/useReports";
+import { useReports } from "@/hooks/useReports";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { 
   faFileAlt, 

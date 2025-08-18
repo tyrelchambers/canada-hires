@@ -19,7 +19,6 @@ function ReportsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [cityFilter, setCityFilter] = useState("");
   const [provinceFilter, setProvinceFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
   const [yearFilter, setYearFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [limit] = useState(20);
@@ -33,7 +32,6 @@ function ReportsPage() {
     query: searchQuery,
     city: cityFilter,
     province: provinceFilter,
-    status: statusFilter,
     year: yearFilter,
     limit,
     offset: (currentPage - 1) * limit,
@@ -53,7 +51,6 @@ function ReportsPage() {
     setSearchQuery("");
     setCityFilter("");
     setProvinceFilter("");
-    setStatusFilter("");
     setYearFilter("");
     setCurrentPage(1);
   };
@@ -131,22 +128,6 @@ function ReportsPage() {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      Verification Status
-                    </label>
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    >
-                      <option value="">All Statuses</option>
-                      <option value="approved">Verified</option>
-                      <option value="pending">Under Review</option>
-                      <option value="rejected">Unverified</option>
-                      <option value="flagged">Flagged</option>
-                    </select>
-                  </div>
 
                   <div>
                     <label className="block text-sm font-medium mb-2">
