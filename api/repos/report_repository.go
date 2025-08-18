@@ -286,7 +286,7 @@ func (r *reportRepository) Delete(id string) error {
 
 func (r *reportRepository) GetByAddress(address string) ([]*models.Report, error) {
 	var reports []*models.Report
-	query := `SELECT * FROM reports WHERE business_address = $1 AND status = 'pending' ORDER BY created_at DESC`
+	query := `SELECT * FROM reports WHERE business_address = $1 ORDER BY created_at DESC`
 
 	err := r.db.Select(&reports, query, address)
 	if err != nil {
@@ -300,7 +300,7 @@ func (r *reportRepository) GetReportsGroupedByAddress(filters *ReportFilters, li
 	var grouped []*models.ReportsByAddress
 
 	// Build the WHERE conditions
-	conditions := []string{"status = 'pending'"}
+	conditions := []string{"1=1"} // Start with a neutral condition
 	args := []interface{}{}
 	argCount := 0
 
@@ -325,6 +325,13 @@ func (r *reportRepository) GetReportsGroupedByAddress(filters *ReportFilters, li
 			argCount++
 			conditions = append(conditions, fmt.Sprintf("LOWER(business_address) LIKE LOWER($%d)", argCount))
 			args = append(args, "%"+filters.Province+"%")
+		}
+
+		// Add status filter
+		if filters.Status != "" {
+			argCount++
+			conditions = append(conditions, fmt.Sprintf("status = $%d", argCount))
+			args = append(args, filters.Status)
 		}
 
 		// Add year filter

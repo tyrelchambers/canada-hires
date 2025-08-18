@@ -4,10 +4,11 @@ import { AuthNav } from "@/components/AuthNav";
 import { StripedBackground } from "@/components/StripedBackground";
 import { TodaysJobs } from "@/components/TodaysJobs";
 import { Footer } from "@/components/Footer";
+import { ReportingBanner } from "@/components/ReportingBanner";
 import clsx from "clsx";
 import { useLMIAStats } from "@/hooks/useLMIA";
 import { Badge } from "@/components/ui/badge";
-import Stat from "@/components/Stat";
+import Stat, { StatSkeleton } from "@/components/Stat";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowRight, faFlask } from "@fortawesome/free-solid-svg-icons";
 import { useJobStats } from "@/hooks/useJobPostings";
@@ -17,10 +18,8 @@ export const Route = createFileRoute("/")({
 });
 
 function RouteComponent() {
-  const { data: stats } = useLMIAStats();
-  const { data: statsData } = useJobStats();
-
-  console.log(statsData);
+  const { data: stats, isLoading: isLMIAStatsLoading } = useLMIAStats();
+  const { data: statsData, isLoading: isJobStatsLoading } = useJobStats();
 
   return (
     <div className="min-h-screen">
@@ -29,7 +28,7 @@ function RouteComponent() {
       <section className="bg-secondary border-b border-border relative h-[550px]">
         <StripedBackground />
 
-        <div className="max-w-5xl mx-auto border-x border-border bg-gray-50 z-10 relative p-4 lg:p-20 h-full flex flex-col items-center justify-center">
+        <div className="max-w-5xl mx-auto border-x border-border bg-white z-10 relative p-4 lg:p-20 h-full flex flex-col items-center justify-center">
           <h1 className="text-3xl lg:text-5xl -tracking-[0.015em] font-medium mb-6 text-center">
             Selling Out Canadian Jobs
           </h1>
@@ -62,32 +61,57 @@ function RouteComponent() {
         </div>
       </section>
 
+      <ReportingBanner />
+
       <section className="min-h-[300px] items-center flex">
         <div className="max-w-5xl mx-auto flex flex-col flex-wrap md:flex-row py-10 gap-10 w-full justify-evenly">
-          <Stat
-            label="Distinct employers"
-            value={String(stats?.distinct_employers.toLocaleString() ?? "0")}
-          />
+          {isLMIAStatsLoading ? (
+            <>
+              <StatSkeleton />
+              <StatSkeleton />
+              <StatSkeleton />
+            </>
+          ) : (
+            <>
+              <Stat
+                label="Distinct employers"
+                value={String(
+                  stats?.distinct_employers.toLocaleString() ?? "0",
+                )}
+              />
 
-          <Stat
-            label="Years"
-            value={`${stats?.year_range.min_year}-${stats?.year_range.max_year}`}
-          />
+              <Stat
+                label="Years"
+                value={`${stats?.year_range.min_year}-${stats?.year_range.max_year}`}
+              />
 
-          <Stat
-            label="Total records"
-            value={String(stats?.total_records.toLocaleString() ?? "0")}
-          />
+              <Stat
+                label="Total records"
+                value={String(stats?.total_records.toLocaleString() ?? "0")}
+              />
+            </>
+          )}
 
-          <Stat
-            label="Total Jobs"
-            value={String(statsData?.total_jobs.toLocaleString() ?? "0")}
-          />
+          {isJobStatsLoading ? (
+            <>
+              <StatSkeleton />
+              <StatSkeleton />
+            </>
+          ) : (
+            <>
+              <Stat
+                label="Total Jobs"
+                value={String(statsData?.total_jobs.toLocaleString() ?? "0")}
+              />
 
-          <Stat
-            label="Total Employers"
-            value={String(statsData?.total_employers.toLocaleString() ?? "0")}
-          />
+              <Stat
+                label="Total Employers"
+                value={String(
+                  statsData?.total_employers.toLocaleString() ?? "0",
+                )}
+              />
+            </>
+          )}
         </div>
       </section>
 

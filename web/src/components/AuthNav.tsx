@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import canadaHires from "@/assets/canada hires.svg";
+import canadaHires from "@/assets/canada hires.png";
 import { useCurrentUser, useLogout } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -77,7 +77,7 @@ export function AuthNav() {
               Job Postings
             </Link>
             <Link
-              to="/directory"
+              to="/reports"
               className="text-sm hover:text-primary px-4 py-2 rounded-full transition-colors"
               activeProps={{
                 className:
@@ -211,7 +211,7 @@ export function AuthNav() {
               Job Postings
             </Link>
             <Link
-              to="/directory"
+              to="/reports"
               className="text-sm hover:text-primary px-4 py-2 rounded-full transition-colors"
               activeProps={{
                 className:

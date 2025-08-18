@@ -117,9 +117,9 @@ PUT  /api/reports/:id (edit own report)
 DELETE /api/reports/:id (delete own report)
 
 Directory:
-GET  /api/directory (public listings)
-GET  /api/directory/export (boycott lists)
-GET  /api/directory/map (location data)
+GET  /api/reports (public listings)
+GET  /api/reports/export (boycott lists)
+GET  /api/reports/map (location data)
 ```
 
 ## User Interface Components

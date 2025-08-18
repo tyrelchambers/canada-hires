@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { AddressSearch } from "@/components/AddressSearch";
-import { useCreateReport } from "@/hooks/useReports";
 import { useCurrentUser } from "@/hooks/useAuth";
 import { CreateReportRequest } from "@/types";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -17,6 +16,7 @@ import {
   faHeart,
   faUsers,
 } from "@fortawesome/free-solid-svg-icons";
+import { useCreateReport } from "@/hooks/useReports";
 
 function CreateReportPage() {
   const navigate = useNavigate();
@@ -37,7 +37,7 @@ function CreateReportPage() {
     try {
       await createReportMutation.mutateAsync(formData);
       // Navigate back to directory or reports list
-      void navigate({ to: "/directory" });
+      void navigate({ to: "/reports" });
     } catch (error) {
       console.error("Failed to create report:", error);
     }
@@ -96,7 +96,7 @@ function CreateReportPage() {
         <div className="mb-6">
           <Button
             variant="ghost"
-            onClick={() => navigate({ to: "/directory" })}
+            onClick={() => navigate({ to: "/reports" })}
             className="mb-4"
           >
             <FontAwesomeIcon icon={faArrowLeft} className="mr-2" />
@@ -224,7 +224,7 @@ function CreateReportPage() {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => navigate({ to: "/directory" })}
+                      onClick={() => navigate({ to: "/reports" })}
                     >
                       Cancel
                     </Button>

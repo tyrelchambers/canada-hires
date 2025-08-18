@@ -179,7 +179,7 @@ function BusinessDetailPage() {
               Home
             </Link>
             <span className="mx-2">/</span>
-            <Link to="/directory" className="hover:text-slate-900">
+            <Link to="/reports" className="hover:text-slate-900">
               Directory
             </Link>
             <span className="mx-2">/</span>

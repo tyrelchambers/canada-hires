@@ -1,5 +1,6 @@
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { Skeleton } from "./ui/skeleton";
 
 interface Props {
   label: string;
@@ -14,6 +15,15 @@ const Stat = ({ label, value, icon }: Props) => {
       <p className="uppercase font-medium text-xs text-muted-foreground text-center">
         {label}
       </p>
+    </div>
+  );
+};
+
+export const StatSkeleton = () => {
+  return (
+    <div className="flex items-center flex-col md:px-4">
+      <Skeleton className="h-12 w-32 mb-2" />
+      <Skeleton className="h-4 w-24" />
     </div>
   );
 };

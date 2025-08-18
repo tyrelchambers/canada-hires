@@ -13,10 +13,10 @@ import { Route as TrendsRouteImport } from './routes/trends'
 import { Route as LmiaRouteImport } from './routes/lmia'
 import { Route as JobsRouteImport } from './routes/jobs'
 import { Route as FeedbackRouteImport } from './routes/feedback'
-import { Route as DirectoryRouteImport } from './routes/directory'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ResearchIndexRouteImport } from './routes/research/index'
+import { Route as ReportsIndexRouteImport } from './routes/reports/index'
 import { Route as ResearchWageSubsidiesImmigrantsRouteImport } from './routes/research/wage-subsidies-immigrants'
 import { Route as ReportsCreateRouteImport } from './routes/reports/create'
 import { Route as BusinessAddressRouteImport } from './routes/business/$address'
@@ -42,11 +42,6 @@ const FeedbackRoute = FeedbackRouteImport.update({
   path: '/feedback',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DirectoryRoute = DirectoryRouteImport.update({
-  id: '/directory',
-  path: '/directory',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -60,6 +55,11 @@ const IndexRoute = IndexRouteImport.update({
 const ResearchIndexRoute = ResearchIndexRouteImport.update({
   id: '/research/',
   path: '/research/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsIndexRoute = ReportsIndexRouteImport.update({
+  id: '/reports/',
+  path: '/reports/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResearchWageSubsidiesImmigrantsRoute =
@@ -87,7 +87,6 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
-  '/directory': typeof DirectoryRoute
   '/feedback': typeof FeedbackRoute
   '/jobs': typeof JobsRoute
   '/lmia': typeof LmiaRoute
@@ -96,12 +95,12 @@ export interface FileRoutesByFullPath {
   '/business/$address': typeof BusinessAddressRoute
   '/reports/create': typeof ReportsCreateRoute
   '/research/wage-subsidies-immigrants': typeof ResearchWageSubsidiesImmigrantsRoute
+  '/reports': typeof ReportsIndexRoute
   '/research': typeof ResearchIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
-  '/directory': typeof DirectoryRoute
   '/feedback': typeof FeedbackRoute
   '/jobs': typeof JobsRoute
   '/lmia': typeof LmiaRoute
@@ -110,13 +109,13 @@ export interface FileRoutesByTo {
   '/business/$address': typeof BusinessAddressRoute
   '/reports/create': typeof ReportsCreateRoute
   '/research/wage-subsidies-immigrants': typeof ResearchWageSubsidiesImmigrantsRoute
+  '/reports': typeof ReportsIndexRoute
   '/research': typeof ResearchIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
-  '/directory': typeof DirectoryRoute
   '/feedback': typeof FeedbackRoute
   '/jobs': typeof JobsRoute
   '/lmia': typeof LmiaRoute
@@ -125,6 +124,7 @@ export interface FileRoutesById {
   '/business/$address': typeof BusinessAddressRoute
   '/reports/create': typeof ReportsCreateRoute
   '/research/wage-subsidies-immigrants': typeof ResearchWageSubsidiesImmigrantsRoute
+  '/reports/': typeof ReportsIndexRoute
   '/research/': typeof ResearchIndexRoute
 }
 export interface FileRouteTypes {
@@ -132,7 +132,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
-    | '/directory'
     | '/feedback'
     | '/jobs'
     | '/lmia'
@@ -141,12 +140,12 @@ export interface FileRouteTypes {
     | '/business/$address'
     | '/reports/create'
     | '/research/wage-subsidies-immigrants'
+    | '/reports'
     | '/research'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/admin'
-    | '/directory'
     | '/feedback'
     | '/jobs'
     | '/lmia'
@@ -155,12 +154,12 @@ export interface FileRouteTypes {
     | '/business/$address'
     | '/reports/create'
     | '/research/wage-subsidies-immigrants'
+    | '/reports'
     | '/research'
   id:
     | '__root__'
     | '/'
     | '/admin'
-    | '/directory'
     | '/feedback'
     | '/jobs'
     | '/lmia'
@@ -169,13 +168,13 @@ export interface FileRouteTypes {
     | '/business/$address'
     | '/reports/create'
     | '/research/wage-subsidies-immigrants'
+    | '/reports/'
     | '/research/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
-  DirectoryRoute: typeof DirectoryRoute
   FeedbackRoute: typeof FeedbackRoute
   JobsRoute: typeof JobsRoute
   LmiaRoute: typeof LmiaRoute
@@ -184,6 +183,7 @@ export interface RootRouteChildren {
   BusinessAddressRoute: typeof BusinessAddressRoute
   ReportsCreateRoute: typeof ReportsCreateRoute
   ResearchWageSubsidiesImmigrantsRoute: typeof ResearchWageSubsidiesImmigrantsRoute
+  ReportsIndexRoute: typeof ReportsIndexRoute
   ResearchIndexRoute: typeof ResearchIndexRoute
 }
 
@@ -217,13 +217,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FeedbackRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/directory': {
-      id: '/directory'
-      path: '/directory'
-      fullPath: '/directory'
-      preLoaderRoute: typeof DirectoryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/admin': {
       id: '/admin'
       path: '/admin'
@@ -243,6 +236,13 @@ declare module '@tanstack/react-router' {
       path: '/research'
       fullPath: '/research'
       preLoaderRoute: typeof ResearchIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports/': {
+      id: '/reports/'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/research/wage-subsidies-immigrants': {
@@ -279,7 +279,6 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
-  DirectoryRoute: DirectoryRoute,
   FeedbackRoute: FeedbackRoute,
   JobsRoute: JobsRoute,
   LmiaRoute: LmiaRoute,
@@ -288,6 +287,7 @@ const rootRouteChildren: RootRouteChildren = {
   BusinessAddressRoute: BusinessAddressRoute,
   ReportsCreateRoute: ReportsCreateRoute,
   ResearchWageSubsidiesImmigrantsRoute: ResearchWageSubsidiesImmigrantsRoute,
+  ReportsIndexRoute: ReportsIndexRoute,
   ResearchIndexRoute: ResearchIndexRoute,
 }
 export const routeTree = rootRouteImport
