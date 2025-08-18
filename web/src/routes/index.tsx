@@ -12,6 +12,7 @@ import Stat, { StatSkeleton } from "@/components/Stat";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowRight, faFlask } from "@fortawesome/free-solid-svg-icons";
 import { useJobStats } from "@/hooks/useJobPostings";
+import { useReportStats } from "@/hooks/useReports";
 
 export const Route = createFileRoute("/")({
   component: RouteComponent,
@@ -20,7 +21,9 @@ export const Route = createFileRoute("/")({
 function RouteComponent() {
   const { data: stats, isLoading: isLMIAStatsLoading } = useLMIAStats();
   const { data: statsData, isLoading: isJobStatsLoading } = useJobStats();
-
+  const { data: reportStats, isLoading: isReportStatsLoading } =
+    useReportStats();
+  console.log(reportStats);
   return (
     <div className="min-h-screen">
       <AuthNav />
@@ -111,6 +114,15 @@ function RouteComponent() {
                 )}
               />
             </>
+          )}
+
+          {isReportStatsLoading ? (
+            <StatSkeleton />
+          ) : (
+            <Stat
+              label="Reports Submitted"
+              value={String(reportStats?.total_reports.toLocaleString() ?? "0")}
+            />
           )}
         </div>
       </section>

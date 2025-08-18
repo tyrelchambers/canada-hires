@@ -87,7 +87,9 @@ export function useCreateReport() {
     onSuccess: async () => {
       // Invalidate reports queries to refetch data
       await queryClient.invalidateQueries({ queryKey: ["reports"] });
-      await queryClient.invalidateQueries({ queryKey: ["reportsGroupedByAddress"] });
+      await queryClient.invalidateQueries({
+        queryKey: ["reportsGroupedByAddress"],
+      });
     },
   });
 }
@@ -109,7 +111,9 @@ export function useReportsGroupedByAddress(filters: ReportFilters) {
       if (filters.limit) params.append("limit", filters.limit.toString());
       if (filters.offset) params.append("offset", filters.offset.toString());
 
-      const response = await apiClient.get<ReportsByAddressResponse>(`/reports/grouped-by-address?${params}`);
+      const response = await apiClient.get<ReportsByAddressResponse>(
+        `/reports/grouped-by-address?${params}`,
+      );
       return response.data;
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -125,7 +129,9 @@ export function useAddressReports(address: string) {
       const params = new URLSearchParams();
       params.append("address", address);
 
-      const response = await apiClient.get<ReportsResponse>(`/reports/address?${params}`);
+      const response = await apiClient.get<ReportsResponse>(
+        `/reports/address?${params}`,
+      );
       return response.data;
     },
     enabled: !!address, // Only run query if address is provided
@@ -133,4 +139,27 @@ export function useAddressReports(address: string) {
   });
 }
 
-export type { Report, ReportsResponse, ReportFilters, CreateReportRequest, ReportsByAddress, ReportsByAddressResponse };
+export function useReportStats() {
+  const apiClient = useApiClient();
+
+  return useQuery({
+    queryKey: ["reports", "stats"],
+    queryFn: async (): Promise<{ total_reports: number }> => {
+      // Get reports with minimal data to get total count
+      const response = await apiClient.get<ReportsResponse>("/reports");
+      return {
+        total_reports: response.data.reports.lengthX || 0,
+      };
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+export type {
+  Report,
+  ReportsResponse,
+  ReportFilters,
+  CreateReportRequest,
+  ReportsByAddress,
+  ReportsByAddressResponse,
+};
