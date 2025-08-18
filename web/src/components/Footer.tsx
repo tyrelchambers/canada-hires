@@ -27,7 +27,7 @@ export function Footer() {
                 href="mailto:contact@jobwatchcanada.com"
                 className="text-blue-600 hover:underline"
               >
-                contact@jobwatchcanada.com
+                connect@jobwatchcanada.com
               </a>
             </p>
           </div>
