@@ -47,11 +47,9 @@ func (r *reportRepository) Create(report *models.Report) error {
 
 	query := `
 		INSERT INTO reports (id, user_id, business_name, business_address, report_source,
-			confidence_level, additional_notes, status, moderated_by, moderation_notes,
-			ip_address, created_at, updated_at)
+			confidence_level, additional_notes, ip_address, created_at, updated_at)
 		VALUES (:id, :user_id, :business_name, :business_address, :report_source,
-			:confidence_level, :additional_notes, :status, :moderated_by, :moderation_notes,
-			:ip_address, :created_at, :updated_at)
+			:confidence_level, :additional_notes, :ip_address, :created_at, :updated_at)
 	`
 
 	report.ID = uuid.New().String()
@@ -194,7 +192,6 @@ func (r *reportRepository) Update(report *models.Report) error {
 			report_source = :report_source,
 			confidence_level = :confidence_level,
 			additional_notes = :additional_notes,
-			status = :status,
 			updated_at = NOW()
 		WHERE id = :id
 	`
