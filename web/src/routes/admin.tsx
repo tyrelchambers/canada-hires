@@ -3,6 +3,7 @@ import { useCurrentUser } from "@/hooks/useAuth";
 import { JobApprovalDashboard } from "@/components/admin/JobApprovalDashboard";
 import { ReportManagementDashboard } from "@/components/admin/ReportManagementDashboard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AuthNav } from "@/components/AuthNav";
 
 interface Search {
   tab?: string;
@@ -83,45 +84,35 @@ function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow">
-        <div className="px-4 sm:px-6 lg:px-8">
-          <div className="py-6">
-            <h1 className="text-3xl font-bold text-gray-900">
-              Admin Dashboard
-            </h1>
-            <p className="mt-2 text-gray-600">
-              Manage job postings and business reports
-            </p>
+    <section>
+      <AuthNav />
+      <div className="min-h-screen bg-gray-50">
+        <div className="py-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <Tabs
+              value={tab || "jobs"}
+              onValueChange={handleTabChange}
+              className="w-full"
+            >
+              <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsTrigger value="jobs">Job Management</TabsTrigger>
+                <TabsTrigger value="reports">Report Management</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="jobs">
+                <JobApprovalDashboard
+                  user={user}
+                  activeTab={jobTab || "pending"}
+                />
+              </TabsContent>
+
+              <TabsContent value="reports">
+                <ReportManagementDashboard />
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       </div>
-
-      <div className="py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Tabs
-            value={tab || "jobs"}
-            onValueChange={handleTabChange}
-            className="w-full"
-          >
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="jobs">Job Management</TabsTrigger>
-              <TabsTrigger value="reports">Report Management</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="jobs">
-              <JobApprovalDashboard
-                user={user}
-                activeTab={jobTab || "pending"}
-              />
-            </TabsContent>
-
-            <TabsContent value="reports">
-              <ReportManagementDashboard />
-            </TabsContent>
-          </Tabs>
-        </div>
-      </div>
-    </div>
+    </section>
   );
 }
