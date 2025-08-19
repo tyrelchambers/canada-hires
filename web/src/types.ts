@@ -297,3 +297,12 @@ export interface BulkGenerationResponse {
 export interface BulkGenerationRequest {
   job_ids: string[];
 }
+
+// Reddit preview types
+export interface RedditPreview {
+  job_id: string;
+  title: string;
+  body: string;
+  content_type: 'ai' | 'template';
+  error?: string;
+}

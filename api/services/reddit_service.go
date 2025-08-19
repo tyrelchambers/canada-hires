@@ -32,6 +32,7 @@ type RedditService interface {
 
 type redditService struct {
 	authService         RedditAuthService
+	geminiService       *GeminiService
 	config              *models.RedditConfig
 	logger              *log.Logger
 	jobRepo             repos.JobBankRepository
@@ -51,7 +52,7 @@ type RedditSubmitResponse struct {
 	} `json:"json"`
 }
 
-func NewRedditService(logger *log.Logger, jobRepo repos.JobBankRepository, subredditRepo repos.SubredditRepository, jobSubredditPostRepo repos.JobSubredditPostRepository) (RedditService, error) {
+func NewRedditService(logger *log.Logger, jobRepo repos.JobBankRepository, subredditRepo repos.SubredditRepository, jobSubredditPostRepo repos.JobSubredditPostRepository, geminiService *GeminiService) (RedditService, error) {
 	// Create Reddit auth service
 	authService, err := NewRedditAuthService(logger)
 	if err != nil {
@@ -65,6 +66,7 @@ func NewRedditService(logger *log.Logger, jobRepo repos.JobBankRepository, subre
 
 	service := &redditService{
 		authService:         authService,
+		geminiService:       geminiService,
 		config:              models.DefaultRedditConfig(),
 		logger:              logger,
 		jobRepo:             jobRepo,
@@ -179,8 +181,31 @@ func (rs *redditService) PostJobWithConfig(ctx context.Context, job *models.JobP
 		return nil, fmt.Errorf("invalid Reddit configuration: %w", err)
 	}
 
-	// Generate post data from template
-	postData := config.GeneratePostData(job)
+	// Try to generate post content using Gemini AI first
+	var postData *models.RedditPostData
+	if rs.geminiService != nil {
+		// Generate AI content
+		aiContent, err := rs.geminiService.GenerateRedditPost(ctx, *job)
+		if err != nil {
+			rs.logger.Warn("Failed to generate AI content, falling back to template", "error", err, "job_id", job.ID)
+			// Fall back to template if AI generation fails
+			postData = config.GeneratePostData(job)
+		} else {
+			// Use AI-generated content
+			postData = &models.RedditPostData{
+				Title:      fmt.Sprintf("🇨🇦 New LMIA Job: %s at %s - %s", job.Title, job.Employer, job.Location),
+				Body:       aiContent,
+				Subreddit:  subreddit.Name,
+				JobPosting: job,
+			}
+			rs.logger.Info("Successfully generated AI content for Reddit post", "job_id", job.ID)
+		}
+	} else {
+		// No Gemini service available, use template
+		rs.logger.Debug("No Gemini service available, using template")
+		postData = config.GeneratePostData(job)
+	}
+
 	if postData == nil {
 		return nil, fmt.Errorf("failed to generate post data")
 	}

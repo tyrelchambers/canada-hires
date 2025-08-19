@@ -310,9 +310,9 @@ func NewScraperCronService(scraperService services.ScraperService, scraperJobRep
 }
 
 // NewRedditService creates a new Reddit service
-func NewRedditService(jobRepo repos.JobBankRepository, subredditRepo repos.SubredditRepository, jobSubredditPostRepo repos.JobSubredditPostRepository) (services.RedditService, error) {
+func NewRedditService(jobRepo repos.JobBankRepository, subredditRepo repos.SubredditRepository, jobSubredditPostRepo repos.JobSubredditPostRepository, geminiService *services.GeminiService) (services.RedditService, error) {
 	logger := log.Default()
-	return services.NewRedditService(logger, jobRepo, subredditRepo, jobSubredditPostRepo)
+	return services.NewRedditService(logger, jobRepo, subredditRepo, jobSubredditPostRepo, geminiService)
 }
 
 // NewScraperService creates a new scraper service

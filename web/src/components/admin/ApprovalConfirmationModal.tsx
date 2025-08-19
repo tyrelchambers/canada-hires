@@ -54,9 +54,9 @@ export function ApprovalConfirmationModal({
     useActiveSubreddits();
   const generateContentMutation = useGenerateRedditPosts();
 
-  const activeSubredditsList = useMemo(() => 
-    activeSubreddits?.subreddits || [], 
-    [activeSubreddits?.subreddits]
+  const activeSubredditsList = useMemo(
+    () => activeSubreddits?.subreddits || [],
+    [activeSubreddits?.subreddits],
   );
 
   // State for per-post subreddit selection
@@ -83,7 +83,11 @@ export function ApprovalConfirmationModal({
 
   // Initialize selected subreddits when subreddits data loads
   useEffect(() => {
-    if (isOpen && activeSubredditsList.length > 0 && selectedSubreddits.length === 0) {
+    if (
+      isOpen &&
+      activeSubredditsList.length > 0 &&
+      selectedSubreddits.length === 0
+    ) {
       setSelectedSubreddits(activeSubredditsList.map((s) => s.id));
     }
   }, [isOpen, activeSubredditsList.length, selectedSubreddits.length]);
@@ -123,10 +127,6 @@ export function ApprovalConfirmationModal({
     onConfirm(selectedSubreddits, editablePosts);
   };
 
-  const handleSkipGeneration = () => {
-    onConfirm(selectedSubreddits);
-  };
-
   const handlePostContentChange = (jobId: string, newContent: string) => {
     setEditablePosts((prev) =>
       prev.map((post) =>
@@ -151,7 +151,7 @@ export function ApprovalConfirmationModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-4xl">
+      <DialogContent className="max-w-5xl w-full">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <FontAwesomeIcon icon={faReddit} className="text-orange-500" />
@@ -375,14 +375,6 @@ export function ApprovalConfirmationModal({
 
           {generationStep === "subreddit-selection" && (
             <>
-              <Button
-                variant="outline"
-                onClick={handleSkipGeneration}
-                disabled={isLoading}
-                className="flex-1"
-              >
-                Skip Content Generation
-              </Button>
               <Button
                 onClick={handleConfirm}
                 disabled={isLoading || generateContentMutation.isPending}

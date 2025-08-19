@@ -146,6 +146,20 @@ Create a Reddit post about this TFW job posting:
 10. Keep the post very low-key and natural, business casual. You are not pretending to be a user, don't try to speak like a human. But just create a reddit post to convey the provided information. Imagine you're a CEO releasing a very professional and succinct newsletter.
 11. Do NOT include an preamble such as "Alright team, another one for the Job Bank files, just landed in the queue." OR any other wording.
 12. Bold the job details
+13. We are against LMIA program and shouldn't praise or talk approvingly of it.
+14. Don't use cringe wordings like "Fresh"
+15. DO NOT be charasmatic in your post.
+16. It's okay to point out (subtly) the issue with the LMIA program prioritizing foreign workers and not canadians
+
+**Example of a bad post**
+Heads up, folks, another job posting through the Temporary Foreign Worker (TFW) program has surfaced on the Job Bank. This one's for a **dairy farm worker** with **Village Ranch Ltd.**, located in **Sorrento, British Columbia**. The listed salary is **$20.00 per hour**.
+
+As expected for a TFW position, this role requires a Labour Market Impact Assessment (LMIA). It's notable how frequently these common, essential jobs are being filled via a program designed for critical labour shortages, even in relatively populated areas. A regular occurrence worth keeping an eye on.
+
+**Example of a good post**
+Another job posting through the Temporary Foreign Worker (TFW) program has surfaced on the Job Bank. This one's for a **dairy farm worker** with **Village Ranch Ltd.**, located in **Sorrento, British Columbia**. The listed salary is **$20.00 per hour**.
+
+As expected for a TFW position, this role requires a Labour Market Impact Assessment (LMIA). It's notable how frequently these common, essential jobs are being filled via a program designed for critical labour shortages, even in relatively populated areas.
 
 Don't sound like you are actual a human. For example:
 

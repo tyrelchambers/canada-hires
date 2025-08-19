@@ -59,6 +59,9 @@ func (ar *adminRouter) Init(r chi.Router) {
 			// Content generation endpoints
 			r.Post("/generate-content/{job_id}", ar.jobController.GenerateRedditPostContent)
 			r.Post("/generate-content/bulk", ar.jobController.GenerateBulkRedditPostContent)
+			
+			// Preview endpoint to see what will be posted
+			r.Get("/preview/{job_id}", ar.jobController.PreviewRedditPost)
 		})
 
 		// Scraper and statistics endpoints

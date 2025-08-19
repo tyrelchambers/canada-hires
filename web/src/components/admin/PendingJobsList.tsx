@@ -23,9 +23,11 @@ import {
   faExternalLinkAlt,
   faCheck,
   faTimes,
+  faEye,
 } from "@fortawesome/free-solid-svg-icons";
 import { RejectJobDialog } from "./RejectJobDialog";
 import { ApprovalConfirmationModal } from "./ApprovalConfirmationModal";
+import { RedditPreviewModal } from "./RedditPreviewModal";
 import { Pagination } from "@/components/ui/pagination";
 import {
   Select,
@@ -66,6 +68,7 @@ export function PendingJobsList({
   onPageSizeChange,
 }: PendingJobsListProps) {
   const [rejectingJobId, setRejectingJobId] = useState<string | null>(null);
+  const [previewingJobId, setPreviewingJobId] = useState<string | null>(null);
   const [approvalConfirmation, setApprovalConfirmation] = useState<{
     type: "single" | "bulk";
     jobIds: string[];
@@ -320,6 +323,15 @@ export function PendingJobsList({
                       <Button
                         size="sm"
                         variant="outline"
+                        onClick={() => setPreviewingJobId(job.id)}
+                        className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                        title="Preview Reddit post"
+                      >
+                        <FontAwesomeIcon icon={faEye} />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
                         onClick={() => setRejectingJobId(job.id)}
                         disabled={rejectJobMutation.isPending}
                         className="text-red-600 border-red-300 hover:bg-red-50"
@@ -400,6 +412,15 @@ export function PendingJobsList({
           isLoading={
             approveJobMutation.isPending || bulkApproveMutation.isPending
           }
+        />
+      )}
+
+      {/* Reddit Preview Modal */}
+      {previewingJobId && (
+        <RedditPreviewModal
+          job={jobs.find((j) => j.id === previewingJobId)!}
+          isOpen={true}
+          onClose={() => setPreviewingJobId(null)}
         />
       )}
     </div>

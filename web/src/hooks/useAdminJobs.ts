@@ -10,6 +10,7 @@ import {
   GeneratedRedditPost,
   BulkGenerationResponse,
   BulkGenerationRequest,
+  RedditPreview,
 } from "@/types";
 
 // Get pending jobs for Reddit approval
@@ -223,6 +224,20 @@ export const useGenerateRedditPost = () => {
     mutationFn: async (jobId: string): Promise<GeneratedRedditPost> => {
       const response = await api.post<GeneratedRedditPost>(
         `/admin/jobs/reddit/generate-content/${jobId}`,
+      );
+      return response.data;
+    },
+  });
+};
+
+// Preview what will be posted to Reddit for a job
+export const usePreviewRedditPost = () => {
+  const api = useApiClient();
+
+  return useMutation({
+    mutationFn: async (jobId: string): Promise<RedditPreview> => {
+      const response = await api.get<RedditPreview>(
+        `/admin/jobs/reddit/preview/${jobId}`,
       );
       return response.data;
     },

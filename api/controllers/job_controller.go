@@ -7,6 +7,7 @@ import (
 	"canada-hires/services"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -780,4 +781,63 @@ func (jc *JobController) GenerateBulkRedditPostContent(w http.ResponseWriter, r 
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+// PreviewRedditPost shows what will be posted to Reddit for a job (including AI content)
+func (jc *JobController) PreviewRedditPost(w http.ResponseWriter, r *http.Request) {
+	jobID := chi.URLParam(r, "job_id")
+	if jobID == "" {
+		http.Error(w, "Job ID is required", http.StatusBadRequest)
+		return
+	}
+
+	// Get the job posting
+	job, err := jc.jobBankRepo.GetJobPostingByID(jobID)
+	if err != nil {
+		log.Error("Failed to retrieve job for preview", "error", err, "job_id", jobID)
+		http.Error(w, "Job not found", http.StatusNotFound)
+		return
+	}
+
+	// Generate AI content (same logic as RedditService uses)
+	ctx, cancel := context.WithTimeout(r.Context(), 45*time.Second)
+	defer cancel()
+
+	var preview struct {
+		JobID      string `json:"job_id"`
+		Title      string `json:"title"`
+		Body       string `json:"body"`
+		ContentType string `json:"content_type"` // "ai" or "template"
+		Error      string `json:"error,omitempty"`
+	}
+
+	preview.JobID = jobID
+	preview.Title = fmt.Sprintf("🇨🇦 New LMIA Job: %s at %s - %s", job.Title, job.Employer, job.Location)
+
+	// Try AI generation first
+	if jc.geminiService != nil {
+		aiContent, err := jc.geminiService.GenerateRedditPost(ctx, *job)
+		if err != nil {
+			log.Warn("Failed to generate AI content for preview", "error", err, "job_id", jobID)
+			// Fall back to template
+			config := jc.redditService.GetDefaultConfig()
+			postData := config.GeneratePostData(job)
+			preview.Body = postData.Body
+			preview.ContentType = "template"
+			preview.Error = "AI generation failed, showing template fallback: " + err.Error()
+		} else {
+			preview.Body = aiContent
+			preview.ContentType = "ai"
+		}
+	} else {
+		// No AI service, use template
+		config := jc.redditService.GetDefaultConfig()
+		postData := config.GeneratePostData(job)
+		preview.Body = postData.Body
+		preview.ContentType = "template"
+		preview.Error = "No AI service available, showing template"
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(preview)
 }
