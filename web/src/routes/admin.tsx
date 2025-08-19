@@ -25,7 +25,7 @@ function AdminPage() {
   const handleTabChange = async (value: string) => {
     await navigate({
       to: "/admin",
-      search: { tab: value },
+      search: { tab: value, jobTab },
     });
   };
 
@@ -99,16 +99,23 @@ function AdminPage() {
 
       <div className="py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Tabs value={tab || "jobs"} onValueChange={handleTabChange} className="w-full">
+          <Tabs
+            value={tab || "jobs"}
+            onValueChange={handleTabChange}
+            className="w-full"
+          >
             <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="jobs">Job Management</TabsTrigger>
               <TabsTrigger value="reports">Report Management</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="jobs">
-              <JobApprovalDashboard user={user} activeTab={jobTab || "pending"} />
+              <JobApprovalDashboard
+                user={user}
+                activeTab={jobTab || "pending"}
+              />
             </TabsContent>
-            
+
             <TabsContent value="reports">
               <ReportManagementDashboard />
             </TabsContent>
