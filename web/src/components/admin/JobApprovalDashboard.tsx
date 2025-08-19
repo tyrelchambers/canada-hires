@@ -32,7 +32,7 @@ export function JobApprovalDashboard({
   const handleTabChange = async (value: string) => {
     await navigate({
       to: "/admin",
-      search: { tab: value },
+      search: (prev) => ({ ...prev, jobTab: value }),
     });
   };
 

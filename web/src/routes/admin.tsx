@@ -6,18 +6,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Search {
   tab?: string;
+  jobTab?: string;
 }
 
 export const Route = createFileRoute("/admin")({
   component: AdminPage,
   validateSearch: (search: Search) => ({
     tab: search?.tab,
+    jobTab: search?.jobTab,
   }),
 });
 
 function AdminPage() {
   const { data: user, isLoading, error } = useCurrentUser();
-  const { tab } = Route.useSearch();
+  const { tab, jobTab } = Route.useSearch();
   const navigate = useNavigate();
 
   const handleTabChange = async (value: string) => {
@@ -104,7 +106,7 @@ function AdminPage() {
             </TabsList>
             
             <TabsContent value="jobs">
-              <JobApprovalDashboard user={user} activeTab="pending" />
+              <JobApprovalDashboard user={user} activeTab={jobTab || "pending"} />
             </TabsContent>
             
             <TabsContent value="reports">
