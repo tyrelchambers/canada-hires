@@ -7,6 +7,9 @@ import {
   BulkApprovalRequest,
   BulkRejectionRequest,
   RedditApprovalStats,
+  GeneratedRedditPost,
+  BulkGenerationResponse,
+  BulkGenerationRequest,
 } from "@/types";
 
 // Get pending jobs for Reddit approval
@@ -193,6 +196,35 @@ export const useBulkRejectJobs = () => {
       await queryClient.invalidateQueries({
         queryKey: ["admin", "jobs", "reddit", "posted"],
       });
+    },
+  });
+};
+
+// Generate Reddit post content for multiple jobs
+export const useGenerateRedditPosts = () => {
+  const api = useApiClient();
+
+  return useMutation({
+    mutationFn: async (jobIds: string[]): Promise<BulkGenerationResponse> => {
+      const response = await api.post<BulkGenerationResponse>(
+        "/admin/jobs/reddit/generate-content/bulk",
+        { job_ids: jobIds } as BulkGenerationRequest,
+      );
+      return response.data;
+    },
+  });
+};
+
+// Generate Reddit post content for a single job
+export const useGenerateRedditPost = () => {
+  const api = useApiClient();
+
+  return useMutation({
+    mutationFn: async (jobId: string): Promise<GeneratedRedditPost> => {
+      const response = await api.post<GeneratedRedditPost>(
+        `/admin/jobs/reddit/generate-content/${jobId}`,
+      );
+      return response.data;
     },
   });
 };

@@ -67,7 +67,7 @@ export function PendingJobsList({
 }: PendingJobsListProps) {
   const [rejectingJobId, setRejectingJobId] = useState<string | null>(null);
   const [approvalConfirmation, setApprovalConfirmation] = useState<{
-    type: 'single' | 'bulk';
+    type: "single" | "bulk";
     jobIds: string[];
   } | null>(null);
 
@@ -78,7 +78,7 @@ export function PendingJobsList({
 
   const handleApprove = (jobId: string) => {
     setApprovalConfirmation({
-      type: 'single',
+      type: "single",
       jobIds: [jobId],
     });
   };
@@ -87,7 +87,7 @@ export function PendingJobsList({
     if (!approvalConfirmation) return;
 
     try {
-      if (approvalConfirmation.type === 'single') {
+      if (approvalConfirmation.type === "single") {
         await approveJobMutation.mutateAsync({
           jobId: approvalConfirmation.jobIds[0],
           approvedBy: user.email,
@@ -124,7 +124,7 @@ export function PendingJobsList({
     if (selectedJobs.length === 0) return;
 
     setApprovalConfirmation({
-      type: 'bulk',
+      type: "bulk",
       jobIds: selectedJobs,
     });
   };
@@ -215,7 +215,10 @@ export function PendingJobsList({
                 <Button
                   size="sm"
                   onClick={handleBulkApprove}
-                  disabled={bulkApproveMutation.isPending || approveJobMutation.isPending}
+                  disabled={
+                    bulkApproveMutation.isPending ||
+                    approveJobMutation.isPending
+                  }
                   className="bg-green-600 hover:bg-green-700"
                 >
                   {bulkApproveMutation.isPending
@@ -326,7 +329,10 @@ export function PendingJobsList({
                       <Button
                         size="sm"
                         onClick={() => handleApprove(job.id)}
-                        disabled={approveJobMutation.isPending || bulkApproveMutation.isPending}
+                        disabled={
+                          approveJobMutation.isPending ||
+                          bulkApproveMutation.isPending
+                        }
                         className="bg-green-600 hover:bg-green-700"
                       >
                         <FontAwesomeIcon icon={faCheck} />
@@ -390,7 +396,10 @@ export function PendingJobsList({
           onClose={() => setApprovalConfirmation(null)}
           onConfirm={handleConfirmApproval}
           jobCount={approvalConfirmation.jobIds.length}
-          isLoading={approveJobMutation.isPending || bulkApproveMutation.isPending}
+          jobIds={approvalConfirmation.jobIds}
+          isLoading={
+            approveJobMutation.isPending || bulkApproveMutation.isPending
+          }
         />
       )}
     </div>

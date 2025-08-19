@@ -282,3 +282,18 @@ export interface LMIAEmployersByResourceResponse {
   employers: LMIAEmployer[];
   count: number;
 }
+
+// Gemini content generation types
+export interface GeneratedRedditPost {
+  job_id: string;
+  content: string;
+  error?: string;
+}
+
+export interface BulkGenerationResponse {
+  posts: GeneratedRedditPost[];
+}
+
+export interface BulkGenerationRequest {
+  job_ids: string[];
+}

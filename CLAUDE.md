@@ -12,6 +12,7 @@ Key features include:
 - Passwordless email authentication system
 - Business directory with location-based search
 - Community reporting system for TFW usage
+- AI-powered content generation using Gemini 2.5 Flash for Reddit posts
 - Confidence scoring algorithm based on user verification tiers
 - Public business ratings (Green/Yellow/Red) based on TFW percentage
 - Feedback system for data accuracy and platform improvements
@@ -74,6 +75,7 @@ EMAIL_SMTP_PORT=587
 EMAIL_SMTP_USER=your_email@domain.com
 EMAIL_SMTP_PASSWORD=your_app_password
 JWT_SECRET=your_jwt_secret_key
+GOOGLE_API_KEY=your_gemini_api_key_here
 ```
 
 #### Frontend Environment (.env in web/ directory)
@@ -82,6 +84,8 @@ VITE_MAPBOX_ACCESS_TOKEN=your_mapbox_access_token_here
 ```
 
 **Mapbox Setup**: Create a free account at [mapbox.com](https://mapbox.com) and get an access token for address search functionality. Without this token, the address search will fall back to a regular text input.
+
+**Gemini AI Setup**: Create a free Google AI Studio account at [aistudio.google.com](https://aistudio.google.com) and generate an API key for Gemini content generation. This enables automatic generation of sarcastic Reddit post content for job approvals. Without this key, job approvals will work but without AI-generated content.
 
 ### Database Setup
 1. Install and start PostgreSQL

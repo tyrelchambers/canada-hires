@@ -122,6 +122,10 @@ func registerProviders(c *dig.Container) error {
 		return err
 	}
 
+	if err := c.Provide(NewGeminiService); err != nil {
+		return err
+	}
+
 	// Controller providers
 	if err := c.Provide(NewAuthController); err != nil {
 		return err
@@ -290,8 +294,8 @@ func NewJobService(repo repos.JobBankRepository, redditService services.RedditSe
 }
 
 // NewJobController creates a new Job controller
-func NewJobController(repo repos.JobBankRepository, jobService services.JobService, redditService services.RedditService, scraperCronService *services.ScraperCronService) *controllers.JobController {
-	return controllers.NewJobController(repo, jobService, redditService, scraperCronService)
+func NewJobController(repo repos.JobBankRepository, jobService services.JobService, redditService services.RedditService, scraperCronService *services.ScraperCronService, geminiService *services.GeminiService) *controllers.JobController {
+	return controllers.NewJobController(repo, jobService, redditService, scraperCronService, geminiService)
 }
 
 // NewScraperJobRepository creates a new scraper job repository
@@ -345,4 +349,9 @@ func NewLMIAStatisticsService(repo repos.LMIAStatisticsRepository) services.LMIA
 // NewLMIAStatisticsController creates a new LMIA statistics controller
 func NewLMIAStatisticsController(service services.LMIAStatisticsService) controllers.LMIAStatisticsController {
 	return controllers.NewLMIAStatisticsController(service)
+}
+
+// NewGeminiService creates a new Gemini service
+func NewGeminiService() (*services.GeminiService, error) {
+	return services.NewGeminiService()
 }

@@ -55,6 +55,10 @@ func (ar *adminRouter) Init(r chi.Router) {
 			r.Post("/reject/{job_id}", ar.jobController.RejectJobForReddit)
 			r.Post("/bulk-approve", ar.jobController.BulkApproveJobsForReddit)
 			r.Post("/bulk-reject", ar.jobController.BulkRejectJobsForReddit)
+			
+			// Content generation endpoints
+			r.Post("/generate-content/{job_id}", ar.jobController.GenerateRedditPostContent)
+			r.Post("/generate-content/bulk", ar.jobController.GenerateBulkRedditPostContent)
 		})
 
 		// Scraper and statistics endpoints

@@ -17,18 +17,20 @@ import (
 )
 
 type JobController struct {
-	jobBankRepo      repos.JobBankRepository
-	jobService       services.JobService
-	redditService    services.RedditService
+	jobBankRepo        repos.JobBankRepository
+	jobService         services.JobService
+	redditService      services.RedditService
 	scraperCronService *services.ScraperCronService
+	geminiService      *services.GeminiService
 }
 
-func NewJobController(jobBankRepo repos.JobBankRepository, jobService services.JobService, redditService services.RedditService, scraperCronService *services.ScraperCronService) *JobController {
+func NewJobController(jobBankRepo repos.JobBankRepository, jobService services.JobService, redditService services.RedditService, scraperCronService *services.ScraperCronService, geminiService *services.GeminiService) *JobController {
 	return &JobController{
 		jobBankRepo:        jobBankRepo,
 		jobService:         jobService,
 		redditService:      redditService,
 		scraperCronService: scraperCronService,
+		geminiService:      geminiService,
 	}
 }
 
@@ -691,6 +693,90 @@ func (jc *JobController) TriggerStatisticsAggregation(w http.ResponseWriter, r *
 		"message": "Statistics aggregation triggered successfully",
 		"status":  "started",
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// GenerateRedditPostContent generates Reddit post content for a single job
+func (jc *JobController) GenerateRedditPostContent(w http.ResponseWriter, r *http.Request) {
+	jobID := chi.URLParam(r, "job_id")
+	if jobID == "" {
+		http.Error(w, "Job ID is required", http.StatusBadRequest)
+		return
+	}
+
+	// Get the job posting
+	job, err := jc.jobBankRepo.GetJobPostingByID(jobID)
+	if err != nil {
+		log.Error("Failed to retrieve job for content generation", "error", err, "job_id", jobID)
+		http.Error(w, "Job not found", http.StatusNotFound)
+		return
+	}
+
+	// Generate content using Gemini
+	ctx, cancel := context.WithTimeout(r.Context(), 45*time.Second)
+	defer cancel()
+
+	content, err := jc.geminiService.GenerateRedditPost(ctx, *job)
+	if err != nil {
+		log.Error("Failed to generate Reddit post content", "error", err, "job_id", jobID)
+		http.Error(w, "Failed to generate content: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string]interface{}{
+		"job_id":  jobID,
+		"content": content,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// GenerateBulkRedditPostContent generates Reddit post content for multiple jobs
+func (jc *JobController) GenerateBulkRedditPostContent(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		JobIDs []string `json:"job_ids"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		log.Error("Failed to decode bulk generation request", "error", err)
+		http.Error(w, "Invalid JSON data", http.StatusBadRequest)
+		return
+	}
+
+	if len(body.JobIDs) == 0 {
+		http.Error(w, "job_ids is required", http.StatusBadRequest)
+		return
+	}
+
+	if len(body.JobIDs) > 50 {
+		http.Error(w, "Maximum 50 jobs can be processed at once", http.StatusBadRequest)
+		return
+	}
+
+	// Get all job postings
+	jobs := make([]models.JobPosting, 0, len(body.JobIDs))
+	for _, jobID := range body.JobIDs {
+		job, err := jc.jobBankRepo.GetJobPostingByID(jobID)
+		if err != nil {
+			log.Error("Failed to retrieve job for bulk generation", "error", err, "job_id", jobID)
+			continue
+		}
+		jobs = append(jobs, *job)
+	}
+
+	if len(jobs) == 0 {
+		http.Error(w, "No valid jobs found", http.StatusBadRequest)
+		return
+	}
+
+	// Generate content for all jobs
+	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Minute)
+	defer cancel()
+
+	response := jc.geminiService.GenerateBulkRedditPosts(ctx, jobs)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
