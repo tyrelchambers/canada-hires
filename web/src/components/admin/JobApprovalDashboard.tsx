@@ -1,10 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { User } from "@/types";
-import {
-  usePendingJobs,
-  usePostedJobs,
-} from "@/hooks/useAdminJobs";
+import { usePendingJobs, usePostedJobs } from "@/hooks/useAdminJobs";
 import { PendingJobsList } from "./PendingJobsList";
 import { PostedJobsList } from "./PostedJobsList";
 import { SubredditManager } from "./SubredditManager";
@@ -32,7 +29,7 @@ export function JobApprovalDashboard({
   const handleTabChange = async (value: string) => {
     await navigate({
       to: "/admin",
-      search: (prev) => ({ ...prev, jobTab: value }),
+      search: (prev) => ({ ...prev, jobTab: value, tab: "jobs" }),
     });
   };
 
@@ -47,7 +44,6 @@ export function JobApprovalDashboard({
     isLoading: postedLoading,
     error: postedError,
   } = usePostedJobs(postedPageSize, postedCurrentPage * postedPageSize);
-
 
   const handleJobSelect = (jobId: string, selected: boolean) => {
     if (selected) {
@@ -255,7 +251,6 @@ export function JobApprovalDashboard({
         <TabsContent value="subreddits" className="space-y-4">
           <SubredditManager />
         </TabsContent>
-
       </Tabs>
     </div>
   );

@@ -138,7 +138,7 @@ export function AuthNav() {
                       <DropdownMenuItem asChild>
                         <Link
                           to="/admin"
-                          search={{ tab: undefined }}
+                          search={{ tab: undefined, jobTab: undefined }}
                           className="flex items-center"
                         >
                           Admin Dashboard
@@ -265,7 +265,7 @@ export function AuthNav() {
                         onClick={() => {
                           void navigate({
                             to: "/admin",
-                            search: { tab: undefined },
+                            search: { tab: undefined, jobTab: undefined },
                           });
                           setIsMobileMenuOpen(false);
                         }}
