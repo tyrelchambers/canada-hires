@@ -90,7 +90,7 @@ export function useCreateReport() {
         .then((res) => res.data);
       return response;
     },
-    onSuccess: async (data, variables) => {
+    onSuccess: async (_, variables) => {
       // Invalidate general reports queries to refetch data
       await queryClient.invalidateQueries({ queryKey: ["reports"] });
       await queryClient.invalidateQueries({

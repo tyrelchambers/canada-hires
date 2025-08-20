@@ -38,7 +38,7 @@ export function ReportingBanner() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4">
-            <Link to="/reports/create">
+            <Link to="/reports/create" search={{ businessName: undefined, businessAddress: undefined }}>
               <Button size="lg" className="w-full sm:w-auto">
                 <FontAwesomeIcon icon={faFlag} className="mr-2" />
                 Submit a Report

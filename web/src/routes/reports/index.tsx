@@ -164,7 +164,7 @@ function ReportsPage() {
             {/* Results Header */}
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold">Business Reports</h2>
-              <Link to="/reports/create">
+              <Link to="/reports/create" search={{ businessName: undefined, businessAddress: undefined }}>
                 <Button>Submit your report</Button>
               </Link>
             </div>

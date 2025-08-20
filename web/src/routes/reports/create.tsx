@@ -337,8 +337,8 @@ export const Route = createFileRoute("/reports/create")({
   component: CreateReportPage,
   validateSearch: (search: Record<string, unknown>) => {
     return {
-      businessName: search.businessName as string,
-      businessAddress: search.businessAddress as string,
+      businessName: search.businessName as string | undefined,
+      businessAddress: search.businessAddress as string | undefined,
     };
   },
 });

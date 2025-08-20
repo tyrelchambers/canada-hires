@@ -49,7 +49,7 @@ export function AuthNav() {
   };
 
   const handleCreateReport = () => {
-    void navigate({ to: "/reports/create" });
+    void navigate({ to: "/reports/create", search: { businessName: undefined, businessAddress: undefined } });
   };
 
   // Generate initials from email for avatar fallback

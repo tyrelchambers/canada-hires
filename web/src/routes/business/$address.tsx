@@ -38,34 +38,35 @@ function BusinessDetailPage() {
     decodedAddress
   );
 
-  const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 80) return "text-green-600";
-    if (confidence >= 60) return "text-yellow-600";
-    return "text-red-600";
-  };
+  // Legacy functions kept for potential future use
+  // const getConfidenceColor = (confidence: number) => {
+  //   if (confidence >= 80) return "text-green-600";
+  //   if (confidence >= 60) return "text-yellow-600";
+  //   return "text-red-600";
+  // };
 
-  const getTFWRating = (confidenceLevel: number) => {
-    if (confidenceLevel >= 8)
-      return {
-        rating: "red",
-        color: "text-white",
-        label: "High TFW Usage",
-        percentage: 45,
-      };
-    if (confidenceLevel >= 5)
-      return {
-        rating: "yellow",
-        color: "text-yellow-600",
-        label: "Moderate TFW Usage",
-        percentage: 25,
-      };
-    return {
-      rating: "green",
-      color: "text-green-600",
-      label: "Low TFW Usage",
-      percentage: 10,
-    };
-  };
+  // const getTFWRating = (confidenceLevel: number) => {
+  //   if (confidenceLevel >= 8)
+  //     return {
+  //       rating: "red",
+  //       color: "text-white",
+  //       label: "High TFW Usage",
+  //       percentage: 45,
+  //     };
+  //   if (confidenceLevel >= 5)
+  //     return {
+  //       rating: "yellow",
+  //       color: "text-yellow-600",
+  //       label: "Moderate TFW Usage",
+  //       percentage: 25,
+  //     };
+  //   return {
+  //     rating: "green",
+  //     color: "text-green-600",
+  //     label: "Low TFW Usage",
+  //     percentage: 10,
+  //   };
+  // };
 
 
   if (loading) {
@@ -371,7 +372,6 @@ function BusinessDetailPage() {
                 ) : (
                   reports.map((report) => {
                     const reportRatio = report.tfw_ratio || 'few';
-                    const reportRating = getTFWRatingFromRatio(reportRatio);
                     const isVerified = true; // All reports are now automatically accepted
 
                     return (
