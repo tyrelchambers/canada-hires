@@ -13,6 +13,7 @@ import { Route as TrendsRouteImport } from './routes/trends'
 import { Route as LmiaRouteImport } from './routes/lmia'
 import { Route as JobsRouteImport } from './routes/jobs'
 import { Route as FeedbackRouteImport } from './routes/feedback'
+import { Route as BoycottsRouteImport } from './routes/boycotts'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ResearchIndexRouteImport } from './routes/research/index'
@@ -40,6 +41,11 @@ const JobsRoute = JobsRouteImport.update({
 const FeedbackRoute = FeedbackRouteImport.update({
   id: '/feedback',
   path: '/feedback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BoycottsRoute = BoycottsRouteImport.update({
+  id: '/boycotts',
+  path: '/boycotts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -87,6 +93,7 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/boycotts': typeof BoycottsRoute
   '/feedback': typeof FeedbackRoute
   '/jobs': typeof JobsRoute
   '/lmia': typeof LmiaRoute
@@ -101,6 +108,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/boycotts': typeof BoycottsRoute
   '/feedback': typeof FeedbackRoute
   '/jobs': typeof JobsRoute
   '/lmia': typeof LmiaRoute
@@ -116,6 +124,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/boycotts': typeof BoycottsRoute
   '/feedback': typeof FeedbackRoute
   '/jobs': typeof JobsRoute
   '/lmia': typeof LmiaRoute
@@ -132,6 +141,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/boycotts'
     | '/feedback'
     | '/jobs'
     | '/lmia'
@@ -146,6 +156,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
+    | '/boycotts'
     | '/feedback'
     | '/jobs'
     | '/lmia'
@@ -160,6 +171,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/boycotts'
     | '/feedback'
     | '/jobs'
     | '/lmia'
@@ -175,6 +187,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  BoycottsRoute: typeof BoycottsRoute
   FeedbackRoute: typeof FeedbackRoute
   JobsRoute: typeof JobsRoute
   LmiaRoute: typeof LmiaRoute
@@ -215,6 +228,13 @@ declare module '@tanstack/react-router' {
       path: '/feedback'
       fullPath: '/feedback'
       preLoaderRoute: typeof FeedbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/boycotts': {
+      id: '/boycotts'
+      path: '/boycotts'
+      fullPath: '/boycotts'
+      preLoaderRoute: typeof BoycottsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -279,6 +299,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  BoycottsRoute: BoycottsRoute,
   FeedbackRoute: FeedbackRoute,
   JobsRoute: JobsRoute,
   LmiaRoute: LmiaRoute,

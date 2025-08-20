@@ -49,14 +49,51 @@ func (c *cronService) Start(ctx context.Context) {
 	quarterlyInterval := 90 * 24 * time.Hour // 90 days
 	c.ticker = time.NewTicker(quarterlyInterval)
 
-	// Run initial update in background
+	// Check if we need to run initial update
 	go func() {
-		log.Info("Running initial LMIA data update")
-		err := c.lmiaService.RunFullUpdate()
+		// Check when the last successful update was
+		lastUpdate, err := c.lmiaService.GetLatestUpdateStatus()
 		if err != nil {
-			log.Error("Initial LMIA data update failed", "error", err)
+			log.Warn("Could not check last update status", "error", err)
+		}
+		
+		// Only run initial update if:
+		// 1. No previous update exists, OR
+		// 2. Last update was more than 7 days ago, OR
+		// 3. Last update failed
+		shouldRunUpdate := false
+		
+		if lastUpdate == nil {
+			log.Info("No previous LMIA update found, running initial update")
+			shouldRunUpdate = true
+		} else if lastUpdate.Status != "completed" {
+			log.Info("Last LMIA update failed, retrying", "last_status", lastUpdate.Status)
+			shouldRunUpdate = true
 		} else {
-			log.Info("Initial LMIA data update completed successfully")
+			// Check if it's been more than 7 days since last successful update
+			if lastUpdate.CompletedAt != nil {
+				daysSinceUpdate := time.Since(*lastUpdate.CompletedAt).Hours() / 24
+				if daysSinceUpdate > 7 {
+					log.Info("Last LMIA update was more than 7 days ago, running update", "days_ago", int(daysSinceUpdate))
+					shouldRunUpdate = true
+				} else {
+					log.Info("Recent LMIA update found, skipping initial update", "days_ago", int(daysSinceUpdate))
+				}
+			} else {
+				// CompletedAt is nil, treat as needing update
+				log.Info("Last LMIA update has no completion time, running update")
+				shouldRunUpdate = true
+			}
+		}
+		
+		if shouldRunUpdate {
+			log.Info("Running initial LMIA data update")
+			err := c.lmiaService.RunFullUpdate()
+			if err != nil {
+				log.Error("Initial LMIA data update failed", "error", err)
+			} else {
+				log.Info("Initial LMIA data update completed successfully")
+			}
 		}
 	}()
 

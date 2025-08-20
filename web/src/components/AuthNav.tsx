@@ -17,6 +17,7 @@ import {
   faFileAlt,
   faSignOutAlt,
   faChevronDown,
+  faBan,
 } from "@fortawesome/free-solid-svg-icons";
 
 const navigationLinks = [
@@ -131,6 +132,12 @@ export function AuthNav() {
                       className="mr-2 h-4 w-4"
                     />
                     Create Report
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/boycotts" className="flex items-center">
+                      <FontAwesomeIcon icon={faBan} className="mr-2 h-4 w-4" />
+                      My Boycotts
+                    </Link>
                   </DropdownMenuItem>
                   {isAdmin && (
                     <>
@@ -258,6 +265,17 @@ export function AuthNav() {
                     >
                       <FontAwesomeIcon icon={faFileAlt} className="mr-2" />
                       Create Report
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        void navigate({ to: "/boycotts" });
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="w-full"
+                    >
+                      <FontAwesomeIcon icon={faBan} className="mr-2" />
+                      My Boycotts
                     </Button>
                     {isAdmin && (
                       <Button

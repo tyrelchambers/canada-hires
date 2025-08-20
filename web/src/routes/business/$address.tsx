@@ -17,6 +17,8 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useAddressReports } from "@/hooks/useReports";
 import { AuthNav } from "@/components/AuthNav";
+import { BoycottButton } from "@/components/BoycottButton";
+import { useBoycottStats } from "@/hooks/useBoycotts";
 
 function BusinessDetailPage() {
   const { address } = Route.useParams();
@@ -29,6 +31,12 @@ function BusinessDetailPage() {
   } = useAddressReports(decodedAddress);
 
   const reports = reportsData?.reports || [];
+  const businessName = reports.length > 0 ? reports[0].business_name : "Unknown Business";
+  
+  const { data: boycottStats } = useBoycottStats(
+    businessName,
+    decodedAddress
+  );
 
   const getConfidenceColor = (confidence: number) => {
     if (confidence >= 80) return "text-green-600";
@@ -128,8 +136,6 @@ function BusinessDetailPage() {
     );
   }
 
-  const businessName =
-    reports.length > 0 ? reports[0].business_name : "Unknown Business";
   const averageConfidence =
     reports.length > 0
       ? reports.reduce(
@@ -217,7 +223,7 @@ function BusinessDetailPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-3 gap-6">
+                <div className="grid grid-cols-4 gap-6">
                   <div className="text-center">
                     <div className="text-3xl font-bold text-slate-900 mb-1">
                       {businessRating.percentage}%
@@ -242,6 +248,14 @@ function BusinessDetailPage() {
                     </div>
                     <div className="text-sm text-slate-600">
                       Community Reports
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-red-600 mb-1">
+                      {boycottStats?.boycott_count || 0}
+                    </div>
+                    <div className="text-sm text-slate-600">
+                      People Boycotting
                     </div>
                   </div>
                 </div>
@@ -410,6 +424,11 @@ function BusinessDetailPage() {
                 <Button className="w-full" asChild>
                   <Link to="/reports/create">Submit Report</Link>
                 </Button>
+                <BoycottButton 
+                  businessName={businessName}
+                  businessAddress={decodedAddress}
+                  className="w-full"
+                />
               </CardContent>
             </Card>
 
@@ -437,6 +456,12 @@ function BusinessDetailPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Verified Reports</span>
                   <span className="font-bold">{verifiedReports}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">People Boycotting</span>
+                  <span className="font-bold text-red-600">
+                    {boycottStats?.boycott_count || 0}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Last Updated</span>

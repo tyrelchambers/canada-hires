@@ -65,6 +65,10 @@ func registerProviders(c *dig.Container) error {
 		return err
 	}
 
+	if err := c.Provide(NewBoycottRepository); err != nil {
+		return err
+	}
+
 	// Service providers
 	if err := c.Provide(NewEmailService); err != nil {
 		return err
@@ -126,6 +130,10 @@ func registerProviders(c *dig.Container) error {
 		return err
 	}
 
+	if err := c.Provide(NewBoycottService); err != nil {
+		return err
+	}
+
 	// Controller providers
 	if err := c.Provide(NewAuthController); err != nil {
 		return err
@@ -153,6 +161,10 @@ func registerProviders(c *dig.Container) error {
 	}
 
 	if err := c.Provide(NewLMIAStatisticsController); err != nil {
+		return err
+	}
+
+	if err := c.Provide(NewBoycottController); err != nil {
 		return err
 	}
 
@@ -354,4 +366,19 @@ func NewLMIAStatisticsController(service services.LMIAStatisticsService) control
 // NewGeminiService creates a new Gemini service
 func NewGeminiService() (*services.GeminiService, error) {
 	return services.NewGeminiService()
+}
+
+// NewBoycottRepository creates a new boycott repository
+func NewBoycottRepository(database db.Database) repos.BoycottRepository {
+	return repos.NewBoycottRepository(database.GetDB())
+}
+
+// NewBoycottService creates a new boycott service
+func NewBoycottService(repo repos.BoycottRepository) services.BoycottService {
+	return services.NewBoycottService(repo)
+}
+
+// NewBoycottController creates a new boycott controller
+func NewBoycottController(service services.BoycottService) controllers.BoycottController {
+	return controllers.NewBoycottController(service)
 }

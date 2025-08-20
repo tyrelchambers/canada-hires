@@ -64,5 +64,13 @@ func InitRoutes(cn *container.Container, r *chi.Mux) {
 		if err != nil {
 			log.Error("Failed to initialize LMIA statistics routes", "error", err)
 		}
+		
+		// Add boycott routes
+		err = cn.Invoke(func(boycottController controllers.BoycottController, authMW func(http.Handler) http.Handler) {
+			BoycottRoutes(boycottController, authMW)(r)
+		})
+		if err != nil {
+			log.Error("Failed to initialize boycott routes", "error", err)
+		}
 	})
 }

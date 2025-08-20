@@ -13,6 +13,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowRight, faFlask } from "@fortawesome/free-solid-svg-icons";
 import { useJobStats } from "@/hooks/useJobPostings";
 import { useReportStats } from "@/hooks/useReports";
+import { TopBoycottedSection } from "@/components/TopBoycottedSection";
 
 export const Route = createFileRoute("/")({
   component: RouteComponent,
@@ -222,6 +223,8 @@ function RouteComponent() {
           </Link>
         </div>
       </section>
+
+      <TopBoycottedSection />
 
       <Footer />
     </div>
