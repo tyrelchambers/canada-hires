@@ -203,7 +203,7 @@ function RouteComponent() {
 
       <section className="my-20 mx-4 lg:max-w-5xl lg:w-full lg:mx-auto p-8 lg:p-20 bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl shadow-xl shadow-gray-900/60 relative">
         <StripedBackground className="mask-l-from-0%" />
-        <div className="flex flex-col items-start z-20 relativeX">
+        <div className="flex flex-col items-start z-20 relative">
           <FontAwesomeIcon icon={faFlask} className="text-3xl text-white" />
           <h3 className="lg:text-4xl font-medium -tracking-wide max-w-lg text-white my-4">
             See how JobWatch Canada is tracking LMIA exploitation
