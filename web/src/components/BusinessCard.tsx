@@ -18,14 +18,19 @@ interface Report {
   report_source: string;
   created_at: string;
   status: string;
-  confidence_level?: number;
+  confidence_level?: number; // Deprecated: use tfw_ratio
+  tfw_ratio?: 'few' | 'many' | 'most' | 'all';
 }
 
 interface GroupedBusiness {
   business_name: string;
   business_address: string;
   report_count: number;
-  confidence_level: number;
+  confidence_level: number; // Deprecated: use tfw_ratio_* fields
+  tfw_ratio_few: number;
+  tfw_ratio_many: number;
+  tfw_ratio_most: number;
+  tfw_ratio_all: number;
   latest_report: string;
 }
 
@@ -99,6 +104,20 @@ const renderStars = (rating: number) => {
   return stars;
 };
 
+const getTFWRatingFromRatio = (ratio: string) => {
+  switch (ratio) {
+    case 'all':
+      return { rating: 1, color: "text-red-600", label: "High TFW Usage (All)" };
+    case 'most':
+      return { rating: 2, color: "text-red-500", label: "High TFW Usage (Most)" };
+    case 'many':
+      return { rating: 3, color: "text-yellow-600", label: "Moderate TFW Usage" };
+    case 'few':
+    default:
+      return { rating: 4, color: "text-green-600", label: "Low TFW Usage" };
+  }
+};
+
 const getTFWRating = (confidenceLevel: number) => {
   if (confidenceLevel >= 8)
     return { rating: 2, color: "text-red-600", label: "High TFW Usage" };
@@ -112,11 +131,38 @@ export function BusinessCard({ report, business }: BusinessCardProps) {
   const isGrouped = !!business;
   const businessName = isGrouped ? business.business_name : report?.business_name;
   const businessAddress = isGrouped ? business.business_address : report?.business_address;
-  const confidenceLevel = isGrouped ? business.confidence_level : (report?.confidence_level || 0);
   const reportCount = isGrouped ? business.report_count : 1;
   const latestDate = isGrouped ? business.latest_report : report?.created_at;
   
-  const tfwRating = getTFWRating(confidenceLevel);
+  // Determine TFW rating based on available data
+  let tfwRating;
+  if (isGrouped && business) {
+    // For grouped businesses, find the most common TFW ratio
+    const ratioDistribution = {
+      few: business.tfw_ratio_few,
+      many: business.tfw_ratio_many,
+      most: business.tfw_ratio_most,
+      all: business.tfw_ratio_all,
+    };
+    const mostCommonRatio = Object.entries(ratioDistribution)
+      .reduce((a, b) => a[1] > b[1] ? a : b)[0] as 'few' | 'many' | 'most' | 'all';
+    
+    // If no TFW ratio data, fall back to confidence level
+    if (Object.values(ratioDistribution).every(val => val === 0)) {
+      tfwRating = getTFWRating(business.confidence_level);
+    } else {
+      tfwRating = getTFWRatingFromRatio(mostCommonRatio);
+    }
+  } else if (report) {
+    // For individual reports, use TFW ratio if available, otherwise confidence level
+    if (report.tfw_ratio) {
+      tfwRating = getTFWRatingFromRatio(report.tfw_ratio);
+    } else {
+      tfwRating = getTFWRating(report.confidence_level || 0);
+    }
+  } else {
+    tfwRating = getTFWRating(0);
+  }
 
   const cardContent = (
     <div className="hover:shadow-lg transition-shadow cursor-pointer bg-white rounded-md border border-border">

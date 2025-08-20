@@ -136,28 +136,34 @@ function BusinessDetailPage() {
     );
   }
 
-  const averageConfidence =
-    reports.length > 0
-      ? reports.reduce(
-          (sum, report) => sum + (report.confidence_level || 0),
-          0,
-        ) / reports.length
-      : 0;
+  // Calculate TFW ratio distribution
+  const tfwRatioDistribution = {
+    few: reports.filter(r => r.tfw_ratio === 'few').length,
+    many: reports.filter(r => r.tfw_ratio === 'many').length,
+    most: reports.filter(r => r.tfw_ratio === 'most').length,
+    all: reports.filter(r => r.tfw_ratio === 'all').length,
+  };
 
-  const businessRating = getTFWRating(averageConfidence);
-  const confidencePercentage = Math.round(averageConfidence * 10);
-  const verifiedReports = reports.length; // All reports are now automatically accepted
+  // Get most common ratio
+  const mostCommonRatio = Object.entries(tfwRatioDistribution)
+    .reduce((a, b) => a[1] > b[1] ? a : b)[0] as 'few' | 'many' | 'most' | 'all';
 
-  // Calculate report distribution
-  const highTFWReports = reports.filter(
-    (r) => (r.confidence_level || 0) >= 8,
-  ).length;
-  const moderateTFWReports = reports.filter(
-    (r) => (r.confidence_level || 0) >= 5 && (r.confidence_level || 0) < 8,
-  ).length;
-  const lowTFWReports = reports.filter(
-    (r) => (r.confidence_level || 0) < 5,
-  ).length;
+  const getTFWRatingFromRatio = (ratio: string) => {
+    switch (ratio) {
+      case 'all':
+        return { rating: "red", color: "text-white", label: "High TFW Usage", percentage: 80 };
+      case 'most':
+        return { rating: "red", color: "text-white", label: "High TFW Usage", percentage: 65 };
+      case 'many':
+        return { rating: "yellow", color: "text-yellow-600", label: "Moderate TFW Usage", percentage: 40 };
+      case 'few':
+      default:
+        return { rating: "green", color: "text-green-600", label: "Low TFW Usage", percentage: 15 };
+    }
+  };
+
+  const businessRating = getTFWRatingFromRatio(mostCommonRatio);
+  const verifiedReports = reports.length;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -225,21 +231,19 @@ function BusinessDetailPage() {
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-4 gap-6">
                   <div className="text-center">
+                    <div className="text-3xl font-bold text-slate-900 mb-1 capitalize">
+                      {mostCommonRatio}
+                    </div>
+                    <div className="text-sm text-slate-600">
+                      Most Common Ratio
+                    </div>
+                  </div>
+                  <div className="text-center">
                     <div className="text-3xl font-bold text-slate-900 mb-1">
                       {businessRating.percentage}%
                     </div>
                     <div className="text-sm text-slate-600">
                       Estimated TFW Usage
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div
-                      className={`text-3xl font-bold mb-1 ${getConfidenceColor(confidencePercentage)}`}
-                    >
-                      {confidencePercentage}%
-                    </div>
-                    <div className="text-sm text-slate-600">
-                      Confidence Score
                     </div>
                   </div>
                   <div className="text-center">
@@ -263,68 +267,81 @@ function BusinessDetailPage() {
                 <Separator />
 
                 <div className="space-y-4">
-                  <h4 className="font-semibold">Report Distribution</h4>
+                  <h4 className="font-semibold">TFW Ratio Distribution</h4>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
-                        <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                        <span className="text-sm">
-                          High TFW (8-10 confidence)
-                        </span>
+                        <div className="w-3 h-3 bg-red-600 rounded-full"></div>
+                        <span className="text-sm">All TFW workers</span>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Progress
                           value={
                             reports.length > 0
-                              ? (highTFWReports / reports.length) * 100
+                              ? (tfwRatioDistribution.all / reports.length) * 100
                               : 0
                           }
                           className="w-24"
                         />
                         <span className="text-sm font-medium">
-                          {highTFWReports} reports
+                          {tfwRatioDistribution.all} reports
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-3 h-3 bg-red-400 rounded-full"></div>
+                        <span className="text-sm">Most TFW workers</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Progress
+                          value={
+                            reports.length > 0
+                              ? (tfwRatioDistribution.most / reports.length) * 100
+                              : 0
+                          }
+                          className="w-24"
+                        />
+                        <span className="text-sm font-medium">
+                          {tfwRatioDistribution.most} reports
                         </span>
                       </div>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                        <span className="text-sm">
-                          Moderate TFW (5-7 confidence)
-                        </span>
+                        <span className="text-sm">Many TFW workers</span>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Progress
                           value={
                             reports.length > 0
-                              ? (moderateTFWReports / reports.length) * 100
+                              ? (tfwRatioDistribution.many / reports.length) * 100
                               : 0
                           }
                           className="w-24"
                         />
                         <span className="text-sm font-medium">
-                          {moderateTFWReports} reports
+                          {tfwRatioDistribution.many} reports
                         </span>
                       </div>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                        <span className="text-sm">
-                          Low TFW (0-4 confidence)
-                        </span>
+                        <span className="text-sm">Few TFW workers</span>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Progress
                           value={
                             reports.length > 0
-                              ? (lowTFWReports / reports.length) * 100
+                              ? (tfwRatioDistribution.few / reports.length) * 100
                               : 0
                           }
                           className="w-24"
                         />
                         <span className="text-sm font-medium">
-                          {lowTFWReports} reports
+                          {tfwRatioDistribution.few} reports
                         </span>
                       </div>
                     </div>
@@ -353,9 +370,8 @@ function BusinessDetailPage() {
                   </div>
                 ) : (
                   reports.map((report) => {
-                    const reportRating = getTFWRating(
-                      report.confidence_level || 0,
-                    );
+                    const reportRatio = report.tfw_ratio || 'few';
+                    const reportRating = getTFWRatingFromRatio(reportRatio);
                     const isVerified = true; // All reports are now automatically accepted
 
                     return (
@@ -396,8 +412,8 @@ function BusinessDetailPage() {
                         </div>
 
                         <div className="flex items-center space-x-2">
-                          <span className="text-sm">Reported TFW usage:</span>
-                          <Badge>{reportRating.label}</Badge>
+                          <span className="text-sm">TFW ratio observed:</span>
+                          <Badge className="capitalize">{reportRatio} TFW workers</Badge>
                         </div>
 
                         {report.additional_notes && (
@@ -422,7 +438,15 @@ function BusinessDetailPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <Button className="w-full" asChild>
-                  <Link to="/reports/create">Submit Report</Link>
+                  <Link 
+                    to="/reports/create" 
+                    search={{ 
+                      businessName: businessName, 
+                      businessAddress: decodedAddress 
+                    }}
+                  >
+                    Submit Report
+                  </Link>
                 </Button>
                 <BoycottButton 
                   businessName={businessName}
@@ -442,11 +466,9 @@ function BusinessDetailPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">Confidence Score</span>
-                  <span
-                    className={`font-bold ${getConfidenceColor(confidencePercentage)}`}
-                  >
-                    {confidencePercentage}%
+                  <span className="text-sm">Most Common Ratio</span>
+                  <span className="font-bold capitalize text-slate-900">
+                    {mostCommonRatio}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">

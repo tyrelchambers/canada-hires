@@ -157,8 +157,6 @@ func (r *boycottRepository) IsBoycottedByUser(userID, businessName, businessAddr
 		args = []interface{}{userID, businessName, businessAddress}
 	}
 
-	fmt.Println(count)
-
 	err := r.db.Get(&count, query, args...)
 	if err != nil {
 		return false, fmt.Errorf("failed to check boycott status: %w", err)

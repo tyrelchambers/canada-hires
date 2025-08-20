@@ -159,6 +159,16 @@ VITE_MAPBOX_ACCESS_TOKEN=your_mapbox_access_token_here
 - Frontend report submission forms and management
 - Report listing and filtering functionality
 
+✅ **Boycott System**
+- User-driven boycott functionality for businesses
+- Boycott model with user-business relationship tracking
+- REST API endpoints for boycott management (toggle, stats, user lists)
+- "Are you boycotting?" button on business pages with visual feedback
+- Personal boycott management page ("My Boycotts")
+- Top 3 most boycotted companies displayed on homepage
+- Prominent boycott count display on business detail pages
+- Authentication-required boycott actions with proper validation
+
 ### In Development
 🔄 **Business Directory**
 - Business model and repository (structure exists)

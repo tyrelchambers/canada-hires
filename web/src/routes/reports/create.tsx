@@ -20,14 +20,15 @@ import { useCreateReport } from "@/hooks/useReports";
 
 function CreateReportPage() {
   const navigate = useNavigate();
+  const { businessName, businessAddress } = Route.useSearch();
   const { data: user, isLoading, error } = useCurrentUser();
   const createReportMutation = useCreateReport();
 
   const [formData, setFormData] = useState<CreateReportRequest>({
-    business_name: "",
-    business_address: "",
+    business_name: businessName || "",
+    business_address: businessAddress || "",
     report_source: "employment",
-    confidence_level: 5,
+    tfw_ratio: "few",
     additional_notes: "",
   });
 
@@ -36,8 +37,15 @@ function CreateReportPage() {
 
     try {
       await createReportMutation.mutateAsync(formData);
-      // Navigate back to directory or reports list
-      void navigate({ to: "/reports" });
+      // Navigate back to business page if we came from there, otherwise go to reports directory
+      if (businessAddress) {
+        void navigate({ 
+          to: "/business/$address", 
+          params: { address: encodeURIComponent(businessAddress) } 
+        });
+      } else {
+        void navigate({ to: "/reports" });
+      }
     } catch (error) {
       console.error("Failed to create report:", error);
     }
@@ -96,11 +104,20 @@ function CreateReportPage() {
         <div className="mb-6">
           <Button
             variant="ghost"
-            onClick={() => navigate({ to: "/reports" })}
+            onClick={() => {
+              if (businessAddress) {
+                navigate({ 
+                  to: "/business/$address", 
+                  params: { address: encodeURIComponent(businessAddress) } 
+                });
+              } else {
+                navigate({ to: "/reports" });
+              }
+            }}
             className="mb-4"
           >
             <FontAwesomeIcon icon={faArrowLeft} className="mr-2" />
-            Back to Directory
+            {businessAddress ? `Back to ${businessName}` : "Back to Directory"}
           </Button>
 
           <h1 className="text-3xl font-bold mb-2 flex items-center">
@@ -171,28 +188,27 @@ function CreateReportPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="confidence_level">
-                      Confidence Level: {formData.confidence_level}/10
-                    </Label>
-                    <input
-                      type="range"
-                      id="confidence_level"
-                      min="1"
-                      max="10"
-                      value={formData.confidence_level || 5}
+                    <Label htmlFor="tfw_ratio">TFW Worker Ratio *</Label>
+                    <select
+                      id="tfw_ratio"
+                      required
+                      value={formData.tfw_ratio}
                       onChange={(e) =>
                         handleInputChange(
-                          "confidence_level",
-                          parseInt(e.target.value),
+                          "tfw_ratio",
+                          e.target.value as "few" | "many" | "most" | "all",
                         )
                       }
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                    />
-                    <div className="flex justify-between text-xs text-gray-500">
-                      <span>1 - Low</span>
-                      <span>5 - Medium</span>
-                      <span>10 - High</span>
-                    </div>
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <option value="few">Few TFW workers observed</option>
+                      <option value="many">Many TFW workers (mixed workforce)</option>
+                      <option value="most">Most workers appeared to be TFW</option>
+                      <option value="all">All observed workers were TFW</option>
+                    </select>
+                    <p className="text-xs text-gray-500">
+                      Select the ratio of TFW workers you observed at this business.
+                    </p>
                   </div>
 
                   <div className="space-y-2">
@@ -224,7 +240,16 @@ function CreateReportPage() {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => navigate({ to: "/reports" })}
+                      onClick={() => {
+                        if (businessAddress) {
+                          navigate({ 
+                            to: "/business/$address", 
+                            params: { address: encodeURIComponent(businessAddress) } 
+                          });
+                        } else {
+                          navigate({ to: "/reports" });
+                        }
+                      }}
                     >
                       Cancel
                     </Button>
@@ -310,4 +335,10 @@ function CreateReportPage() {
 
 export const Route = createFileRoute("/reports/create")({
   component: CreateReportPage,
+  validateSearch: (search: Record<string, unknown>) => {
+    return {
+      businessName: search.businessName as string,
+      businessAddress: search.businessAddress as string,
+    };
+  },
 });

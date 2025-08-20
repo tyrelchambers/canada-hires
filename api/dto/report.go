@@ -9,7 +9,8 @@ type CreateReportRequest struct {
 	BusinessName    string  `json:"business_name" validate:"required,min=1,max=255"`
 	BusinessAddress string  `json:"business_address" validate:"required,min=1"`
 	ReportSource    string  `json:"report_source" validate:"required,oneof=employment observation public_record"`
-	ConfidenceLevel *int    `json:"confidence_level" validate:"omitempty,gte=1,lte=10"`
+	ConfidenceLevel *int    `json:"confidence_level" validate:"omitempty,gte=1,lte=10"` // Deprecated: use TFWRatio
+	TFWRatio        *string `json:"tfw_ratio" validate:"omitempty,oneof=few many most all"`
 	AdditionalNotes *string `json:"additional_notes" validate:"omitempty,max=1000"`
 }
 
@@ -17,7 +18,8 @@ type UpdateReportRequest struct {
 	BusinessName    string  `json:"business_name" validate:"required,min=1,max=255"`
 	BusinessAddress string  `json:"business_address" validate:"required,min=1"`
 	ReportSource    string  `json:"report_source" validate:"required,oneof=employment observation public_record"`
-	ConfidenceLevel *int    `json:"confidence_level" validate:"omitempty,gte=1,lte=10"`
+	ConfidenceLevel *int    `json:"confidence_level" validate:"omitempty,gte=1,lte=10"` // Deprecated: use TFWRatio
+	TFWRatio        *string `json:"tfw_ratio" validate:"omitempty,oneof=few many most all"`
 	AdditionalNotes *string `json:"additional_notes" validate:"omitempty,max=1000"`
 }
 
@@ -27,7 +29,8 @@ type ReportResponse struct {
 	BusinessName    string    `json:"business_name"`
 	BusinessAddress string    `json:"business_address"`
 	ReportSource    string    `json:"report_source"`
-	ConfidenceLevel *int      `json:"confidence_level"`
+	ConfidenceLevel *int      `json:"confidence_level"` // Deprecated: use TFWRatio
+	TFWRatio        *string   `json:"tfw_ratio"`
 	AdditionalNotes *string   `json:"additional_notes"`
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
@@ -54,6 +57,7 @@ func ToReportResponse(report *models.Report) *ReportResponse {
 		BusinessAddress: report.BusinessAddress,
 		ReportSource:    report.ReportSource,
 		ConfidenceLevel: report.ConfidenceLevel,
+		TFWRatio:        report.TFWRatio,
 		AdditionalNotes: report.AdditionalNotes,
 		CreatedAt:       report.CreatedAt,
 		UpdatedAt:       report.UpdatedAt,

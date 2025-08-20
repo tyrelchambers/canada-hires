@@ -4,7 +4,6 @@ import (
 	"canada-hires/helpers"
 	"canada-hires/services"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -186,7 +185,6 @@ func (c *boycottController) GetBoycottStats(w http.ResponseWriter, r *http.Reque
 	// If user is authenticated, also check if they're boycotting
 	user := helpers.GetUserFromContext(r.Context())
 	isBoycottedByUser := false
-	fmt.Println(user)
 	if user != nil {
 		isBoycottedByUser, err = c.service.IsBoycottedByUser(user.ID, businessName, businessAddress)
 		if err != nil {

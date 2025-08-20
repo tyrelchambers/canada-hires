@@ -225,7 +225,8 @@ export interface Report {
   business_name: string;
   business_address: string;
   report_source: 'employment' | 'observation' | 'public_record';
-  confidence_level?: number; // 1-10 scale
+  confidence_level?: number; // Deprecated: use tfw_ratio
+  tfw_ratio?: 'few' | 'many' | 'most' | 'all';
   additional_notes?: string;
   created_at: string;
   updated_at: string;
@@ -236,7 +237,8 @@ export interface CreateReportRequest {
   business_name: string;
   business_address: string;
   report_source: 'employment' | 'observation' | 'public_record';
-  confidence_level?: number;
+  confidence_level?: number; // Deprecated: use tfw_ratio
+  tfw_ratio?: 'few' | 'many' | 'most' | 'all';
   additional_notes?: string;
 }
 
@@ -261,7 +263,11 @@ export interface ReportsByAddress {
   business_name: string;
   business_address: string;
   report_count: number;
-  confidence_level: number;
+  confidence_level: number; // Deprecated: use tfw_ratio_* fields
+  tfw_ratio_few: number;
+  tfw_ratio_many: number;
+  tfw_ratio_most: number;
+  tfw_ratio_all: number;
   latest_report: string;
 }
 

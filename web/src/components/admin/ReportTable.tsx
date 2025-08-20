@@ -177,7 +177,7 @@ export function ReportTable({ onEditReport, onViewReport }: ReportTableProps) {
                     <th className="text-left p-4 font-semibold">Business</th>
                     <th className="text-left p-4 font-semibold">Address</th>
                     <th className="text-left p-4 font-semibold">Source</th>
-                    <th className="text-left p-4 font-semibold">Confidence</th>
+                    <th className="text-left p-4 font-semibold">TFW Ratio</th>
                     <th className="text-left p-4 font-semibold">Submitted</th>
                     <th className="text-left p-4 font-semibold">Actions</th>
                   </tr>
@@ -202,8 +202,10 @@ export function ReportTable({ onEditReport, onViewReport }: ReportTableProps) {
                         {getReportSourceBadge(report.report_source)}
                       </td>
                       <td className="p-4">
-                        {report.confidence_level ? (
-                          <span className="font-medium">{report.confidence_level}/10</span>
+                        {report.tfw_ratio ? (
+                          <span className="font-medium capitalize">{report.tfw_ratio}</span>
+                        ) : report.confidence_level ? (
+                          <span className="font-medium text-gray-500">{report.confidence_level}/10 (legacy)</span>
                         ) : (
                           <span className="text-gray-400">-</span>
                         )}

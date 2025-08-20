@@ -39,7 +39,8 @@ export function ReportDetailsModal({
     business_name: "",
     business_address: "",
     report_source: "employment" as "employment" | "observation" | "public_record",
-    confidence_level: undefined as number | undefined,
+    confidence_level: undefined as number | undefined, // Deprecated: use tfw_ratio
+    tfw_ratio: undefined as "few" | "many" | "most" | "all" | undefined,
     additional_notes: "",
   });
 
@@ -53,6 +54,7 @@ export function ReportDetailsModal({
         business_address: report.business_address,
         report_source: report.report_source as "employment" | "observation" | "public_record",
         confidence_level: report.confidence_level,
+        tfw_ratio: report.tfw_ratio,
         additional_notes: report.additional_notes || "",
       });
     }
@@ -70,6 +72,7 @@ export function ReportDetailsModal({
           business_address: formData.business_address,
           report_source: formData.report_source,
           confidence_level: formData.confidence_level,
+          tfw_ratio: formData.tfw_ratio,
           additional_notes: formData.additional_notes || undefined,
         },
       });
@@ -89,6 +92,7 @@ export function ReportDetailsModal({
         business_address: report.business_address,
         report_source: report.report_source as "employment" | "observation" | "public_record",
         confidence_level: report.confidence_level,
+        tfw_ratio: report.tfw_ratio,
         additional_notes: report.additional_notes || "",
       });
     }
@@ -231,7 +235,36 @@ export function ReportDetailsModal({
             </div>
 
             <div>
-              <Label htmlFor="confidence_level">Confidence Level (1-10)</Label>
+              <Label htmlFor="tfw_ratio">TFW Worker Ratio</Label>
+              {isEditing ? (
+                <select
+                  id="tfw_ratio"
+                  value={formData.tfw_ratio || ""}
+                  onChange={(e) => setFormData(prev => ({ 
+                    ...prev, 
+                    tfw_ratio: e.target.value ? e.target.value as "few" | "many" | "most" | "all" : undefined 
+                  }))}
+                  className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">Select ratio...</option>
+                  <option value="few">Few TFW workers observed</option>
+                  <option value="many">Many TFW workers (mixed workforce)</option>
+                  <option value="most">Most workers appeared to be TFW</option>
+                  <option value="all">All observed workers were TFW</option>
+                </select>
+              ) : (
+                <div className="mt-1 p-2 bg-gray-50 rounded-md">
+                  {report.tfw_ratio ? (
+                    <span className="font-semibold capitalize">{report.tfw_ratio} TFW workers</span>
+                  ) : (
+                    <span className="text-gray-500">Not specified</span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="confidence_level">Confidence Level (1-10) [Deprecated]</Label>
               {isEditing ? (
                 <Input
                   id="confidence_level"
@@ -244,7 +277,8 @@ export function ReportDetailsModal({
                     confidence_level: e.target.value ? parseInt(e.target.value) : undefined 
                   }))}
                   className="mt-1"
-                  placeholder="Optional"
+                  placeholder="Optional (deprecated)"
+                  disabled
                 />
               ) : (
                 <div className="mt-1 p-2 bg-gray-50 rounded-md">

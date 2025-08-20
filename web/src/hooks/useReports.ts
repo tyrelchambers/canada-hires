@@ -8,7 +8,8 @@ interface Report {
   business_name: string;
   business_address: string;
   report_source: string;
-  confidence_level?: number;
+  confidence_level?: number; // Deprecated: use tfw_ratio
+  tfw_ratio?: 'few' | 'many' | 'most' | 'all';
   additional_notes?: string;
   ip_address?: string;
   created_at: string;
@@ -39,7 +40,8 @@ interface CreateReportRequest {
   business_name: string;
   business_address: string;
   report_source: string;
-  confidence_level?: number;
+  confidence_level?: number; // Deprecated: use tfw_ratio
+  tfw_ratio?: 'few' | 'many' | 'most' | 'all';
   additional_notes?: string;
 }
 
@@ -47,7 +49,8 @@ interface UpdateReportRequest {
   business_name: string;
   business_address: string;
   report_source: string;
-  confidence_level?: number;
+  confidence_level?: number; // Deprecated: use tfw_ratio
+  tfw_ratio?: 'few' | 'many' | 'most' | 'all';
   additional_notes?: string;
 }
 
@@ -87,12 +90,19 @@ export function useCreateReport() {
         .then((res) => res.data);
       return response;
     },
-    onSuccess: async () => {
-      // Invalidate reports queries to refetch data
+    onSuccess: async (data, variables) => {
+      // Invalidate general reports queries to refetch data
       await queryClient.invalidateQueries({ queryKey: ["reports"] });
       await queryClient.invalidateQueries({
         queryKey: ["reportsGroupedByAddress"],
       });
+      
+      // Invalidate the specific business address query if we have an address
+      if (variables.business_address) {
+        await queryClient.invalidateQueries({
+          queryKey: ["addressReports", variables.business_address],
+        });
+      }
     },
   });
 }

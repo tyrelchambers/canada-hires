@@ -47,15 +47,14 @@ func (r *reportRepository) Create(report *models.Report) error {
 
 	query := `
 		INSERT INTO reports (id, user_id, business_name, business_address, report_source,
-			confidence_level, additional_notes, ip_address, created_at, updated_at)
+			confidence_level, tfw_ratio, additional_notes, ip_address, created_at, updated_at)
 		VALUES (:id, :user_id, :business_name, :business_address, :report_source,
-			:confidence_level, :additional_notes, :ip_address, :created_at, :updated_at)
+			:confidence_level, :tfw_ratio, :additional_notes, :ip_address, :created_at, :updated_at)
 	`
 
 	report.ID = uuid.New().String()
 	report.CreatedAt = time.Now().UTC()
 	report.UpdatedAt = time.Now().UTC()
-
 
 	_, err = tx.NamedExec(query, report)
 	if err != nil {
@@ -117,7 +116,6 @@ func (r *reportRepository) GetByBusinessName(businessName string, limit, offset 
 	return reports, nil
 }
 
-
 func (r *reportRepository) GetWithFilters(filters ReportFilters, limit, offset int) ([]*models.Report, error) {
 	var reports []*models.Report
 	var args []interface{}
@@ -147,7 +145,6 @@ func (r *reportRepository) GetWithFilters(filters ReportFilters, limit, offset i
 		conditions = append(conditions, fmt.Sprintf("business_address ILIKE $%d", argCount))
 		args = append(args, "%"+filters.Province+"%")
 	}
-
 
 	// Add year filter
 	if filters.Year != "" {
@@ -191,6 +188,7 @@ func (r *reportRepository) Update(report *models.Report) error {
 			business_address = :business_address,
 			report_source = :report_source,
 			confidence_level = :confidence_level,
+			tfw_ratio = :tfw_ratio,
 			additional_notes = :additional_notes,
 			updated_at = NOW()
 		WHERE id = :id
@@ -209,7 +207,6 @@ func (r *reportRepository) Update(report *models.Report) error {
 
 	return nil
 }
-
 
 func (r *reportRepository) Delete(id string) error {
 	tx, err := r.db.Beginx()
@@ -274,7 +271,6 @@ func (r *reportRepository) GetReportsGroupedByAddress(filters *ReportFilters, li
 			args = append(args, "%"+filters.Province+"%")
 		}
 
-
 		// Add year filter
 		if filters.Year != "" {
 			argCount++
@@ -291,6 +287,10 @@ func (r *reportRepository) GetReportsGroupedByAddress(filters *ReportFilters, li
 			business_address,
 			COUNT(*) as report_count,
 			AVG(COALESCE(confidence_level, 5)) as confidence_level,
+			SUM(CASE WHEN tfw_ratio = 'few' THEN 1 ELSE 0 END) as tfw_ratio_few,
+			SUM(CASE WHEN tfw_ratio = 'many' THEN 1 ELSE 0 END) as tfw_ratio_many,
+			SUM(CASE WHEN tfw_ratio = 'most' THEN 1 ELSE 0 END) as tfw_ratio_most,
+			SUM(CASE WHEN tfw_ratio = 'all' THEN 1 ELSE 0 END) as tfw_ratio_all,
 			MAX(created_at) as latest_report
 		FROM reports
 		WHERE %s
@@ -306,8 +306,6 @@ func (r *reportRepository) GetReportsGroupedByAddress(filters *ReportFilters, li
 	if err != nil {
 		return nil, fmt.Errorf("failed to get filtered reports grouped by address: %w", err)
 	}
-
-	fmt.Println(grouped)
 
 	return grouped, nil
 }

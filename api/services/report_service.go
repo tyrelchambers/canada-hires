@@ -13,7 +13,8 @@ type CreateReportRequest struct {
 	BusinessName    string  `json:"business_name"`
 	BusinessAddress string  `json:"business_address"`
 	ReportSource    string  `json:"report_source"`
-	ConfidenceLevel *int    `json:"confidence_level"`
+	ConfidenceLevel *int    `json:"confidence_level"` // Deprecated: use TFWRatio
+	TFWRatio        *string `json:"tfw_ratio"`
 	AdditionalNotes *string `json:"additional_notes"`
 	IPAddress       *string `json:"ip_address"`
 }
@@ -57,6 +58,7 @@ func (s *reportService) CreateReport(req *CreateReportRequest) (*models.Report, 
 		BusinessAddress: strings.TrimSpace(req.BusinessAddress),
 		ReportSource:    req.ReportSource,
 		ConfidenceLevel: req.ConfidenceLevel,
+		TFWRatio:        req.TFWRatio,
 		AdditionalNotes: req.AdditionalNotes,
 		IPAddress:       req.IPAddress,
 	}
@@ -87,12 +89,20 @@ func (s *reportService) validateCreateRequest(req *CreateReportRequest) error {
 	if req.ConfidenceLevel != nil && (*req.ConfidenceLevel < 1 || *req.ConfidenceLevel > 10) {
 		return fmt.Errorf("confidence level must be between 1 and 10")
 	}
+	if req.TFWRatio != nil && !isValidTFWRatio(*req.TFWRatio) {
+		return fmt.Errorf("invalid TFW ratio: must be 'few', 'many', 'most', or 'all'")
+	}
 	return nil
 }
 
 func isValidReportSource(source string) bool {
 	validSources := []string{"employment", "observation", "public_record"}
 	return slices.Contains(validSources, source)
+}
+
+func isValidTFWRatio(ratio string) bool {
+	validRatios := []string{"few", "many", "most", "all"}
+	return slices.Contains(validRatios, ratio)
 }
 
 func (s *reportService) GetReportByID(id string) (*models.Report, error) {
@@ -233,6 +243,9 @@ func (s *reportService) validateReport(report *models.Report) error {
 	}
 	if report.ConfidenceLevel != nil && (*report.ConfidenceLevel < 1 || *report.ConfidenceLevel > 10) {
 		return fmt.Errorf("confidence level must be between 1 and 10")
+	}
+	if report.TFWRatio != nil && !isValidTFWRatio(*report.TFWRatio) {
+		return fmt.Errorf("invalid TFW ratio: must be 'few', 'many', 'most', or 'all'")
 	}
 	return nil
 }

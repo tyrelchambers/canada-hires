@@ -56,6 +56,7 @@ func (c *reportController) CreateReport(w http.ResponseWriter, r *http.Request) 
 		BusinessAddress: req.BusinessAddress,
 		ReportSource:    req.ReportSource,
 		ConfidenceLevel: req.ConfidenceLevel,
+		TFWRatio:        req.TFWRatio,
 		AdditionalNotes: req.AdditionalNotes,
 		IPAddress:       &clientIP,
 	}
