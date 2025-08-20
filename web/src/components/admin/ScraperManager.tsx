@@ -1,74 +1,111 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useApiClient } from "@/hooks/useApiClient";
-import { useMutation } from "@tanstack/react-query";
+import {
+  useLMIAOperations,
+  useScraperOperations,
+} from "@/hooks/useLMIAOperations";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPlay, faChartLine, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import {
+  faPlay,
+  faChartLine,
+  faSpinner,
+  faDownload,
+  faCogs,
+} from "@fortawesome/free-solid-svg-icons";
 
 export function ScraperManager() {
-  const apiClient = useApiClient();
+  const lmiaOperations = useLMIAOperations();
+  const scraperOperations = useScraperOperations();
   const [scraperStatus, setScraperStatus] = useState<string | null>(null);
   const [statisticsStatus, setStatisticsStatus] = useState<string | null>(null);
-
-  const scraperMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiClient.post("/admin/scraper/run");
-      return response.data;
-    },
-    onSuccess: (data) => {
-      setScraperStatus("Scraper job started successfully!");
-      console.log("Scraper triggered:", data);
-    },
-    onError: (error: any) => {
-      setScraperStatus(`Error: ${error.response?.data?.message || error.message}`);
-      console.error("Scraper error:", error);
-    },
-  });
-
-  const statisticsMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiClient.post("/admin/scraper/statistics");
-      return response.data;
-    },
-    onSuccess: (data) => {
-      setStatisticsStatus("Statistics aggregation started successfully!");
-      console.log("Statistics triggered:", data);
-    },
-    onError: (error: any) => {
-      setStatisticsStatus(`Error: ${error.response?.data?.message || error.message}`);
-      console.error("Statistics error:", error);
-    },
-  });
-
-  const lmiaBackfillMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiClient.post("/lmia/statistics/backfill");
-      return response.data;
-    },
-    onSuccess: (data) => {
-      setStatisticsStatus("LMIA statistics backfill completed successfully!");
-      console.log("LMIA backfill triggered:", data);
-    },
-    onError: (error: any) => {
-      setStatisticsStatus(`Error: ${error.response?.data?.message || error.message}`);
-      console.error("LMIA backfill error:", error);
-    },
-  });
+  const [lmiaScraperStatus, setLmiaScraperStatus] = useState<string | null>(
+    null,
+  );
+  const [lmiaProcessorStatus, setLmiaProcessorStatus] = useState<string | null>(
+    null,
+  );
 
   const handleTriggerScraper = () => {
     setScraperStatus(null);
-    scraperMutation.mutate();
+    scraperOperations.scraper.mutate(undefined, {
+      onSuccess: (data) => {
+        setScraperStatus("Scraper job started successfully!");
+        console.log("Scraper triggered:", data);
+      },
+      onError: (error: unknown) => {
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        setScraperStatus(`Error: ${errorMessage}`);
+        console.error("Scraper error:", error);
+      },
+    });
   };
 
   const handleTriggerStatistics = () => {
     setStatisticsStatus(null);
-    statisticsMutation.mutate();
+    scraperOperations.statistics.mutate(undefined, {
+      onSuccess: (data) => {
+        setStatisticsStatus("Statistics aggregation started successfully!");
+        console.log("Statistics triggered:", data);
+      },
+      onError: (error: unknown) => {
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        setStatisticsStatus(`Error: ${errorMessage}`);
+        console.error("Statistics error:", error);
+      },
+    });
   };
 
   const handleTriggerLMIABackfill = () => {
     setStatisticsStatus(null);
-    lmiaBackfillMutation.mutate();
+    lmiaOperations.backfill.mutate(undefined, {
+      onSuccess: (data) => {
+        setStatisticsStatus("LMIA statistics backfill completed successfully!");
+        console.log("LMIA backfill triggered:", data);
+      },
+      onError: (error: unknown) => {
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        setStatisticsStatus(`Error: ${errorMessage}`);
+        console.error("LMIA backfill error:", error);
+      },
+    });
+  };
+
+  const handleTriggerLMIAScraper = () => {
+    setLmiaScraperStatus(null);
+    lmiaOperations.fullUpdate.mutate(undefined, {
+      onSuccess: (data) => {
+        setLmiaScraperStatus("LMIA data scraper started successfully!");
+        console.log("LMIA scraper triggered:", data);
+      },
+      onError: (error: unknown) => {
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        setLmiaScraperStatus(`Error: ${errorMessage}`);
+        console.error("LMIA scraper error:", error);
+      },
+    });
+  };
+
+  const handleTriggerLMIAProcessor = () => {
+    setLmiaProcessorStatus(null);
+    lmiaOperations.processor.mutate(undefined, {
+      onSuccess: (data) => {
+        setLmiaProcessorStatus(
+          "LMIA resource processing started successfully!",
+        );
+        console.log("LMIA processor triggered:", data);
+      },
+      onError: (error: unknown) => {
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        setLmiaProcessorStatus(`Error: ${errorMessage}`);
+        console.error("LMIA processor error:", error);
+      },
+    });
   };
 
   return (
@@ -80,29 +117,36 @@ export function ScraperManager() {
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {/* Job Scraper */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <FontAwesomeIcon icon={faPlay} className="h-5 w-5 text-blue-600" />
+              <FontAwesomeIcon
+                icon={faPlay}
+                className="h-5 w-5 text-blue-600"
+              />
               Job Scraper
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Triggers the job scraper to collect new LMIA job postings from government sources.
-              This process also automatically runs statistics aggregation when complete.
+              Triggers the job scraper to collect new LMIA job postings from
+              government sources. This process also automatically runs
+              statistics aggregation when complete.
             </p>
-            
+
             <Button
               onClick={handleTriggerScraper}
-              disabled={scraperMutation.isPending}
+              disabled={scraperOperations.scraper.isPending}
               className="w-full"
             >
-              {scraperMutation.isPending ? (
+              {scraperOperations.scraper.isPending ? (
                 <>
-                  <FontAwesomeIcon icon={faSpinner} className="mr-2 h-4 w-4 animate-spin" />
+                  <FontAwesomeIcon
+                    icon={faSpinner}
+                    className="mr-2 h-4 w-4 animate-spin"
+                  />
                   Starting Scraper...
                 </>
               ) : (
@@ -114,12 +158,120 @@ export function ScraperManager() {
             </Button>
 
             {scraperStatus && (
-              <div className={`p-3 rounded-md text-sm ${
-                scraperStatus.startsWith("Error") 
-                  ? "bg-red-50 text-red-700 border border-red-200"
-                  : "bg-green-50 text-green-700 border border-green-200"
-              }`}>
+              <div
+                className={`p-3 rounded-md text-sm ${
+                  scraperStatus.startsWith("Error")
+                    ? "bg-red-50 text-red-700 border border-red-200"
+                    : "bg-green-50 text-green-700 border border-green-200"
+                }`}
+              >
                 {scraperStatus}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* LMIA Data Scraper */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FontAwesomeIcon
+                icon={faDownload}
+                className="h-5 w-5 text-orange-600"
+              />
+              LMIA Data Scraper
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Downloads and processes LMIA employer data from Open Canada API.
+              This fetches new CSV/Excel files and populates employer records.
+            </p>
+
+            <Button
+              onClick={handleTriggerLMIAScraper}
+              disabled={lmiaOperations.fullUpdate.isPending}
+              variant="outline"
+              className="w-full border-orange-200 text-orange-700 hover:bg-orange-50"
+            >
+              {lmiaOperations.fullUpdate.isPending ? (
+                <>
+                  <FontAwesomeIcon
+                    icon={faSpinner}
+                    className="mr-2 h-4 w-4 animate-spin"
+                  />
+                  Downloading Data...
+                </>
+              ) : (
+                <>
+                  <FontAwesomeIcon icon={faDownload} className="mr-2 h-4 w-4" />
+                  Download LMIA Data
+                </>
+              )}
+            </Button>
+
+            {lmiaScraperStatus && (
+              <div
+                className={`p-3 rounded-md text-sm ${
+                  lmiaScraperStatus.startsWith("Error")
+                    ? "bg-red-50 text-red-700 border border-red-200"
+                    : "bg-green-50 text-green-700 border border-green-200"
+                }`}
+              >
+                {lmiaScraperStatus}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* LMIA Resource Processor */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FontAwesomeIcon
+                icon={faCogs}
+                className="h-5 w-5 text-teal-600"
+              />
+              LMIA Processor
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Processes existing LMIA resources to populate employer records.
+              Use this to reprocess data without downloading new files.
+            </p>
+
+            <Button
+              onClick={handleTriggerLMIAProcessor}
+              disabled={lmiaOperations.processor.isPending}
+              variant="outline"
+              className="w-full border-teal-200 text-teal-700 hover:bg-teal-50"
+            >
+              {lmiaOperations.processor.isPending ? (
+                <>
+                  <FontAwesomeIcon
+                    icon={faSpinner}
+                    className="mr-2 h-4 w-4 animate-spin"
+                  />
+                  Processing Data...
+                </>
+              ) : (
+                <>
+                  <FontAwesomeIcon icon={faCogs} className="mr-2 h-4 w-4" />
+                  Process LMIA Resources
+                </>
+              )}
+            </Button>
+
+            {lmiaProcessorStatus && (
+              <div
+                className={`p-3 rounded-md text-sm ${
+                  lmiaProcessorStatus.startsWith("Error")
+                    ? "bg-red-50 text-red-700 border border-red-200"
+                    : "bg-green-50 text-green-700 border border-green-200"
+                }`}
+              >
+                {lmiaProcessorStatus}
               </div>
             )}
           </CardContent>
@@ -129,41 +281,52 @@ export function ScraperManager() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <FontAwesomeIcon icon={faChartLine} className="h-5 w-5 text-green-600" />
+              <FontAwesomeIcon
+                icon={faChartLine}
+                className="h-5 w-5 text-green-600"
+              />
               Statistics Aggregation
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Triggers the statistics aggregation to generate daily and monthly LMIA job trends
-              from existing job posting data.
+              Triggers the statistics aggregation to generate daily and monthly
+              LMIA job trends from existing job posting data.
             </p>
-            
+
             <Button
               onClick={handleTriggerStatistics}
-              disabled={statisticsMutation.isPending}
+              disabled={scraperOperations.statistics.isPending}
               variant="outline"
               className="w-full"
             >
-              {statisticsMutation.isPending ? (
+              {scraperOperations.statistics.isPending ? (
                 <>
-                  <FontAwesomeIcon icon={faSpinner} className="mr-2 h-4 w-4 animate-spin" />
+                  <FontAwesomeIcon
+                    icon={faSpinner}
+                    className="mr-2 h-4 w-4 animate-spin"
+                  />
                   Running Aggregation...
                 </>
               ) : (
                 <>
-                  <FontAwesomeIcon icon={faChartLine} className="mr-2 h-4 w-4" />
+                  <FontAwesomeIcon
+                    icon={faChartLine}
+                    className="mr-2 h-4 w-4"
+                  />
                   Run Statistics Aggregation
                 </>
               )}
             </Button>
 
             {statisticsStatus && (
-              <div className={`p-3 rounded-md text-sm ${
-                statisticsStatus.startsWith("Error") 
-                  ? "bg-red-50 text-red-700 border border-red-200"
-                  : "bg-green-50 text-green-700 border border-green-200"
-              }`}>
+              <div
+                className={`p-3 rounded-md text-sm ${
+                  statisticsStatus.startsWith("Error")
+                    ? "bg-red-50 text-red-700 border border-red-200"
+                    : "bg-green-50 text-green-700 border border-green-200"
+                }`}
+              >
                 {statisticsStatus}
               </div>
             )}
@@ -174,30 +337,40 @@ export function ScraperManager() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <FontAwesomeIcon icon={faChartLine} className="h-5 w-5 text-purple-600" />
+              <FontAwesomeIcon
+                icon={faChartLine}
+                className="h-5 w-5 text-purple-600"
+              />
               LMIA Statistics Backfill
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Generates all historical LMIA statistics from existing job posting data. 
-              This populates province/city charts and trend data for the trends page.
+              Generates all historical LMIA statistics from existing job posting
+              data. This populates province/city charts and trend data for the
+              trends page.
             </p>
-            
+
             <Button
               onClick={handleTriggerLMIABackfill}
-              disabled={lmiaBackfillMutation.isPending}
+              disabled={lmiaOperations.backfill.isPending}
               variant="secondary"
               className="w-full"
             >
-              {lmiaBackfillMutation.isPending ? (
+              {lmiaOperations.backfill.isPending ? (
                 <>
-                  <FontAwesomeIcon icon={faSpinner} className="mr-2 h-4 w-4 animate-spin" />
+                  <FontAwesomeIcon
+                    icon={faSpinner}
+                    className="mr-2 h-4 w-4 animate-spin"
+                  />
                   Running Backfill...
                 </>
               ) : (
                 <>
-                  <FontAwesomeIcon icon={faChartLine} className="mr-2 h-4 w-4" />
+                  <FontAwesomeIcon
+                    icon={faChartLine}
+                    className="mr-2 h-4 w-4"
+                  />
                   Backfill LMIA Statistics
                 </>
               )}
@@ -214,13 +387,16 @@ export function ScraperManager() {
         <CardContent>
           <div className="space-y-3 text-sm text-muted-foreground">
             <p>
-              <strong>Daily Schedule:</strong> The job scraper runs automatically every day at midnight UTC.
+              <strong>Daily Schedule:</strong> The job scraper runs
+              automatically every day at midnight UTC.
             </p>
             <p>
-              <strong>Auto-Aggregation:</strong> Statistics are automatically generated after each successful scraper run.
+              <strong>Auto-Aggregation:</strong> Statistics are automatically
+              generated after each successful scraper run.
             </p>
             <p>
-              <strong>Manual Triggers:</strong> Use the buttons above for immediate execution when needed for testing or updates.
+              <strong>Manual Triggers:</strong> Use the buttons above for
+              immediate execution when needed for testing or updates.
             </p>
           </div>
         </CardContent>

@@ -42,8 +42,8 @@ func (p *lmiaParser) DownloadAndParseResource(resource *models.LMIAResource) ([]
 	fileName := fmt.Sprintf("%s.%s", resource.ResourceID, strings.ToLower(resource.Format))
 	filePath := filepath.Join(p.tempDir, fileName)
 	
-	// Use the year from the resource's CreatedAt field.
-	year := resource.CreatedAt.Year()
+	// Use the year from the resource's Year field (parsed from filename)
+	year := resource.Year
 	
 	log.Info("Downloading and parsing LMIA resource", 
 		"resource_id", resource.ResourceID, 

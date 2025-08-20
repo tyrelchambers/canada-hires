@@ -53,3 +53,11 @@ type CronJob struct {
 	RecordsProcessed int        `json:"records_processed" db:"records_processed"`
 	CreatedAt        time.Time  `json:"created_at" db:"created_at"`
 }
+
+type LMIAGeographicSummary struct {
+	Province         string `json:"province" db:"province_territory"`
+	TotalEmployers   int    `json:"total_employers" db:"total_employers"`
+	TotalLMIAs       int    `json:"total_lmias" db:"total_lmias"`
+	TotalPositions   int    `json:"total_positions" db:"total_positions"`
+	Year            int     `json:"year" db:"year"`
+}

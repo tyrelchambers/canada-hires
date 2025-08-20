@@ -246,3 +246,78 @@ func (c *LMIAController) GetStats(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(stats)
 }
+
+// GetGeographicSummary returns aggregated LMIA data by province for heatmap visualization
+func (c *LMIAController) GetGeographicSummary(w http.ResponseWriter, r *http.Request) {
+	yearStr := r.URL.Query().Get("year")
+	var year int
+	if yearStr == "" {
+		now := time.Now()
+		year = time.Time.Year(now)
+	} else {
+		if parsedYear, err := strconv.Atoi(yearStr); err == nil && parsedYear >= 2000 && parsedYear <= time.Now().Year() {
+			year = parsedYear
+		} else {
+			http.Error(w, "Invalid year parameter", http.StatusBadRequest)
+			return
+		}
+	}
+
+	log.Info("Getting geographic LMIA summary", "year", year)
+
+	summary, err := c.repo.GetGeographicSummary(year)
+	if err != nil {
+		log.Error("Failed to get geographic summary", "error", err)
+		http.Error(w, "Failed to get geographic summary", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"summary": summary,
+		"year":    year,
+		"count":   len(summary),
+	})
+}
+
+// TriggerFullUpdate triggers a full LMIA data update (fetch and process)
+func (c *LMIAController) TriggerFullUpdate(w http.ResponseWriter, r *http.Request) {
+	log.Info("Triggering full LMIA data update")
+
+	// Run the full update in a goroutine so we can return immediately
+	go func() {
+		err := c.lmiaService.RunFullUpdate()
+		if err != nil {
+			log.Error("Full LMIA data update failed", "error", err)
+		} else {
+			log.Info("Full LMIA data update completed successfully")
+		}
+	}()
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "LMIA full data update started",
+		"status":  "started",
+	})
+}
+
+// ProcessUnprocessedResources processes all unprocessed LMIA resources
+func (c *LMIAController) ProcessUnprocessedResources(w http.ResponseWriter, r *http.Request) {
+	log.Info("Triggering LMIA resource processing")
+
+	// Run the processing in a goroutine so we can return immediately
+	go func() {
+		err := c.lmiaService.ProcessAllUnprocessedResources()
+		if err != nil {
+			log.Error("LMIA resource processing failed", "error", err)
+		} else {
+			log.Info("LMIA resource processing completed successfully")
+		}
+	}()
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "LMIA resource processing started",
+		"status":  "started",
+	})
+}

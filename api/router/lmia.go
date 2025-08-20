@@ -16,6 +16,9 @@ func LMIARoutes(lmiaController *controllers.LMIAController) func(chi.Router) {
 			r.Get("/resources", lmiaController.GetResources)
 			r.Get("/stats", lmiaController.GetStats)
 			r.Get("/status", lmiaController.GetUpdateStatus)
+			r.Get("/geographic", lmiaController.GetGeographicSummary)
+			r.Post("/update", lmiaController.TriggerFullUpdate)
+			r.Post("/process", lmiaController.ProcessUnprocessedResources)
 			
 		})
 	}

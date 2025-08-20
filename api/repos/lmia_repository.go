@@ -28,6 +28,7 @@ type LMIARepository interface {
 	AllEmployersCount() (int, error)
 	GetYearRange() (minYear, maxYear int, err error)
 	GetDistinctEmployersCount() (int, error)
+	GetGeographicSummary(year int) ([]*models.LMIAGeographicSummary, error)
 
 	// Cron Jobs
 	CreateCronJob(job *models.CronJob) error
@@ -113,7 +114,7 @@ func (r *lmiaRepository) UpdateResourceProcessed(id string) error {
 
 func (r *lmiaRepository) GetUnprocessedResources() ([]*models.LMIAResource, error) {
 	var resources []*models.LMIAResource
-	query := `SELECT * FROM lmia_resources WHERE processed_at IS NULL ORDER BY year DESC, quarter DESC`
+	query := `SELECT * FROM lmia_resources ORDER BY year DESC, quarter DESC`
 
 	err := r.db.Select(&resources, query)
 	if err != nil {
@@ -373,21 +374,21 @@ func (r *lmiaRepository) AllEmployersCount() (int, error) {
 
 func (r *lmiaRepository) GetYearRange() (minYear, maxYear int, err error) {
 	query := `SELECT MIN(year) as min_year, MAX(year) as max_year FROM lmia_resources WHERE processed_at IS NOT NULL`
-	
+
 	var result struct {
 		MinYear *int `db:"min_year"`
 		MaxYear *int `db:"max_year"`
 	}
-	
+
 	err = r.db.Get(&result, query)
 	if err != nil {
 		return 0, 0, err
 	}
-	
+
 	if result.MinYear == nil || result.MaxYear == nil {
 		return 0, 0, nil
 	}
-	
+
 	return *result.MinYear, *result.MaxYear, nil
 }
 
@@ -401,4 +402,30 @@ func (r *lmiaRepository) GetDistinctEmployersCount() (int, error) {
 	}
 
 	return count, nil
+}
+
+func (r *lmiaRepository) GetGeographicSummary(year int) ([]*models.LMIAGeographicSummary, error) {
+	query := `
+		SELECT
+			COALESCE(province_territory, 'Unknown') as province_territory,
+			COUNT(DISTINCT employer) as total_employers,
+			SUM(COALESCE(approved_lmias, 0)) as total_lmias,
+			SUM(COALESCE(approved_positions, 0)) as total_positions,
+			$2 as year
+		FROM lmia_employers
+		WHERE year = $1
+		  AND province_territory IS NOT NULL
+		  AND province_territory != ''
+		  AND province_territory != 'N/A'
+		GROUP BY province_territory
+		ORDER BY total_positions DESC
+	`
+
+	var summaries []*models.LMIAGeographicSummary
+	err := r.db.Select(&summaries, query, year, year)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get geographic summary: %w", err)
+	}
+
+	return summaries, nil
 }
