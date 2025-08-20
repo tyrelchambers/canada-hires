@@ -3,10 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useTopBoycotted } from "@/hooks/useBoycotts";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faHeartBroken,
-  faMapMarkerAlt,
-} from "@fortawesome/free-solid-svg-icons";
+import { faBan, faMapMarkerAlt } from "@fortawesome/free-solid-svg-icons";
 import { Link } from "@tanstack/react-router";
 import { BoycottButton } from "./BoycottButton";
 
@@ -42,10 +39,7 @@ export function TopBoycottedSection() {
     <section className="my-20 mx-4 lg:max-w-5xl lg:w-full lg:mx-auto">
       <div className="text-center mb-12">
         <div className="flex justify-center mb-4">
-          <FontAwesomeIcon
-            icon={faHeartBroken}
-            className="text-4xl text-red-600"
-          />
+          <FontAwesomeIcon icon={faBan} className="text-4xl text-red-600" />
         </div>
         <h2 className="text-3xl lg:text-4xl -tracking-wide font-medium mb-4">
           Most Boycotted Companies
@@ -81,7 +75,7 @@ export function TopBoycottedSection() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
-                <Badge variant="destructive" className="text-sm">
+                <Badge variant="secondary" className="text-sm">
                   {company.boycott_count} boycotting
                 </Badge>
                 <span className="text-xs text-gray-500">#{index + 1}</span>
