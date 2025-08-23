@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TrendsRouteImport } from './routes/trends'
+import { Route as LmiaMapRouteImport } from './routes/lmia-map'
 import { Route as LmiaRouteImport } from './routes/lmia'
 import { Route as JobsRouteImport } from './routes/jobs'
 import { Route as FeedbackRouteImport } from './routes/feedback'
@@ -26,6 +27,11 @@ import { Route as AuthLoginRouteImport } from './routes/auth/login'
 const TrendsRoute = TrendsRouteImport.update({
   id: '/trends',
   path: '/trends',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LmiaMapRoute = LmiaMapRouteImport.update({
+  id: '/lmia-map',
+  path: '/lmia-map',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LmiaRoute = LmiaRouteImport.update({
@@ -97,6 +103,7 @@ export interface FileRoutesByFullPath {
   '/feedback': typeof FeedbackRoute
   '/jobs': typeof JobsRoute
   '/lmia': typeof LmiaRoute
+  '/lmia-map': typeof LmiaMapRoute
   '/trends': typeof TrendsRoute
   '/auth/login': typeof AuthLoginRoute
   '/business/$address': typeof BusinessAddressRoute
@@ -112,6 +119,7 @@ export interface FileRoutesByTo {
   '/feedback': typeof FeedbackRoute
   '/jobs': typeof JobsRoute
   '/lmia': typeof LmiaRoute
+  '/lmia-map': typeof LmiaMapRoute
   '/trends': typeof TrendsRoute
   '/auth/login': typeof AuthLoginRoute
   '/business/$address': typeof BusinessAddressRoute
@@ -128,6 +136,7 @@ export interface FileRoutesById {
   '/feedback': typeof FeedbackRoute
   '/jobs': typeof JobsRoute
   '/lmia': typeof LmiaRoute
+  '/lmia-map': typeof LmiaMapRoute
   '/trends': typeof TrendsRoute
   '/auth/login': typeof AuthLoginRoute
   '/business/$address': typeof BusinessAddressRoute
@@ -145,6 +154,7 @@ export interface FileRouteTypes {
     | '/feedback'
     | '/jobs'
     | '/lmia'
+    | '/lmia-map'
     | '/trends'
     | '/auth/login'
     | '/business/$address'
@@ -160,6 +170,7 @@ export interface FileRouteTypes {
     | '/feedback'
     | '/jobs'
     | '/lmia'
+    | '/lmia-map'
     | '/trends'
     | '/auth/login'
     | '/business/$address'
@@ -175,6 +186,7 @@ export interface FileRouteTypes {
     | '/feedback'
     | '/jobs'
     | '/lmia'
+    | '/lmia-map'
     | '/trends'
     | '/auth/login'
     | '/business/$address'
@@ -191,6 +203,7 @@ export interface RootRouteChildren {
   FeedbackRoute: typeof FeedbackRoute
   JobsRoute: typeof JobsRoute
   LmiaRoute: typeof LmiaRoute
+  LmiaMapRoute: typeof LmiaMapRoute
   TrendsRoute: typeof TrendsRoute
   AuthLoginRoute: typeof AuthLoginRoute
   BusinessAddressRoute: typeof BusinessAddressRoute
@@ -207,6 +220,13 @@ declare module '@tanstack/react-router' {
       path: '/trends'
       fullPath: '/trends'
       preLoaderRoute: typeof TrendsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lmia-map': {
+      id: '/lmia-map'
+      path: '/lmia-map'
+      fullPath: '/lmia-map'
+      preLoaderRoute: typeof LmiaMapRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lmia': {
@@ -303,6 +323,7 @@ const rootRouteChildren: RootRouteChildren = {
   FeedbackRoute: FeedbackRoute,
   JobsRoute: JobsRoute,
   LmiaRoute: LmiaRoute,
+  LmiaMapRoute: LmiaMapRoute,
   TrendsRoute: TrendsRoute,
   AuthLoginRoute: AuthLoginRoute,
   BusinessAddressRoute: BusinessAddressRoute,

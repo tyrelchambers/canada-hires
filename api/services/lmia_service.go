@@ -3,12 +3,14 @@ package services
 import (
 	"canada-hires/models"
 	"canada-hires/repos"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"regexp"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/charmbracelet/log"
@@ -20,12 +22,16 @@ type LMIAService interface {
 	ProcessAllUnprocessedResources() error
 	RunFullUpdate() error
 	GetLatestUpdateStatus() (*models.CronJob, error)
+	GeocodeUnprocessedEmployers() error
+	GetGeocodingService() PostalCodeGeocodingService
 }
 
 type lmiaService struct {
-	repo   repos.LMIARepository
-	parser LMIAParser
-	client *http.Client
+	repo               repos.LMIARepository
+	parser             LMIAParser
+	client             *http.Client
+	geocodingService   PostalCodeGeocodingService
+	postalCodeService  PostalCodeService
 }
 
 type OpenDataResponse struct {
@@ -43,13 +49,15 @@ type OpenDataResponse struct {
 	} `json:"result"`
 }
 
-func NewLMIAService(repo repos.LMIARepository) LMIAService {
+func NewLMIAService(repo repos.LMIARepository, geocodingService PostalCodeGeocodingService, postalCodeService PostalCodeService) LMIAService {
 	return &lmiaService{
-		repo:   repo,
-		parser: NewLMIAParser(),
+		repo:              repo,
+		parser:            NewLMIAParser(),
 		client: &http.Client{
 			Timeout: 30 * time.Second,
 		},
+		geocodingService:  geocodingService,
+		postalCodeService: postalCodeService,
 	}
 }
 
@@ -333,4 +341,265 @@ func (s *lmiaService) RunFullUpdate() error {
 
 func (s *lmiaService) GetLatestUpdateStatus() (*models.CronJob, error) {
 	return s.repo.GetLatestCronJob("lmia_data_fetch")
+}
+
+func (s *lmiaService) GeocodeUnprocessedEmployers() error {
+	startTime := time.Now()
+	log.Info("Starting geocoding for unprocessed employers using postal codes table")
+
+	// Create cron job record
+	cronJob := &models.CronJob{
+		JobName:   "lmia_geocoding",
+		Status:    "running",
+		StartedAt: time.Now(),
+	}
+	err := s.repo.CreateCronJob(cronJob)
+	if err != nil {
+		return fmt.Errorf("failed to create cron job record: %w", err)
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			errorMsg := fmt.Sprintf("Panic occurred: %v", r)
+			s.repo.UpdateCronJobStatus(cronJob.ID, "failed", &errorMsg)
+		}
+	}()
+
+	// Get ungeocoded postal codes with their provinces for validation
+	ungeocodedPostalCodes, err := s.repo.GetUngeocodedPostalCodes()
+	if err != nil {
+		errorMsg := fmt.Sprintf("failed to get ungeocoded postal codes: %v", err)
+		s.repo.UpdateCronJobStatus(cronJob.ID, "failed", &errorMsg)
+		return fmt.Errorf(errorMsg)
+	}
+
+	if len(ungeocodedPostalCodes) == 0 {
+		log.Info("No unprocessed postal codes to geocode.")
+		err = s.repo.UpdateCronJobCompleted(cronJob.ID, 0, 0)
+		if err != nil {
+			log.Error("Failed to update cron job as completed", "error", err)
+		}
+		return nil
+	}
+
+	log.Info("Found postal codes that need geocoding", "count", len(ungeocodedPostalCodes))
+
+	// Get all postal codes from the postal_codes table in one query (much more efficient)
+	log.Info("Fetching all postal codes from postal_codes table")
+	allPostalCodes, err := s.geocodingService.GetAllPostalCodes()
+	if err != nil {
+		errorMsg := fmt.Sprintf("failed to get all postal codes: %v", err)
+		s.repo.UpdateCronJobStatus(cronJob.ID, "failed", &errorMsg)
+		return fmt.Errorf(errorMsg)
+	}
+
+	log.Info("Loaded postal codes from database", "count", len(allPostalCodes))
+
+	// Phase 1: Fast in-memory matching against existing postal codes
+	results := make(map[string]models.PostalCodeCoordinates)
+	var unmatchedPostalCodes []string
+	var unmatchedPostalCodeProvinces map[string]string = make(map[string]string)
+	foundInDatabaseCount := 0
+	invalidFormatCount := 0
+
+	for postalCode, province := range ungeocodedPostalCodes {
+		// Format the postal code properly
+		cleanedPostalCode := s.postalCodeService.FormatPostalCode(postalCode)
+		if cleanedPostalCode == "" {
+			results[postalCode] = models.PostalCodeCoordinates{
+				PostalCode: postalCode,
+				Error:      "invalid postal code format",
+			}
+			invalidFormatCount++
+			continue
+		}
+
+		// Check if this postal code exists in our cached table
+		if coords, exists := allPostalCodes[cleanedPostalCode]; exists {
+			if coords.Latitude.Valid && coords.Longitude.Valid {
+				// Has successful coordinates
+				results[postalCode] = models.PostalCodeCoordinates{
+					PostalCode: postalCode,
+					Latitude:   coords.Latitude,
+					Longitude:  coords.Longitude,
+				}
+				foundInDatabaseCount++
+			} else {
+				// Postal code exists in database but has no valid coordinates
+				unmatchedPostalCodes = append(unmatchedPostalCodes, postalCode)
+				unmatchedPostalCodeProvinces[postalCode] = province
+			}
+		} else {
+			// Collect unmatched postal codes for geocoding with province validation
+			unmatchedPostalCodes = append(unmatchedPostalCodes, postalCode)
+			unmatchedPostalCodeProvinces[postalCode] = province
+		}
+	}
+
+	log.Info("Phase 1 - Database lookup completed",
+		"total_postal_codes", len(ungeocodedPostalCodes),
+		"found_in_database", foundInDatabaseCount,
+		"invalid_format", invalidFormatCount,
+		"need_pelias_geocoding", len(unmatchedPostalCodes))
+
+	// Phase 2: Parallel geocode unmatched postal codes via Pelias server
+	var peliasSuccessCount, peliasFailedCount int64
+	totalToGeocode := len(unmatchedPostalCodes)
+	
+	if totalToGeocode > 0 {
+		log.Info("Phase 2 - Starting parallel Pelias geocoding", 
+			"postal_codes_to_geocode", totalToGeocode,
+			"workers", 12,
+			"found_in_db", foundInDatabaseCount,
+			"invalid_format", invalidFormatCount)
+		
+		// Create channels for work distribution
+		jobs := make(chan string, totalToGeocode)
+		type geocodeResult struct {
+			postalCode string
+			coords     models.PostalCodeCoordinates
+			success    bool
+		}
+		resultsChan := make(chan geocodeResult, totalToGeocode)
+		
+		// Start 12 worker goroutines
+		var wg sync.WaitGroup
+		for i := 0; i < 12; i++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				for postalCode := range jobs {
+					province := unmatchedPostalCodeProvinces[postalCode]
+					
+					// Geocode with province validation
+					latitude, longitude, err := s.geocodingService.GeocodePostalCode(postalCode, province)
+					if err != nil {
+						resultsChan <- geocodeResult{
+							postalCode: postalCode,
+							coords: models.PostalCodeCoordinates{
+								PostalCode: postalCode,
+								Error:      err.Error(),
+							},
+							success: false,
+						}
+					} else {
+						resultsChan <- geocodeResult{
+							postalCode: postalCode,
+							coords: models.PostalCodeCoordinates{
+								PostalCode: postalCode,
+								Latitude:   sql.NullFloat64{Float64: latitude, Valid: true},
+								Longitude:  sql.NullFloat64{Float64: longitude, Valid: true},
+							},
+							success: true,
+						}
+					}
+				}
+			}()
+		}
+		
+		// Send jobs to workers
+		go func() {
+			for _, postalCode := range unmatchedPostalCodes {
+				jobs <- postalCode
+			}
+			close(jobs)
+		}()
+		
+		// Collect results with progress tracking
+		processedCount := 0
+		for i := 0; i < totalToGeocode; i++ {
+			result := <-resultsChan
+			results[result.postalCode] = result.coords
+			
+			if result.success {
+				peliasSuccessCount++
+			} else {
+				peliasFailedCount++
+			}
+			
+			processedCount++
+			
+			// Progress logging every 1000 items
+			if processedCount%1000 == 0 || processedCount == totalToGeocode {
+				remaining := totalToGeocode - processedCount
+				percentage := float64(processedCount) / float64(totalToGeocode) * 100
+				
+				log.Info("Parallel geocoding progress",
+					"processed", processedCount,
+					"remaining", remaining,
+					"percentage", fmt.Sprintf("%.1f%%", percentage),
+					"db_found", foundInDatabaseCount,
+					"pelias_success", peliasSuccessCount,
+					"pelias_failed", peliasFailedCount,
+					"invalid_format", invalidFormatCount)
+			}
+		}
+		
+		// Wait for all workers to finish
+		wg.Wait()
+		close(resultsChan)
+		
+		log.Info("Phase 2 - Parallel Pelias geocoding completed",
+			"successful", peliasSuccessCount,
+			"failed", peliasFailedCount)
+	}
+
+	// Final summary with processing rate
+	totalFoundCount := foundInDatabaseCount + int(peliasSuccessCount)
+	totalErrorCount := invalidFormatCount + int(peliasFailedCount)
+	processingRate := float64(len(ungeocodedPostalCodes)) / time.Since(startTime).Seconds()
+	
+	log.Info("Final geocoding results summary",
+		"total_processed", len(ungeocodedPostalCodes),
+		"found_in_database", foundInDatabaseCount,
+		"pelias_success", peliasSuccessCount,
+		"pelias_failed", peliasFailedCount,
+		"invalid_format", invalidFormatCount,
+		"total_successful", totalFoundCount,
+		"total_failed", totalErrorCount,
+		"success_rate", fmt.Sprintf("%.1f%%", float64(totalFoundCount)/float64(len(ungeocodedPostalCodes))*100),
+		"processing_rate", fmt.Sprintf("%.1f postal_codes/sec", processingRate),
+		"duration", time.Since(startTime).String())
+
+	// Log all failed postal codes for debugging
+	var failedPostalCodes []string
+	for postalCode, coords := range results {
+		if coords.Error != "" {
+			failedPostalCodes = append(failedPostalCodes, fmt.Sprintf("%s (%s)", postalCode, coords.Error))
+		}
+	}
+	
+	if len(failedPostalCodes) > 0 {
+		log.Warn("Failed postal codes", "count", len(failedPostalCodes), "postal_codes", failedPostalCodes)
+	}
+
+	// Update the postal_codes table with the geocoded data
+	successfulUpdates := 0
+	for postalCode, coords := range results {
+		if coords.Error == "" && coords.Latitude.Valid && coords.Longitude.Valid {
+			err = s.geocodingService.UpsertPostalCode(&coords)
+			if err != nil {
+				log.Warn("Failed to upsert postal code", "postal_code", postalCode, "error", err)
+			} else {
+				successfulUpdates++
+			}
+		}
+	}
+
+	log.Info("Postal codes table updated", 
+		"successful_upserts", successfulUpdates, 
+		"total_geocoded", len(results),
+		"total_successful", totalFoundCount)
+
+	// Update cron job as completed
+	err = s.repo.UpdateCronJobCompleted(cronJob.ID, totalFoundCount, 0)
+	if err != nil {
+		log.Error("Failed to update cron job as completed", "error", err)
+	}
+
+	return nil
+}
+
+func (s *lmiaService) GetGeocodingService() PostalCodeGeocodingService {
+	return s.geocodingService
 }

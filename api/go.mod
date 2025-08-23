@@ -15,6 +15,7 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/tealeg/xlsx/v3 v3.3.13
 	go.uber.org/dig v1.19.0
+	google.golang.org/genai v1.21.0
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 )
 
@@ -58,7 +59,6 @@ require (
 	golang.org/x/crypto v0.37.0 // indirect
 	golang.org/x/net v0.39.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
-	google.golang.org/genai v1.21.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1 // indirect
 	google.golang.org/grpc v1.67.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect

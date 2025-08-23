@@ -289,6 +289,61 @@ export interface LMIAEmployersByResourceResponse {
   count: number;
 }
 
+export interface LMIAEmployerGeoLocation {
+  id: string;
+  employer: string;
+  address?: string;
+  province_territory?: string;
+  approved_lmias?: number;
+  approved_positions?: number;
+  quarter: string;
+  year: number;
+  latitude?: number;
+  longitude?: number;
+  total_lmias: number;
+}
+
+export interface LMIAGeolocationResponse {
+  employers: LMIAEmployerGeoLocation[];
+  count: number;
+  year: number;
+  quarter?: string;
+  limit: number;
+}
+
+export interface PostalCodeBusiness {
+  employer: string;
+  occupation: string;
+  approved_lmias: number;
+  approved_positions: number;
+}
+
+export interface PostalCodeLocation {
+  postal_code: string;
+  latitude: number;
+  longitude: number;
+  businesses: PostalCodeBusiness[];
+  total_lmias: number;
+  business_count: number;
+}
+
+export interface PostalCodeLocationsResponse {
+  locations: PostalCodeLocation[];
+  count: number;
+  year: number;
+  quarter?: string;
+  limit: number;
+}
+
+export interface LMIAEmployersByPostalCodeResponse {
+  employers: LMIAEmployer[];
+  count: number;
+  postal_code: string;
+  year: number;
+  quarter?: string;
+  limit: number;
+}
+
 // Gemini content generation types
 export interface GeneratedRedditPost {
   job_id: string;

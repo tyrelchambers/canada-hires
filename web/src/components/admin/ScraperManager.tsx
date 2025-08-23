@@ -12,6 +12,7 @@ import {
   faSpinner,
   faDownload,
   faCogs,
+  faMapMarkerAlt,
 } from "@fortawesome/free-solid-svg-icons";
 
 export function ScraperManager() {
@@ -25,6 +26,7 @@ export function ScraperManager() {
   const [lmiaProcessorStatus, setLmiaProcessorStatus] = useState<string | null>(
     null,
   );
+  const [geocodingStatus, setGeocodingStatus] = useState<string | null>(null);
 
   const handleTriggerScraper = () => {
     setScraperStatus(null);
@@ -104,6 +106,22 @@ export function ScraperManager() {
           error instanceof Error ? error.message : "Unknown error";
         setLmiaProcessorStatus(`Error: ${errorMessage}`);
         console.error("LMIA processor error:", error);
+      },
+    });
+  };
+
+  const handleTriggerGeocoding = () => {
+    setGeocodingStatus(null);
+    lmiaOperations.geocoding.mutate(undefined, {
+      onSuccess: (data) => {
+        setGeocodingStatus("LMIA geocoding started successfully!");
+        console.log("LMIA geocoding triggered:", data);
+      },
+      onError: (error: unknown) => {
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        setGeocodingStatus(`Error: ${errorMessage}`);
+        console.error("LMIA geocoding error:", error);
       },
     });
   };
@@ -277,6 +295,62 @@ export function ScraperManager() {
           </CardContent>
         </Card>
 
+        {/* LMIA Geocoding */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FontAwesomeIcon
+                icon={faMapMarkerAlt}
+                className="h-5 w-5 text-indigo-600"
+              />
+              LMIA Geocoding
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Geocodes postal codes for LMIA employers using concurrent Mapbox v6 batch processing. 
+              16 parallel workers each process 1000 postal codes per batch for maximum efficiency.
+            </p>
+
+            <Button
+              onClick={handleTriggerGeocoding}
+              disabled={lmiaOperations.geocoding.isPending}
+              variant="outline"
+              className="w-full border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+            >
+              {lmiaOperations.geocoding.isPending ? (
+                <>
+                  <FontAwesomeIcon
+                    icon={faSpinner}
+                    className="mr-2 h-4 w-4 animate-spin"
+                  />
+                  Geocoding Postal Codes...
+                </>
+              ) : (
+                <>
+                  <FontAwesomeIcon
+                    icon={faMapMarkerAlt}
+                    className="mr-2 h-4 w-4"
+                  />
+                  Geocode Postal Codes
+                </>
+              )}
+            </Button>
+
+            {geocodingStatus && (
+              <div
+                className={`p-3 rounded-md text-sm ${
+                  geocodingStatus.startsWith("Error")
+                    ? "bg-red-50 text-red-700 border border-red-200"
+                    : "bg-green-50 text-green-700 border border-green-200"
+                }`}
+              >
+                {geocodingStatus}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Statistics Aggregation */}
         <Card>
           <CardHeader>
@@ -382,10 +456,19 @@ export function ScraperManager() {
       {/* Information Section */}
       <Card>
         <CardHeader>
-          <CardTitle>Automated Schedule</CardTitle>
+          <CardTitle>Process Overview</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3 text-sm text-muted-foreground">
+            <p>
+              <strong>Recommended Workflow:</strong>
+            </p>
+            <ol className="list-decimal list-inside space-y-1 ml-4">
+              <li>Download LMIA Data - Fetches latest employer data files</li>
+              <li>Process LMIA Resources - Parses files and extracts postal codes</li>
+              <li>Geocode Postal Codes - Adds latitude/longitude for map features</li>
+              <li>Backfill LMIA Statistics - Generates trend data and charts</li>
+            </ol>
             <p>
               <strong>Daily Schedule:</strong> The job scraper runs
               automatically every day at midnight UTC.
@@ -395,8 +478,8 @@ export function ScraperManager() {
               generated after each successful scraper run.
             </p>
             <p>
-              <strong>Manual Triggers:</strong> Use the buttons above for
-              immediate execution when needed for testing or updates.
+              <strong>Concurrent Batch Processing:</strong> Geocoding uses 16 parallel workers 
+              with Mapbox v6 batch API, processing up to 16,000 postal codes simultaneously.
             </p>
           </div>
         </CardContent>

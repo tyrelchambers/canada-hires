@@ -7,6 +7,9 @@ import {
   LMIAResourcesResponse,
   LMIAStatsResponse,
   LMIAEmployersByResourceResponse,
+  LMIAGeolocationResponse,
+  PostalCodeLocationsResponse,
+  LMIAEmployersByPostalCodeResponse,
 } from "@/types";
 
 interface LMIASearchParams {
@@ -201,5 +204,96 @@ export function useLMIAEmployersByResource(resourceId: string) {
       return response.data;
     },
     enabled: !!resourceId,
+  });
+}
+
+export function useLMIAGeolocation(
+  year?: number,
+  quarter?: string,
+  limit: number = 1000,
+) {
+  const apiClient = useApiClient();
+  const currentYear = new Date().getFullYear();
+  const queryYear = year || currentYear;
+
+  return useQuery<LMIAGeolocationResponse>({
+    queryKey: ["lmia", "geolocation", queryYear, quarter, limit],
+    queryFn: async (): Promise<LMIAGeolocationResponse> => {
+      const params: Record<string, string | number> = {
+        year: queryYear,
+        limit,
+      };
+      if (quarter) {
+        params.quarter = quarter;
+      }
+
+      const response = await apiClient.get<LMIAGeolocationResponse>(
+        "/lmia/employers/geolocation",
+        { params },
+      );
+      return response.data;
+    },
+    enabled: true,
+  });
+}
+
+export function useLMIAPostalCodeLocations(
+  year?: number,
+  quarter?: string,
+  limit: number = 1000,
+) {
+  const apiClient = useApiClient();
+  const currentYear = new Date().getFullYear();
+  const queryYear = year || currentYear;
+
+  return useQuery<PostalCodeLocationsResponse>({
+    queryKey: ["lmia", "postal-code-locations", queryYear, quarter, limit],
+    queryFn: async (): Promise<PostalCodeLocationsResponse> => {
+      const params: Record<string, string | number> = {
+        year: queryYear,
+        limit,
+      };
+      if (quarter) {
+        params.quarter = quarter;
+      }
+
+      const response = await apiClient.get<PostalCodeLocationsResponse>(
+        "/lmia/postal-code-locations",
+        { params },
+      );
+      return response.data;
+    },
+    enabled: true,
+  });
+}
+
+export function useLMIAEmployersByPostalCode(
+  postalCode: string,
+  year?: number,
+  quarter?: string,
+  limit: number = 100,
+) {
+  const apiClient = useApiClient();
+  const currentYear = new Date().getFullYear();
+  const queryYear = year || currentYear;
+
+  return useQuery<LMIAEmployersByPostalCodeResponse>({
+    queryKey: ["lmia", "employers", "postal-code", postalCode, queryYear, quarter, limit],
+    queryFn: async (): Promise<LMIAEmployersByPostalCodeResponse> => {
+      const params: Record<string, string | number> = {
+        year: queryYear,
+        limit,
+      };
+      if (quarter) {
+        params.quarter = quarter;
+      }
+
+      const response = await apiClient.get<LMIAEmployersByPostalCodeResponse>(
+        `/lmia/employers/postal-code/${postalCode}`,
+        { params },
+      );
+      return response.data;
+    },
+    enabled: !!postalCode,
   });
 }

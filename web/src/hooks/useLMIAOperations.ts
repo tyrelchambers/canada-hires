@@ -30,10 +30,18 @@ export function useLMIAOperations() {
     },
   });
 
+  const geocodingMutation = useMutation({
+    mutationFn: async (): Promise<ApiResponse> => {
+      const response = await apiClient.post('/admin/lmia/geocode');
+      return response.data as ApiResponse;
+    },
+  });
+
   return {
     fullUpdate: fullUpdateMutation,
     processor: processorMutation,
     backfill: backfillMutation,
+    geocoding: geocodingMutation,
   };
 }
 

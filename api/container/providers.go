@@ -69,6 +69,10 @@ func registerProviders(c *dig.Container) error {
 		return err
 	}
 
+	if err := c.Provide(NewPostalCodeRepository); err != nil {
+		return err
+	}
+
 	// Service providers
 	if err := c.Provide(NewEmailService); err != nil {
 		return err
@@ -131,6 +135,14 @@ func registerProviders(c *dig.Container) error {
 	}
 
 	if err := c.Provide(NewBoycottService); err != nil {
+		return err
+	}
+
+	if err := c.Provide(NewPostalCodeService); err != nil {
+		return err
+	}
+
+	if err := c.Provide(NewPostalCodeGeocodingService); err != nil {
 		return err
 	}
 
@@ -266,8 +278,8 @@ func NewLMIARepository(database db.Database) repos.LMIARepository {
 }
 
 // NewLMIAService creates a new LMIA service
-func NewLMIAService(repo repos.LMIARepository) services.LMIAService {
-	return services.NewLMIAService(repo)
+func NewLMIAService(repo repos.LMIARepository, geocodingService services.PostalCodeGeocodingService, postalCodeService services.PostalCodeService) services.LMIAService {
+	return services.NewLMIAService(repo, geocodingService, postalCodeService)
 }
 
 // NewCronService creates a new cron service
@@ -381,4 +393,19 @@ func NewBoycottService(repo repos.BoycottRepository) services.BoycottService {
 // NewBoycottController creates a new boycott controller
 func NewBoycottController(service services.BoycottService) controllers.BoycottController {
 	return controllers.NewBoycottController(service)
+}
+
+// NewPostalCodeService creates a new postal code service
+func NewPostalCodeService() services.PostalCodeService {
+	return services.NewPostalCodeService()
+}
+
+// NewPostalCodeRepository creates a new postal code repository
+func NewPostalCodeRepository(database db.Database) repos.PostalCodeRepository {
+	return repos.NewPostalCodeRepository(database.GetDB())
+}
+
+// NewPostalCodeGeocodingService creates a new postal code geocoding service
+func NewPostalCodeGeocodingService(postalCodeRepo repos.PostalCodeRepository, postalCodeService services.PostalCodeService) services.PostalCodeGeocodingService {
+	return services.NewPostalCodeGeocodingService(postalCodeRepo, postalCodeService)
 }
