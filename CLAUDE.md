@@ -77,15 +77,15 @@ EMAIL_SMTP_USER=your_email@domain.com
 EMAIL_SMTP_PASSWORD=your_app_password
 JWT_SECRET=your_jwt_secret_key
 GOOGLE_API_KEY=your_gemini_api_key_here
-PELIAS_SERVER_URL=http://homeserver:4000
+HOMESERVER_URL=http://homeserver:4000
 ```
 
 #### Frontend Environment (.env in web/ directory)
 ```
-VITE_PELIAS_SERVER_URL=http://homeserver:4000
+VITE_HOMESERVER_URL=http://homeserver:4000
 ```
 
-**Pelias Geocoding Setup**: The application uses a local Pelias geocoding server for address search and location lookup. The default URL is `http://homeserver:4000` but can be configured via the `VITE_PELIAS_SERVER_URL` environment variable.
+**Pelias Geocoding Setup**: The application uses a local Pelias geocoding server for address search and location lookup. The default URL is `http://homeserver:4000` but can be configured via the `HOMESERVER_URL` (backend) and `VITE_HOMESERVER_URL` (frontend) environment variables.
 
 **Gemini AI Setup**: Create a free Google AI Studio account at [aistudio.google.com](https://aistudio.google.com) and generate an API key for Gemini content generation. This enables automatic generation of sarcastic Reddit post content for job approvals. Without this key, job approvals will work but without AI-generated content.
 

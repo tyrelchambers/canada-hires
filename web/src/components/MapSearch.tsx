@@ -78,9 +78,9 @@ export function MapSearch({
   const containerRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Get Pelias server URL from environment
+  // Get homeserver URL from environment
   const peliasServerURL =
-    import.meta.env.VITE_PELIAS_SERVER_URL || "http://homeserver:4000";
+    (import.meta.env.VITE_HOMESERVER_URL as string) || "http://homeserver:4000";
 
   // Debounced search function
   const searchCities = async (searchQuery: string) => {

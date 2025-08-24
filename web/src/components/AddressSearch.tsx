@@ -81,8 +81,9 @@ export function AddressSearch({
   const containerRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Get Pelias server URL from environment
-  const peliasServerURL = import.meta.env.VITE_PELIAS_SERVER_URL || "http://homeserver:4000";
+  // Get homeserver URL from environment
+  const peliasServerURL =
+    (import.meta.env.VITE_HOMESERVER_URL as string) || "http://homeserver:4000";
 
   // Debounced search function
   const searchAddresses = async (query: string) => {
@@ -99,13 +100,13 @@ export function AddressSearch({
 
     try {
       const response = await fetch(
-        `${peliasServerURL}/v1/search?text=${encodeURIComponent(query)}&size=5`
+        `${peliasServerURL}/v1/search?text=${encodeURIComponent(query)}&size=5`,
       );
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-      
+
       const results: PeliasResponse = await response.json();
       setSuggestions(results.features || []);
       setShowDropdown(true); // Show dropdown when search completes
@@ -216,7 +217,6 @@ export function AddressSearch({
       }
     };
   }, []);
-
 
   return (
     <div ref={containerRef} className="relative">

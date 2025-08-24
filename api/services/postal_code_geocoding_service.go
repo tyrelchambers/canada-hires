@@ -86,14 +86,15 @@ type postalCodeGeocodingService struct {
 }
 
 func NewPostalCodeGeocodingService(postalCodeRepo repos.PostalCodeRepository, postalCodeService PostalCodeService, addressCacheRepo repos.AddressGeocodingCacheRepository) PostalCodeGeocodingService {
-	peliasServerURL := os.Getenv("PELIAS_SERVER_URL")
-	if peliasServerURL == "" {
-		// Default to local server
-		peliasServerURL = "http://homeserver:4000"
-		log.Info("Using default Pelias server URL", "url", peliasServerURL)
+	homeserverURL := os.Getenv("HOMESERVER_URL")
+	if homeserverURL == "" {
+		homeserverURL = "http://homeserver:4000"
+		log.Info("Using default homeserver URL", "url", homeserverURL)
 	} else {
-		log.Info("Pelias server configured", "url", peliasServerURL)
+		log.Info("Homeserver configured", "url", homeserverURL)
 	}
+	
+	peliasServerURL := homeserverURL
 
 	service := &postalCodeGeocodingService{
 		peliasServerURL: peliasServerURL,
