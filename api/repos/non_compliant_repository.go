@@ -441,7 +441,7 @@ func (r *nonCompliantRepository) GetLocationsByPostalCode(limit int) ([]models.N
 			GROUP BY epc.extracted_postal_code, pc.latitude, pc.longitude
 		),
 		address_locations AS (
-			-- Get locations based on address geocoding cache
+			-- Get locations based on address geocoding cache (only for employers without extractable postal codes)
 			SELECT
 				'COORD_' || ROUND(agc.latitude::numeric, 6) || '_' || ROUND(agc.longitude::numeric, 6) as postal_code,
 				agc.latitude,
@@ -494,20 +494,17 @@ func (r *nonCompliantRepository) GetEmployersByPostalCode(postalCode string, lim
 		return nil, err
 	}
 
-	for _, e := range employers {
-
+	for i := range employers {
 		// Get full reason objects with descriptions for the reason codes
-		if len(e.ReasonCodes) > 0 {
+		if len(employers[i].ReasonCodes) > 0 {
 			var reasons []models.NonCompliantReason
-			for _, code := range e.ReasonCodes {
+			for _, code := range employers[i].ReasonCodes {
 				if reason, err := r.GetReasonByCode(code); err == nil {
 					reasons = append(reasons, *reason)
 				}
 			}
-			e.Reasons = reasons
+			employers[i].Reasons = reasons
 		}
-
-		employers = append(employers, e)
 	}
 
 	return employers, err
@@ -551,18 +548,16 @@ func (r *nonCompliantRepository) GetEmployersByCoordinates(lat, lng float64, lim
 		return nil, err
 	}
 
-	for _, e := range employers {
-		for _, rc := range e.ReasonCodes {
+	for i := range employers {
+		for _, rc := range employers[i].ReasonCodes {
 			c, err := r.GetReasonByCode(rc)
 			if err != nil {
 				return nil, err
 			}
 
-			e.Reasons = append(e.Reasons, *c)
+			employers[i].Reasons = append(employers[i].Reasons, *c)
 		}
 	}
-
-	fmt.Println(employers[0].Reasons)
 
 	return employers, err
 }

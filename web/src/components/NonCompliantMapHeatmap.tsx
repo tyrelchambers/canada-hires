@@ -210,7 +210,7 @@ export function NonCompliantMapHeatmap() {
             Non-Compliant Employers Map
           </h1>
           <p className="text-sm text-gray-600 mt-1">
-            Explore labor violations across Canada
+            Explore labor violations across Canada since 2016.
           </p>
         </div>
 
@@ -500,45 +500,13 @@ export function NonCompliantMapHeatmap() {
                   </div>
                 ) : null}
               </div>
-
-              {/* Legend */}
-              <div className="bg-white rounded-lg shadow p-4">
-                <h3 className="font-semibold mb-3">Legend</h3>
-                <div className="space-y-3 text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 bg-orange-600 rounded-full flex items-center justify-center">
-                      <FontAwesomeIcon
-                        icon={faExclamationTriangle}
-                        className="text-white h-2 w-2"
-                      />
-                    </div>
-                    <span>Non-Compliant Employer Location</span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 border-2 border-orange-600 rounded-full opacity-30 bg-orange-600"></div>
-                    <span>Violation Impact Radius</span>
-                  </div>
-
-                  <div className="text-xs text-gray-500 space-y-1">
-                    <p>
-                      • Markers show postal code locations with non-compliant
-                      employers
-                    </p>
-                    <p>• Circle size indicates penalty amount severity</p>
-                    <p>• Orange theme represents labor violations</p>
-                    <p>• Click markers to see all violations in that area</p>
-                    <p>• Data sourced from official government records</p>
-                  </div>
-                </div>
-              </div>
             </>
           )}
         </div>
       </div>
 
       {/* Map */}
-      <div className=" h-[300px] md:h-[400px] lg:h-full lg:flex-1 ">
+      <div className=" h-[300px] md:h-[400px] lg:h-full lg:flex-1 z-0">
         <MapContainer
           center={mapCenter}
           zoom={mapZoom}
@@ -851,38 +819,6 @@ export function NonCompliantMapHeatmap() {
                     </div>
                   </div>
                 ) : null}
-              </div>
-
-              {/* Legend */}
-              <div className="bg-white rounded-lg shadow p-4">
-                <h3 className="font-semibold mb-3">Legend</h3>
-                <div className="space-y-3 text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 bg-orange-600 rounded-full flex items-center justify-center">
-                      <FontAwesomeIcon
-                        icon={faExclamationTriangle}
-                        className="text-white h-2 w-2"
-                      />
-                    </div>
-                    <span>Non-Compliant Employer Location</span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 border-2 border-orange-600 rounded-full opacity-30 bg-orange-600"></div>
-                    <span>Violation Impact Radius</span>
-                  </div>
-
-                  <div className="text-xs text-gray-500 space-y-1">
-                    <p>
-                      • Markers show postal code locations with non-compliant
-                      employers
-                    </p>
-                    <p>• Circle size indicates penalty amount severity</p>
-                    <p>• Orange theme represents labor violations</p>
-                    <p>• Click markers to see all violations in that area</p>
-                    <p>• Data sourced from official government records</p>
-                  </div>
-                </div>
               </div>
             </>
           )}
