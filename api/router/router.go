@@ -80,5 +80,9 @@ func InitRoutes(cn *container.Container, r *chi.Mux) {
 		if err != nil {
 			log.Error("Failed to initialize non-compliant routes", "error", err)
 		}
+		
+		// Add search routes
+		searchController := controllers.NewSearchController()
+		SearchRoutes(searchController)(r)
 	})
 }

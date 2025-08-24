@@ -3,57 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
-// Pelias geocoding response interfaces
-interface PeliasGeometry {
-  type: string;
-  coordinates: [number, number]; // [longitude, latitude]
-}
-
-interface PeliasProperties {
-  id: string;
-  gid: string;
-  layer: string;
-  source: string;
-  source_id: string;
-  country_code?: string;
-  name: string;
-  postalcode?: string;
-  confidence: number;
-  match_type?: string;
-  distance?: number;
-  accuracy?: string;
-  country?: string;
-  country_gid?: string;
-  country_a?: string;
-  region?: string;
-  region_gid?: string;
-  region_a?: string;
-  locality?: string;
-  locality_gid?: string;
-  label?: string;
-}
-
-interface PeliasFeature {
-  type: string;
-  geometry: PeliasGeometry;
-  properties: PeliasProperties;
-  bbox?: number[];
-}
-
-interface PeliasResponse {
-  geocoding: {
-    version: string;
-    attribution: string;
-    query: Record<string, any>;
-    warnings?: string[];
-    errors?: string[];
-    engine: Record<string, any>;
-    timestamp: number;
-  };
-  type: string;
-  features: PeliasFeature[];
-  bbox?: number[];
-}
+import { useAddressSearch, PeliasFeature } from "@/hooks/useSearch";
 
 interface AddressSearchProps {
   value: string;
@@ -70,79 +20,54 @@ export function AddressSearch({
   id,
   required = false,
 }: AddressSearchProps) {
-  const [suggestions, setSuggestions] = useState<PeliasFeature[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
-  const [error, setError] = useState<string | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Get homeserver URL from environment
-  const peliasServerURL =
-    (import.meta.env.VITE_HOMESERVER_URL as string) || "http://homeserver:4000";
+  // Use the search hook
+  const { data: searchResults, isLoading, error } = useAddressSearch(debouncedQuery);
+  const suggestions = searchResults?.features || [];
 
-  // Debounced search function
-  const searchAddresses = async (query: string) => {
-    if (query.length < 3) {
-      setSuggestions([]);
-      setShowDropdown(false);
-      setHasSearched(false);
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-    setHasSearched(true);
-
-    try {
-      const response = await fetch(
-        `${peliasServerURL}/v1/search?text=${encodeURIComponent(query)}&size=5`,
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const results: PeliasResponse = await response.json();
-      setSuggestions(results.features || []);
-      setShowDropdown(true); // Show dropdown when search completes
-      setSelectedIndex(-1);
-    } catch (err) {
-      console.error("Geocoding error:", err);
-      setError("Failed to search addresses");
-      setSuggestions([]);
-      setShowDropdown(true); // Still show to display error/no results
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Handle input change with debouncing
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    onChange(newValue);
-
-    // Clear existing timeout
+  // Debounce the search query
+  useEffect(() => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
 
-    // If input is empty, clear suggestions immediately
-    if (!newValue.trim()) {
-      setSuggestions([]);
-      setShowDropdown(false);
-      setHasSearched(false);
-      return;
-    }
-
-    // Set new timeout for search
     timeoutRef.current = setTimeout(() => {
-      void searchAddresses(newValue);
+      setDebouncedQuery(value);
     }, 300);
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [value]);
+
+  // Show dropdown when we have results or are loading
+  useEffect(() => {
+    if (debouncedQuery.length >= 3) {
+      setShowDropdown(true);
+      setSelectedIndex(-1);
+    } else {
+      setShowDropdown(false);
+    }
+  }, [debouncedQuery, suggestions, isLoading]);
+
+  // Handle input change
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    onChange(newValue);
+
+    // If input is empty, clear dropdown immediately
+    if (!newValue.trim()) {
+      setShowDropdown(false);
+    }
   };
 
   // Handle suggestion selection
@@ -150,8 +75,6 @@ export function AddressSearch({
     onChange(suggestion.properties.label || suggestion.properties.name);
     setShowDropdown(false);
     setSelectedIndex(-1);
-    setSuggestions([]);
-    setHasSearched(false);
     inputRef.current?.focus();
   };
 
@@ -186,9 +109,7 @@ export function AddressSearch({
   // Clear input
   const handleClear = () => {
     onChange("");
-    setSuggestions([]);
     setShowDropdown(false);
-    setHasSearched(false);
     setSelectedIndex(-1);
     inputRef.current?.focus();
   };
@@ -269,7 +190,7 @@ export function AddressSearch({
                 </div>
               </button>
             ))
-          ) : hasSearched && !isLoading ? (
+          ) : debouncedQuery.length >= 3 && !isLoading ? (
             <div className="px-4 py-3 text-sm text-gray-500">
               No results found
             </div>
@@ -278,7 +199,7 @@ export function AddressSearch({
       )}
 
       {/* Error message */}
-      {error && <p className="text-sm text-red-600 mt-1">{error}</p>}
+      {error && <p className="text-sm text-red-600 mt-1">Failed to search addresses</p>}
     </div>
   );
 }
