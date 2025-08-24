@@ -90,18 +90,18 @@ func (c *NonCompliantController) GetNonCompliantReasons(w http.ResponseWriter, r
 
 // TriggerNonCompliantScraper handles POST /api/admin/non-compliant/scrape
 func (c *NonCompliantController) TriggerNonCompliantScraper(w http.ResponseWriter, r *http.Request) {
-	c.logger.Info("Non-compliant scraper triggered via API")
+	c.logger.Info("Non-compliant complete workflow triggered via API")
 
-	// Start the scraping process
-	job, err := c.service.ScrapeAndStoreNonCompliantEmployers()
+	// Start the complete workflow: scrape -> postal code geocoding -> address geocoding
+	job, err := c.service.ScrapeAndProcessAllGeocoding()
 	if err != nil {
-		c.logger.Error("Failed to trigger non-compliant scraper", "error", err)
-		http.Error(w, "Failed to start non-compliant scraper", http.StatusInternalServerError)
+		c.logger.Error("Failed to trigger non-compliant complete workflow", "error", err)
+		http.Error(w, "Failed to start non-compliant complete workflow", http.StatusInternalServerError)
 		return
 	}
 
 	response := map[string]interface{}{
-		"message": "Non-compliant employers scraper started successfully",
+		"message": "Non-compliant employers complete workflow (scrape + geocoding) completed successfully",
 		"job":     job,
 	}
 
@@ -188,6 +188,60 @@ func (c *NonCompliantController) GetNonCompliantEmployersByPostalCode(w http.Res
 	json.NewEncoder(w).Encode(response)
 }
 
+// GetNonCompliantEmployersByCoordinates handles GET /api/non-compliant/employers/coordinates/{lat}/{lng}
+func (c *NonCompliantController) GetNonCompliantEmployersByCoordinates(w http.ResponseWriter, r *http.Request) {
+	// Get coordinates from URL
+	latStr := chi.URLParam(r, "lat")
+	lngStr := chi.URLParam(r, "lng")
+	
+	if latStr == "" || lngStr == "" {
+		http.Error(w, "Both lat and lng coordinates are required", http.StatusBadRequest)
+		return
+	}
+
+	// Parse coordinates
+	lat, err := strconv.ParseFloat(latStr, 64)
+	if err != nil {
+		http.Error(w, "Invalid latitude format", http.StatusBadRequest)
+		return
+	}
+
+	lng, err := strconv.ParseFloat(lngStr, 64)
+	if err != nil {
+		http.Error(w, "Invalid longitude format", http.StatusBadRequest)
+		return
+	}
+
+	// Parse pagination parameters
+	limitStr := r.URL.Query().Get("limit")
+	offsetStr := r.URL.Query().Get("offset")
+
+	limit := 100 // default
+	if limitStr != "" {
+		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 && parsedLimit <= 500 {
+			limit = parsedLimit
+		}
+	}
+
+	offset := 0 // default
+	if offsetStr != "" {
+		if parsedOffset, err := strconv.Atoi(offsetStr); err == nil && parsedOffset >= 0 {
+			offset = parsedOffset
+		}
+	}
+
+	// Get employers by coordinates
+	response, err := c.service.GetNonCompliantEmployersByCoordinates(lat, lng, limit, offset)
+	if err != nil {
+		c.logger.Error("Failed to get non-compliant employers by coordinates", "error", err, "lat", lat, "lng", lng)
+		http.Error(w, "Failed to retrieve employers for coordinates", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
 // TriggerNonCompliantGeocoding handles POST /api/admin/non-compliant/geocode
 func (c *NonCompliantController) TriggerNonCompliantGeocoding(w http.ResponseWriter, r *http.Request) {
 	c.logger.Info("Non-compliant geocoding triggered via API")
@@ -208,6 +262,26 @@ func (c *NonCompliantController) TriggerNonCompliantGeocoding(w http.ResponseWri
 	json.NewEncoder(w).Encode(response)
 }
 
+// TriggerNonCompliantAddressGeocode handles POST /api/admin/non-compliant/address-geocode
+func (c *NonCompliantController) TriggerNonCompliantAddressGeocode(w http.ResponseWriter, r *http.Request) {
+	c.logger.Info("Non-compliant address geocoding triggered via API")
+
+	// Start the address geocoding process for employers without extractable postal codes
+	err := c.service.GeocodeEmployersUsingAddresses()
+	if err != nil {
+		c.logger.Error("Failed to trigger address geocoding", "error", err)
+		http.Error(w, "Failed to start address geocoding process", http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string]interface{}{
+		"message": "Non-compliant employers address geocoding completed successfully",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
 // SetupNonCompliantRoutes sets up all routes for non-compliant employers
 func (c *NonCompliantController) SetupNonCompliantRoutes(r chi.Router) {
 	// Public API routes
@@ -216,6 +290,7 @@ func (c *NonCompliantController) SetupNonCompliantRoutes(r chi.Router) {
 		r.Get("/reasons", c.GetNonCompliantReasons)
 		r.Get("/locations", c.GetNonCompliantLocations)
 		r.Get("/employers/postal-code/{postal_code}", c.GetNonCompliantEmployersByPostalCode)
+		r.Get("/employers/coordinates/{lat}/{lng}", c.GetNonCompliantEmployersByCoordinates)
 	})
 
 	// Admin routes (these should have authentication middleware in production)
@@ -223,5 +298,6 @@ func (c *NonCompliantController) SetupNonCompliantRoutes(r chi.Router) {
 		r.Post("/scrape", c.TriggerNonCompliantScraper)
 		r.Get("/status", c.GetNonCompliantScrapingStatus)
 		r.Post("/geocode", c.TriggerNonCompliantGeocoding)
+		r.Post("/address-geocode", c.TriggerNonCompliantAddressGeocode)
 	})
 }

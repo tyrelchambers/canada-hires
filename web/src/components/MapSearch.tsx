@@ -2,11 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faTimes,
-  faSearch,
-  faMapMarkerAlt,
-} from "@fortawesome/free-solid-svg-icons";
+import { faTimes, faMapMarkerAlt } from "@fortawesome/free-solid-svg-icons";
 // Pelias geocoding response interfaces
 interface PeliasGeometry {
   type: string;
@@ -83,7 +79,8 @@ export function MapSearch({
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Get Pelias server URL from environment
-  const peliasServerURL = import.meta.env.VITE_PELIAS_SERVER_URL || "http://homeserver:4000";
+  const peliasServerURL =
+    import.meta.env.VITE_PELIAS_SERVER_URL || "http://homeserver:4000";
 
   // Debounced search function
   const searchCities = async (searchQuery: string) => {
@@ -97,13 +94,13 @@ export function MapSearch({
 
     try {
       const response = await fetch(
-        `${peliasServerURL}/v1/search?text=${encodeURIComponent(searchQuery)}&size=8&layers=locality,region`
+        `${peliasServerURL}/v1/search?text=${encodeURIComponent(searchQuery)}&size=8&layers=locality,region`,
       );
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-      
+
       const results: PeliasResponse = await response.json();
       setSuggestions(results.features || []);
       setShowDropdown(true);
@@ -218,14 +215,8 @@ export function MapSearch({
     };
   }, []);
 
-
   return (
-    <div className="bg-white rounded-lg shadow p-4">
-      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-        <FontAwesomeIcon icon={faSearch} className="text-blue-600" />
-        Search Cities
-      </h3>
-
+    <div>
       <div ref={containerRef} className="relative">
         <div className="relative">
           <Input

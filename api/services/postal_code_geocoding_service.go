@@ -18,6 +18,7 @@ import (
 type PostalCodeGeocodingService interface {
 	GeocodePostalCode(postalCode string, expectedProvince ...string) (latitude, longitude float64, err error)
 	GeocodeMultiplePostalCodes(postalCodes []string) (map[string]models.PostalCodeCoordinates, error)
+	GeocodeFullAddress(address string) (latitude, longitude float64, err error)
 	GetAllPostalCodes() (map[string]models.PostalCodeCoordinates, error)
 	UpsertPostalCode(postalCode *models.PostalCodeCoordinates) error
 }
@@ -81,9 +82,10 @@ type postalCodeGeocodingService struct {
 	client            *http.Client
 	postalCodeRepo    repos.PostalCodeRepository
 	postalCodeService PostalCodeService
+	addressCacheRepo  repos.AddressGeocodingCacheRepository
 }
 
-func NewPostalCodeGeocodingService(postalCodeRepo repos.PostalCodeRepository, postalCodeService PostalCodeService) PostalCodeGeocodingService {
+func NewPostalCodeGeocodingService(postalCodeRepo repos.PostalCodeRepository, postalCodeService PostalCodeService, addressCacheRepo repos.AddressGeocodingCacheRepository) PostalCodeGeocodingService {
 	peliasServerURL := os.Getenv("PELIAS_SERVER_URL")
 	if peliasServerURL == "" {
 		// Default to local server
@@ -100,6 +102,7 @@ func NewPostalCodeGeocodingService(postalCodeRepo repos.PostalCodeRepository, po
 		},
 		postalCodeRepo:    postalCodeRepo,
 		postalCodeService: postalCodeService,
+		addressCacheRepo:  addressCacheRepo,
 	}
 
 	return service
@@ -324,6 +327,95 @@ func (g *postalCodeGeocodingService) GetAllPostalCodes() (map[string]models.Post
 
 func (g *postalCodeGeocodingService) UpsertPostalCode(postalCode *models.PostalCodeCoordinates) error {
 	return g.postalCodeRepo.Upsert(postalCode)
+}
+
+// GeocodeFullAddress geocodes a full address string using Pelias search API
+func (g *postalCodeGeocodingService) GeocodeFullAddress(address string) (latitude, longitude float64, err error) {
+	if address == "" {
+		return 0, 0, fmt.Errorf("address is empty")
+	}
+
+	// Clean the address by trimming whitespace
+	cleanedAddress := strings.TrimSpace(address)
+	if cleanedAddress == "" {
+		return 0, 0, fmt.Errorf("address is empty after cleaning")
+	}
+
+	// Check cache first
+	normalizedAddress := repos.NormalizeAddress(cleanedAddress)
+	if cached, err := g.addressCacheRepo.GetByNormalizedAddress(normalizedAddress); err == nil && cached != nil {
+		return cached.Latitude, cached.Longitude, nil
+	}
+
+	// Build Pelias search URL for full address search
+	// Use boundary.country=CAN to restrict results to Canada
+	apiURL := fmt.Sprintf("%s/v1/search?text=%s&boundary.country=CAN&size=1",
+		g.peliasServerURL,
+		url.QueryEscape(cleanedAddress))
+
+	// Make the request
+	resp, err := g.client.Get(apiURL)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to make Pelias geocoding request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return 0, 0, fmt.Errorf("Pelias API returned status %d", resp.StatusCode)
+	}
+
+	// Parse the response
+	var peliasResult PeliasResponse
+	if err := json.NewDecoder(resp.Body).Decode(&peliasResult); err != nil {
+		return 0, 0, fmt.Errorf("failed to decode Pelias response: %w", err)
+	}
+
+	// Check if we got any results
+	if len(peliasResult.Features) == 0 {
+		return 0, 0, fmt.Errorf("no geocoding results found for address: %s", cleanedAddress)
+	}
+
+	// Get the first result
+	result := peliasResult.Features[0]
+	if len(result.Geometry.Coordinates) < 2 {
+		return 0, 0, fmt.Errorf("invalid coordinates in Pelias response")
+	}
+
+
+	// Ensure the result is in Canada
+	if result.Properties.CountryCode != "CA" && result.Properties.CountryA != "CAN" {
+		return 0, 0, fmt.Errorf("geocoding result is not in Canada: %s for address: %s", 
+			result.Properties.Country, cleanedAddress)
+	}
+
+	// Pelias returns coordinates as [longitude, latitude]
+	longitude = result.Geometry.Coordinates[0]
+	latitude = result.Geometry.Coordinates[1]
+
+	// Validate coordinates are within reasonable bounds for Canada
+	// Canada latitude: approximately 41.7 to 83.1
+	// Canada longitude: approximately -141.0 to -52.6
+	if latitude < 41.0 || latitude > 84.0 || longitude < -142.0 || longitude > -52.0 {
+		return 0, 0, fmt.Errorf("coordinates outside Canada bounds: lat=%.6f, lng=%.6f for address: %s", 
+			latitude, longitude, cleanedAddress)
+	}
+
+	// Save to cache for future use
+	cacheEntry := &models.AddressGeocodingCache{
+		Address:           cleanedAddress,
+		NormalizedAddress: normalizedAddress,
+		Latitude:          latitude,
+		Longitude:         longitude,
+		Confidence:        &result.Properties.Confidence,
+		GeocodedAt:        time.Now(),
+	}
+
+	// Don't fail the whole request if cache save fails
+	if err := g.addressCacheRepo.Upsert(cacheEntry); err != nil {
+		// Just log the error and continue
+	}
+
+	return latitude, longitude, nil
 }
 
 

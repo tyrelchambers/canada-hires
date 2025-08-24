@@ -64,6 +64,32 @@ export function useNonCompliantByPostalCode(
   });
 }
 
+export function useNonCompliantByCoordinates(
+  lat: number | null,
+  lng: number | null,
+  limit: number = 100,
+) {
+  const apiClient = useApiClient();
+
+  return useQuery<NonCompliantEmployersByPostalCodeResponse>({
+    queryKey: ["non-compliant", "coordinates", lat, lng, limit],
+    queryFn: async (): Promise<NonCompliantEmployersByPostalCodeResponse> => {
+      if (lat === null || lng === null) {
+        throw new Error("Both lat and lng coordinates are required");
+      }
+      const response =
+        await apiClient.get<NonCompliantEmployersByPostalCodeResponse>(
+          `/non-compliant/employers/coordinates/${lat}/${lng}`,
+          {
+            params: { limit },
+          },
+        );
+      return response.data;
+    },
+    enabled: lat !== null && lng !== null,
+  });
+}
+
 export function useTriggerNonCompliantGeocoding() {
   const apiClient = useApiClient();
   const queryClient = useQueryClient();

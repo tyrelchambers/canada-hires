@@ -16,6 +16,7 @@ func NonCompliantRoutes(controller *controllers.NonCompliantController, authMW f
 			r.Get("/reasons", controller.GetNonCompliantReasons)
 			r.Get("/locations", controller.GetNonCompliantLocations)
 			r.Get("/employers/postal-code/{postal_code}", controller.GetNonCompliantEmployersByPostalCode)
+			r.Get("/employers/coordinates/{lat}/{lng}", controller.GetNonCompliantEmployersByCoordinates)
 		})
 
 		// Admin routes for scraping operations

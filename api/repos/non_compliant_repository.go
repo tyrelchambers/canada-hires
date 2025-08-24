@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 )
 
 type NonCompliantRepository interface {
@@ -14,7 +15,7 @@ type NonCompliantRepository interface {
 	CreateEmployer(employer *models.NonCompliantEmployer) error
 	CreateEmployersBatch(employers []models.NonCompliantEmployer) error
 	GetEmployerByID(id string) (*models.NonCompliantEmployer, error)
-	GetEmployersWithReasons(limit, offset int) ([]models.NonCompliantEmployerWithReasonCodes, error)
+	GetEmployersWithReasons(limit, offset int) ([]models.NonCompliantEmployerWithReasons, error)
 	GetEmployersCount() (int, error)
 	UpdateEmployer(employer *models.NonCompliantEmployer) error
 	DeleteEmployer(id string) error
@@ -24,11 +25,6 @@ type NonCompliantRepository interface {
 	GetReasonByCode(code string) (*models.NonCompliantReason, error)
 	GetAllReasons() ([]models.NonCompliantReason, error)
 	UpsertReason(code, description string) (*models.NonCompliantReason, error)
-
-	// Employer-Reason relationships
-	AddEmployerReason(employerID string, reasonID int) error
-	RemoveEmployerReason(employerID string, reasonID int) error
-	GetEmployerReasons(employerID string) ([]models.NonCompliantReason, error)
 
 	// Bulk operations
 	CreateEmployersWithReasons(data []models.ScraperNonCompliantData) error
@@ -41,9 +37,13 @@ type NonCompliantRepository interface {
 
 	// Geolocation methods
 	GetEmployersWithoutPostalCodes() ([]models.NonCompliantEmployer, error)
+	GetEmployersWithoutExtractablePostalCodes() ([]models.NonCompliantEmployer, error)
 	UpdateEmployerPostalCode(employerID, postalCode string) error
+	UpdateEmployerAddress(employerID, address string) error
 	GetLocationsByPostalCode(limit int) ([]models.NonCompliantPostalCodeLocation, error)
-	GetEmployersByPostalCode(postalCode string, limit, offset int) ([]models.NonCompliantEmployerWithReasonCodes, error)
+	GetEmployersByPostalCode(postalCode string, limit, offset int) ([]models.NonCompliantEmployerWithReasons, error)
+	GetEmployersByCoordinates(lat, lng float64, limit, offset int) ([]models.NonCompliantEmployerWithReasons, error)
+	GetAllEmployers() ([]models.NonCompliantEmployer, error)
 }
 
 type nonCompliantRepository struct {
@@ -58,16 +58,16 @@ func (r *nonCompliantRepository) CreateEmployer(employer *models.NonCompliantEmp
 	query := `
 		INSERT INTO non_compliant_employers (
 			id, business_operating_name, business_legal_name, address,
-			date_of_final_decision, penalty_amount, penalty_currency, status, scraped_at
+			date_of_final_decision, penalty_amount, penalty_currency, status, reason_codes, scraped_at
 		) VALUES (
-			COALESCE(NULLIF($1, ''), gen_random_uuid()), $2, $3, $4, $5, $6, $7, $8, $9
+			COALESCE(NULLIF($1, ''), gen_random_uuid()), $2, $3, $4, $5, $6, $7, $8, $9, $10
 		)
 		RETURNING id, created_at, updated_at`
 
 	return r.db.QueryRow(query,
 		employer.ID, employer.BusinessOperatingName, employer.BusinessLegalName,
 		employer.Address, employer.DateOfFinalDecision, employer.PenaltyAmount,
-		employer.PenaltyCurrency, employer.Status, employer.ScrapedAt,
+		employer.PenaltyCurrency, employer.Status, employer.ReasonCodes, employer.ScrapedAt,
 	).Scan(&employer.ID, &employer.CreatedAt, &employer.UpdatedAt)
 }
 
@@ -117,7 +117,7 @@ func (r *nonCompliantRepository) GetEmployerByID(id string) (*models.NonComplian
 	query := `
 		SELECT id, business_operating_name, business_legal_name, address,
 		       date_of_final_decision, penalty_amount, penalty_currency, status,
-		       scraped_at, created_at, updated_at
+		       reason_codes, postal_code, scraped_at, created_at, updated_at
 		FROM non_compliant_employers
 		WHERE id = $1`
 
@@ -126,32 +126,27 @@ func (r *nonCompliantRepository) GetEmployerByID(id string) (*models.NonComplian
 		return nil, err
 	}
 
-	// Load associated reasons
-	reasons, err := r.GetEmployerReasons(id)
-	if err == nil {
+	// Load associated reasons from reason codes
+	if len(employer.ReasonCodes) > 0 {
+		var reasons []models.NonCompliantReason
+		for _, code := range employer.ReasonCodes {
+			if reason, err := r.GetReasonByCode(code); err == nil {
+				reasons = append(reasons, *reason)
+			}
+		}
 		employer.Reasons = reasons
 	}
 
 	return &employer, nil
 }
 
-func (r *nonCompliantRepository) GetEmployersWithReasons(limit, offset int) ([]models.NonCompliantEmployerWithReasonCodes, error) {
+func (r *nonCompliantRepository) GetEmployersWithReasons(limit, offset int) ([]models.NonCompliantEmployerWithReasons, error) {
 	query := `
 		SELECT
 			e.id, e.business_operating_name, e.business_legal_name, e.address,
 			e.date_of_final_decision, e.penalty_amount, e.penalty_currency, e.status,
-			e.postal_code, e.scraped_at, e.created_at, e.updated_at,
-			COALESCE(
-				array_agg(r.reason_code ORDER BY r.reason_code)
-				FILTER (WHERE r.reason_code IS NOT NULL),
-				ARRAY[]::VARCHAR[]
-			) as reason_codes
+			e.reason_codes, e.postal_code, e.scraped_at, e.created_at, e.updated_at
 		FROM non_compliant_employers e
-		LEFT JOIN non_compliant_employer_reasons er ON e.id = er.employer_id
-		LEFT JOIN non_compliant_reasons r ON er.reason_id = r.id
-		GROUP BY e.id, e.business_operating_name, e.business_legal_name, e.address,
-		         e.date_of_final_decision, e.penalty_amount, e.penalty_currency, e.status,
-		         e.postal_code, e.scraped_at, e.created_at, e.updated_at
 		ORDER BY e.date_of_final_decision DESC, e.business_operating_name
 		LIMIT $1 OFFSET $2`
 
@@ -161,17 +156,16 @@ func (r *nonCompliantRepository) GetEmployersWithReasons(limit, offset int) ([]m
 	}
 	defer rows.Close()
 
-	var employers []models.NonCompliantEmployerWithReasonCodes
+	var employers []models.NonCompliantEmployerWithReasons
 	for rows.Next() {
-		var employer models.NonCompliantEmployerWithReasonCodes
+		var employer models.NonCompliantEmployerWithReasons
 		var reasonCodesArray interface{}
 
 		err := rows.Scan(
 			&employer.ID, &employer.BusinessOperatingName, &employer.BusinessLegalName,
 			&employer.Address, &employer.DateOfFinalDecision, &employer.PenaltyAmount,
-			&employer.PenaltyCurrency, &employer.Status, &employer.PostalCode,
+			&employer.PenaltyCurrency, &employer.Status, &reasonCodesArray, &employer.PostalCode,
 			&employer.ScrapedAt, &employer.CreatedAt, &employer.UpdatedAt,
-			&reasonCodesArray,
 		)
 		if err != nil {
 			return nil, err
@@ -187,6 +181,17 @@ func (r *nonCompliantRepository) GetEmployersWithReasons(limit, offset int) ([]m
 					}
 				}
 			}
+		}
+
+		// Get full reason objects with descriptions for the reason codes
+		if len(employer.ReasonCodes) > 0 {
+			var reasons []models.NonCompliantReason
+			for _, code := range employer.ReasonCodes {
+				if reason, err := r.GetReasonByCode(code); err == nil {
+					reasons = append(reasons, *reason)
+				}
+			}
+			employer.Reasons = reasons
 		}
 
 		employers = append(employers, employer)
@@ -262,34 +267,6 @@ func (r *nonCompliantRepository) UpsertReason(code, description string) (*models
 	return &reason, err
 }
 
-func (r *nonCompliantRepository) AddEmployerReason(employerID string, reasonID int) error {
-	query := `
-		INSERT INTO non_compliant_employer_reasons (employer_id, reason_id)
-		VALUES ($1, $2)
-		ON CONFLICT (employer_id, reason_id) DO NOTHING`
-
-	_, err := r.db.Exec(query, employerID, reasonID)
-	return err
-}
-
-func (r *nonCompliantRepository) RemoveEmployerReason(employerID string, reasonID int) error {
-	_, err := r.db.Exec("DELETE FROM non_compliant_employer_reasons WHERE employer_id = $1 AND reason_id = $2", employerID, reasonID)
-	return err
-}
-
-func (r *nonCompliantRepository) GetEmployerReasons(employerID string) ([]models.NonCompliantReason, error) {
-	var reasons []models.NonCompliantReason
-	query := `
-		SELECT r.id, r.reason_code, r.description, r.created_at, r.updated_at
-		FROM non_compliant_reasons r
-		JOIN non_compliant_employer_reasons er ON r.id = er.reason_id
-		WHERE er.employer_id = $1
-		ORDER BY r.reason_code`
-
-	err := r.db.Select(&reasons, query, employerID)
-	return reasons, err
-}
-
 func (r *nonCompliantRepository) CreateEmployersWithReasons(data []models.ScraperNonCompliantData) error {
 	if len(data) == 0 {
 		return nil
@@ -310,65 +287,24 @@ func (r *nonCompliantRepository) CreateEmployersWithReasons(data []models.Scrape
 			}
 		}
 
-		// Create employer
-		employer := models.NonCompliantEmployer{
-			BusinessOperatingName: item.BusinessOperatingName,
-			BusinessLegalName:     &item.BusinessLegalName,
-			Address:               &item.Address,
-			DateOfFinalDecision:   finalDecisionDate,
-			PenaltyAmount:         &item.PenaltyAmount,
-			PenaltyCurrency:       item.PenaltyCurrency,
-			Status:                &item.Status,
-			ScrapedAt:             time.Now(),
-		}
+		// Convert reason codes slice to PostgreSQL array format
+		reasonCodes := item.ReasonCodes
 
-		// For now, just insert without ON CONFLICT since the constraint might not exist yet
 		employerQuery := `
 			INSERT INTO non_compliant_employers (
 				business_operating_name, business_legal_name, address,
-				date_of_final_decision, penalty_amount, penalty_currency, status, scraped_at
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+				date_of_final_decision, penalty_amount, penalty_currency, status, reason_codes, scraped_at
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 			RETURNING id`
 
+		var employerID string
 		err = tx.QueryRow(employerQuery,
-			employer.BusinessOperatingName, employer.BusinessLegalName, employer.Address,
-			employer.DateOfFinalDecision, employer.PenaltyAmount, employer.PenaltyCurrency,
-			employer.Status, employer.ScrapedAt,
-		).Scan(&employer.ID)
+			item.BusinessOperatingName, &item.BusinessLegalName, &item.Address,
+			finalDecisionDate, &item.PenaltyAmount, item.PenaltyCurrency,
+			&item.Status, pq.Array(reasonCodes), time.Now(),
+		).Scan(&employerID)
 		if err != nil {
 			return fmt.Errorf("failed to insert employer: %w", err)
-		}
-
-		// Handle reason codes
-		for _, reasonCode := range item.ReasonCodes {
-			if reasonCode == "" {
-				continue
-			}
-
-			// Upsert reason
-			var reasonID int
-			reasonQuery := `
-				INSERT INTO non_compliant_reasons (reason_code, description)
-				VALUES ($1, $2)
-				ON CONFLICT (reason_code) DO UPDATE SET
-					description = COALESCE(EXCLUDED.description, non_compliant_reasons.description),
-					updated_at = CURRENT_TIMESTAMP
-				RETURNING id`
-
-			err = tx.QueryRow(reasonQuery, reasonCode, fmt.Sprintf("Reason code %s", reasonCode)).Scan(&reasonID)
-			if err != nil {
-				return fmt.Errorf("failed to upsert reason code %s: %w", reasonCode, err)
-			}
-
-			// Link employer to reason
-			_, err = tx.Exec(`
-				INSERT INTO non_compliant_employer_reasons (employer_id, reason_id)
-				VALUES ($1, $2)
-				ON CONFLICT (employer_id, reason_id) DO NOTHING`,
-				employer.ID, reasonID)
-			if err != nil {
-				return fmt.Errorf("failed to link employer to reason: %w", err)
-			}
 		}
 	}
 
@@ -395,80 +331,32 @@ func (r *nonCompliantRepository) UpsertEmployersWithReasons(data []models.Scrape
 			}
 		}
 
-		// Upsert employer using ON CONFLICT
-		employer := models.NonCompliantEmployer{
-			BusinessOperatingName: item.BusinessOperatingName,
-			BusinessLegalName:     &item.BusinessLegalName,
-			Address:               &item.Address,
-			DateOfFinalDecision:   finalDecisionDate,
-			PenaltyAmount:         &item.PenaltyAmount,
-			PenaltyCurrency:       item.PenaltyCurrency,
-			Status:                &item.Status,
-			ScrapedAt:             time.Now(),
-		}
+		// Convert reason codes slice to PostgreSQL array format
+		reasonCodes := item.ReasonCodes
 
 		employerQuery := `
 			INSERT INTO non_compliant_employers (
 				business_operating_name, business_legal_name, address,
-				date_of_final_decision, penalty_amount, penalty_currency, status, scraped_at
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-			ON CONFLICT (business_operating_name, COALESCE(date_of_final_decision, '1900-01-01'::date)) 
-			DO UPDATE SET 
+				date_of_final_decision, penalty_amount, penalty_currency, status, reason_codes, scraped_at
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+			ON CONFLICT (business_operating_name, COALESCE(date_of_final_decision, '1900-01-01'::date))
+			DO UPDATE SET
 				business_legal_name = EXCLUDED.business_legal_name,
 				penalty_amount = EXCLUDED.penalty_amount,
 				penalty_currency = EXCLUDED.penalty_currency,
 				status = EXCLUDED.status,
+				reason_codes = EXCLUDED.reason_codes,
 				scraped_at = EXCLUDED.scraped_at
 			RETURNING id`
 
+		var employerID string
 		err = tx.QueryRow(employerQuery,
-			employer.BusinessOperatingName, employer.BusinessLegalName, employer.Address,
-			employer.DateOfFinalDecision, employer.PenaltyAmount, employer.PenaltyCurrency,
-			employer.Status, employer.ScrapedAt,
-		).Scan(&employer.ID)
+			item.BusinessOperatingName, &item.BusinessLegalName, &item.Address,
+			finalDecisionDate, &item.PenaltyAmount, item.PenaltyCurrency,
+			&item.Status, pq.Array(reasonCodes), time.Now(),
+		).Scan(&employerID)
 		if err != nil {
 			return fmt.Errorf("failed to upsert employer: %w", err)
-		}
-
-		// Clear existing reason associations for this employer
-		_, err = tx.Exec("DELETE FROM non_compliant_employer_reasons WHERE employer_id = $1", employer.ID)
-		if err != nil {
-			return fmt.Errorf("failed to clear existing reasons: %w", err)
-		}
-
-		// Handle reason codes
-		for _, reasonCode := range item.ReasonCodes {
-			if reasonCode == "" {
-				continue
-			}
-
-			// Get or create reason
-			var reason models.NonCompliantReason
-			reasonQuery := `
-				INSERT INTO non_compliant_reasons (reason_code) 
-				VALUES ($1) 
-				ON CONFLICT (reason_code) DO NOTHING 
-				RETURNING id, reason_code`
-			err = tx.QueryRow(reasonQuery, reasonCode).Scan(&reason.ID, &reason.ReasonCode)
-			if err != nil {
-				// If no rows returned, reason already exists, so fetch it
-				if err == sql.ErrNoRows {
-					err = tx.QueryRow("SELECT id, reason_code FROM non_compliant_reasons WHERE reason_code = $1", reasonCode).
-						Scan(&reason.ID, &reason.ReasonCode)
-					if err != nil {
-						return fmt.Errorf("failed to fetch existing reason: %w", err)
-					}
-				} else {
-					return fmt.Errorf("failed to upsert reason: %w", err)
-				}
-			}
-
-			// Create employer-reason association
-			_, err = tx.Exec("INSERT INTO non_compliant_employer_reasons (employer_id, reason_id) VALUES ($1, $2)", 
-				employer.ID, reason.ID)
-			if err != nil {
-				return fmt.Errorf("failed to create employer-reason association: %w", err)
-			}
 		}
 	}
 
@@ -476,24 +364,8 @@ func (r *nonCompliantRepository) UpsertEmployersWithReasons(data []models.Scrape
 }
 
 func (r *nonCompliantRepository) ClearAllNonCompliantData() error {
-	tx, err := r.db.Beginx()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	// Delete in correct order due to foreign key constraints
-	_, err = tx.Exec("DELETE FROM non_compliant_employer_reasons")
-	if err != nil {
-		return err
-	}
-
-	_, err = tx.Exec("DELETE FROM non_compliant_employers")
-	if err != nil {
-		return err
-	}
-
-	return tx.Commit()
+	_, err := r.db.Exec("DELETE FROM non_compliant_employers")
+	return err
 }
 
 func (r *nonCompliantRepository) GetLatestScrapedDate() (*time.Time, error) {
@@ -532,7 +404,7 @@ func (r *nonCompliantRepository) GetEmployersWithoutPostalCodes() ([]models.NonC
 // UpdateEmployerPostalCode updates the postal code for an employer
 func (r *nonCompliantRepository) UpdateEmployerPostalCode(employerID, postalCode string) error {
 	query := `
-		UPDATE non_compliant_employers 
+		UPDATE non_compliant_employers
 		SET postal_code = $2, updated_at = CURRENT_TIMESTAMP
 		WHERE id = $1`
 
@@ -540,32 +412,55 @@ func (r *nonCompliantRepository) UpdateEmployerPostalCode(employerID, postalCode
 	return err
 }
 
-// GetLocationsByPostalCode returns aggregated location data grouped by postal code
+// GetLocationsByPostalCode returns aggregated location data grouped by postal code and includes direct coordinates
 func (r *nonCompliantRepository) GetLocationsByPostalCode(limit int) ([]models.NonCompliantPostalCodeLocation, error) {
 	var locations []models.NonCompliantPostalCodeLocation
 	query := `
-		WITH extracted_postal_codes AS (
-			SELECT 
-				e.*,
-				-- Extract Canadian postal codes from address using regex
-				UPPER(SUBSTRING(e.address FROM '[A-Za-z]\d[A-Za-z]\s*\d[A-Za-z]\d')) as extracted_postal_code
+		WITH postal_code_locations AS (
+			-- Get locations based on postal codes
+			SELECT
+				epc.extracted_postal_code as postal_code,
+				pc.latitude,
+				pc.longitude,
+				COUNT(*) as employer_count,
+				COALESCE(SUM(epc.penalty_amount), 0) as total_penalty_amount,
+				COUNT(*) as violation_count,
+				MAX(epc.date_of_final_decision) as most_recent_violation
+			FROM (
+				SELECT
+					e.*,
+					-- Extract Canadian postal codes from address using regex
+					UPPER(SUBSTRING(e.address FROM '[A-Za-z]\d[A-Za-z]\s*\d[A-Za-z]\d')) as extracted_postal_code
+				FROM non_compliant_employers e
+				WHERE e.address IS NOT NULL AND e.address != ''
+			) epc
+			JOIN postal_codes pc ON epc.extracted_postal_code = pc.postal_code
+			WHERE epc.extracted_postal_code IS NOT NULL
+			  AND pc.latitude IS NOT NULL
+			  AND pc.longitude IS NOT NULL
+			GROUP BY epc.extracted_postal_code, pc.latitude, pc.longitude
+		),
+		address_locations AS (
+			-- Get locations based on address geocoding cache
+			SELECT
+				'COORD_' || ROUND(agc.latitude::numeric, 6) || '_' || ROUND(agc.longitude::numeric, 6) as postal_code,
+				agc.latitude,
+				agc.longitude,
+				COUNT(*) as employer_count,
+				COALESCE(SUM(e.penalty_amount), 0) as total_penalty_amount,
+				COUNT(*) as violation_count,
+				MAX(e.date_of_final_decision) as most_recent_violation
 			FROM non_compliant_employers e
-			WHERE e.address IS NOT NULL AND e.address != ''
+			JOIN address_geocoding_cache agc ON agc.normalized_address = LOWER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(e.address, '[,.]', '', 'g'), '\s+', ' ', 'g')))
+			WHERE e.address IS NOT NULL
+			  AND e.address != ''
+			  AND UPPER(SUBSTRING(e.address FROM '[A-Za-z]\d[A-Za-z]\s*\d[A-Za-z]\d')) IS NULL
+			GROUP BY agc.latitude, agc.longitude
 		)
-		SELECT 
-			epc.extracted_postal_code as postal_code,
-			pc.latitude,
-			pc.longitude,
-			COUNT(*) as employer_count,
-			COALESCE(SUM(epc.penalty_amount), 0) as total_penalty_amount,
-			COUNT(*) as violation_count,
-			MAX(epc.date_of_final_decision) as most_recent_violation
-		FROM extracted_postal_codes epc
-		JOIN postal_codes pc ON epc.extracted_postal_code = pc.postal_code
-		WHERE epc.extracted_postal_code IS NOT NULL 
-		  AND pc.latitude IS NOT NULL 
-		  AND pc.longitude IS NOT NULL
-		GROUP BY epc.extracted_postal_code, pc.latitude, pc.longitude
+		-- Union both location types
+		SELECT * FROM postal_code_locations
+		UNION ALL
+		SELECT * FROM address_locations
 		ORDER BY employer_count DESC, total_penalty_amount DESC
 		LIMIT $1`
 
@@ -574,10 +469,10 @@ func (r *nonCompliantRepository) GetLocationsByPostalCode(limit int) ([]models.N
 }
 
 // GetEmployersByPostalCode returns all employers for a specific postal code
-func (r *nonCompliantRepository) GetEmployersByPostalCode(postalCode string, limit, offset int) ([]models.NonCompliantEmployerWithReasonCodes, error) {
+func (r *nonCompliantRepository) GetEmployersByPostalCode(postalCode string, limit, offset int) ([]models.NonCompliantEmployerWithReasons, error) {
 	query := `
 		WITH extracted_postal_codes AS (
-			SELECT 
+			SELECT
 				e.*,
 				-- Extract Canadian postal codes from address using regex
 				UPPER(SUBSTRING(e.address FROM '[A-Za-z]\d[A-Za-z]\s*\d[A-Za-z]\d')) as extracted_postal_code
@@ -587,19 +482,9 @@ func (r *nonCompliantRepository) GetEmployersByPostalCode(postalCode string, lim
 		SELECT
 			epc.id, epc.business_operating_name, epc.business_legal_name, epc.address,
 			epc.date_of_final_decision, epc.penalty_amount, epc.penalty_currency, epc.status,
-			epc.postal_code, epc.scraped_at, epc.created_at, epc.updated_at,
-			COALESCE(
-				array_agg(r.reason_code ORDER BY r.reason_code)
-				FILTER (WHERE r.reason_code IS NOT NULL),
-				ARRAY[]::VARCHAR[]
-			) as reason_codes
+			epc.reason_codes, epc.postal_code, epc.scraped_at, epc.created_at, epc.updated_at
 		FROM extracted_postal_codes epc
-		LEFT JOIN non_compliant_employer_reasons er ON epc.id = er.employer_id
-		LEFT JOIN non_compliant_reasons r ON er.reason_id = r.id
 		WHERE epc.extracted_postal_code = $1
-		GROUP BY epc.id, epc.business_operating_name, epc.business_legal_name, epc.address,
-		         epc.date_of_final_decision, epc.penalty_amount, epc.penalty_currency, epc.status,
-		         epc.postal_code, epc.scraped_at, epc.created_at, epc.updated_at
 		ORDER BY epc.date_of_final_decision DESC, epc.business_operating_name
 		LIMIT $2 OFFSET $3`
 
@@ -609,17 +494,16 @@ func (r *nonCompliantRepository) GetEmployersByPostalCode(postalCode string, lim
 	}
 	defer rows.Close()
 
-	var employers []models.NonCompliantEmployerWithReasonCodes
+	var employers []models.NonCompliantEmployerWithReasons
 	for rows.Next() {
-		var employer models.NonCompliantEmployerWithReasonCodes
+		var employer models.NonCompliantEmployerWithReasons
 		var reasonCodesArray interface{}
 
 		err := rows.Scan(
 			&employer.ID, &employer.BusinessOperatingName, &employer.BusinessLegalName,
 			&employer.Address, &employer.DateOfFinalDecision, &employer.PenaltyAmount,
-			&employer.PenaltyCurrency, &employer.Status, &employer.PostalCode,
+			&employer.PenaltyCurrency, &employer.Status, &reasonCodesArray, &employer.PostalCode,
 			&employer.ScrapedAt, &employer.CreatedAt, &employer.UpdatedAt,
-			&reasonCodesArray,
 		)
 		if err != nil {
 			return nil, err
@@ -637,8 +521,105 @@ func (r *nonCompliantRepository) GetEmployersByPostalCode(postalCode string, lim
 			}
 		}
 
+		// Get full reason objects with descriptions for the reason codes
+		if len(employer.ReasonCodes) > 0 {
+			var reasons []models.NonCompliantReason
+			for _, code := range employer.ReasonCodes {
+				if reason, err := r.GetReasonByCode(code); err == nil {
+					reasons = append(reasons, *reason)
+				}
+			}
+			employer.Reasons = reasons
+		}
+
 		employers = append(employers, employer)
 	}
 
 	return employers, rows.Err()
+}
+
+// GetEmployersWithoutExtractablePostalCodes returns employers that don't have extractable
+// postal codes for address geocoding
+func (r *nonCompliantRepository) GetEmployersWithoutExtractablePostalCodes() ([]models.NonCompliantEmployer, error) {
+	var employers []models.NonCompliantEmployer
+	query := `
+  		SELECT id, business_operating_name, business_legal_name, address,
+  		       date_of_final_decision, penalty_amount, penalty_currency, status,
+  		       postal_code, scraped_at, created_at, updated_at
+  		FROM non_compliant_employers
+  		WHERE address IS NOT NULL
+  		  AND address != ''
+  		  AND UPPER(SUBSTRING(address FROM '[A-Za-z]\d[A-Za-z]\s*\d[A-Za-z]\d')) IS NULL`
+
+	err := r.db.Select(&employers, query)
+	return employers, err
+}
+
+// GetEmployersByCoordinates returns all employers at specific lat/lng coordinates
+func (r *nonCompliantRepository) GetEmployersByCoordinates(lat, lng float64, limit, offset int) ([]models.NonCompliantEmployerWithReasons, error) {
+	query := `
+		SELECT
+			e.*
+		FROM non_compliant_employers e
+		JOIN address_geocoding_cache agc ON agc.normalized_address = LOWER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(e.address, '[,.]', '', 'g'), '\s+', ' ', 'g')))
+		WHERE e.address IS NOT NULL
+		  AND e.address != ''
+		  AND ABS(agc.latitude - $1) < 0.001
+		  AND ABS(agc.longitude - $2) < 0.001
+		ORDER BY e.date_of_final_decision DESC, e.business_operating_name
+		LIMIT $3 OFFSET $4`
+
+	var employers []models.NonCompliantEmployerWithReasons
+
+	err := r.db.Select(&employers, query, lat, lng, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, e := range employers {
+		for _, rc := range e.ReasonCodes {
+			q := `
+				SELECT *
+				FROM non_compliant_reasons
+				WHERE reason_code = $1`
+
+			var reason models.NonCompliantReason
+			err := r.db.Get(&reason, q, rc)
+			if err != nil {
+				return nil, err
+			}
+			fmt.Println(reason)
+
+			e.Reasons = append(e.Reasons, reason)
+		}
+	}
+
+	fmt.Println(employers[0].Reasons)
+
+	return employers, err
+}
+
+// UpdateEmployerAddress updates the address for an employer
+func (r *nonCompliantRepository) UpdateEmployerAddress(employerID, address string) error {
+	query := `
+		UPDATE non_compliant_employers
+		SET address = $2, updated_at = CURRENT_TIMESTAMP
+		WHERE id = $1`
+
+	_, err := r.db.Exec(query, employerID, address)
+	return err
+}
+
+// GetAllEmployers returns all employers for address cleaning
+func (r *nonCompliantRepository) GetAllEmployers() ([]models.NonCompliantEmployer, error) {
+	var employers []models.NonCompliantEmployer
+	query := `
+		SELECT id, business_operating_name, business_legal_name, address,
+		       date_of_final_decision, penalty_amount, penalty_currency, status,
+		       postal_code, scraped_at, created_at, updated_at
+		FROM non_compliant_employers
+		ORDER BY created_at DESC`
+
+	err := r.db.Select(&employers, query)
+	return employers, err
 }

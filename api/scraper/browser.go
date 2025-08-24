@@ -351,6 +351,110 @@ func removeTabsAndNewLines(str string) string {
 	return strings.TrimSpace(str)
 }
 
+// ScrapeReasonDescriptions scrapes all reason code descriptions from the non-compliant page
+func (s *Scraper) ScrapeReasonDescriptions() (map[string]string, error) {
+	fmt.Println("🎯 Scraping reason descriptions from non-compliant page...")
+	
+	err := chromedp.Run(s.ctx,
+		chromedp.Navigate(nonCompliantURL),
+		chromedp.WaitVisible("ol li", chromedp.ByQuery),
+		chromedp.Sleep(2*time.Second), // Wait for page to fully load
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to navigate to non-compliant page: %v", err)
+	}
+
+	// Extract reason descriptions using JavaScript
+	var reasonsJSON string
+	err = chromedp.Run(s.ctx,
+		chromedp.Evaluate(`(function() {
+			const reasonsMap = {};
+			
+			// Look for list items with ids like "list1", "list2", etc.
+			for (let i = 1; i <= 50; i++) {
+				const element = document.getElementById('list' + i);
+				if (element) {
+					const description = element.textContent.trim();
+					if (description) {
+						reasonsMap[i.toString()] = description;
+					}
+				}
+			}
+			
+			// If no elements with list IDs found, try to extract from ordered list
+			if (Object.keys(reasonsMap).length === 0) {
+				const listItems = document.querySelectorAll('ol li');
+				for (let i = 0; i < listItems.length; i++) {
+					const item = listItems[i];
+					const description = item.textContent.trim();
+					if (description) {
+						// Use 1-based indexing to match reason codes
+						reasonsMap[(i + 1).toString()] = description;
+					}
+				}
+			}
+			
+			// If still no results, try to find any numbered list pattern
+			if (Object.keys(reasonsMap).length === 0) {
+				const allLists = document.querySelectorAll('ol, ul');
+				for (let list of allLists) {
+					const items = list.querySelectorAll('li');
+					if (items.length > 10) { // Likely the main reasons list
+						for (let i = 0; i < items.length; i++) {
+							const item = items[i];
+							const description = item.textContent.trim();
+							if (description) {
+								reasonsMap[(i + 1).toString()] = description;
+							}
+						}
+						break;
+					}
+				}
+			}
+			
+			return JSON.stringify(reasonsMap);
+		})()`, &reasonsJSON),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract reason descriptions: %v", err)
+	}
+
+	// Parse JSON data
+	var reasonsMap map[string]string
+	err = json.Unmarshal([]byte(reasonsJSON), &reasonsMap)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse reasons JSON: %v", err)
+	}
+
+	fmt.Printf("✅ Extracted %d reason descriptions\n", len(reasonsMap))
+	for code, desc := range reasonsMap {
+		if len(desc) > 100 {
+			fmt.Printf("   Reason %s: %s...\n", code, desc[:100])
+		} else {
+			fmt.Printf("   Reason %s: %s\n", code, desc)
+		}
+	}
+
+	return reasonsMap, nil
+}
+
+// ScrapeNonCompliantEmployersWithReasons scrapes both reason descriptions and employer data
+func (s *Scraper) ScrapeNonCompliantEmployersWithReasons() ([]scraper_types.NonCompliantEmployerData, map[string]string, error) {
+	// First, scrape the reason descriptions
+	reasonDescriptions, err := s.ScrapeReasonDescriptions()
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to scrape reason descriptions: %v", err)
+	}
+
+	// Then scrape the employer data
+	employers, err := s.ScrapeNonCompliantEmployers()
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to scrape employers: %v", err)
+	}
+
+	return employers, reasonDescriptions, nil
+}
+
 // ScrapeNonCompliantEmployers scrapes the non-compliant employers page with pagination
 func (s *Scraper) ScrapeNonCompliantEmployers() ([]scraper_types.NonCompliantEmployerData, error) {
 	fmt.Println("🎯 Navigating to non-compliant employers page...")
@@ -362,6 +466,43 @@ func (s *Scraper) ScrapeNonCompliantEmployers() ([]scraper_types.NonCompliantEmp
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to navigate to non-compliant page: %v", err)
+	}
+
+	// Try to set page length to 100 entries per page (optional - don't fail if it doesn't work)
+	fmt.Println("🔧 Attempting to set page length to 100 entries...")
+	err = chromedp.Run(s.ctx,
+		chromedp.Evaluate(`(function() {
+			// Try multiple possible selectors for the page length dropdown
+			const selectors = [
+				'select[name="wb-auto-4_length"]',
+				'select[name*="_length"]',
+				'select.dataTables_length',
+				'.dataTables_length select'
+			];
+			
+			for (let selector of selectors) {
+				const select = document.querySelector(selector);
+				if (select) {
+					// Try to find and select the 100 option
+					const options = select.querySelectorAll('option');
+					for (let option of options) {
+						if (option.value === '100' || option.textContent.includes('100')) {
+							select.value = option.value;
+							select.dispatchEvent(new Event('change', { bubbles: true }));
+							console.log('Set page length to 100 using selector:', selector);
+							return true;
+						}
+					}
+				}
+			}
+			console.log('Could not find page length selector, continuing with default');
+			return false;
+		})()`, nil),
+		chromedp.Sleep(3*time.Second), // Wait for potential page reload
+	)
+	if err != nil {
+		fmt.Printf("⚠️  Could not set page length (continuing anyway): %v\n", err)
+		// Don't return error - continue with default page size
 	}
 
 	var allEmployers []scraper_types.NonCompliantEmployerData
@@ -469,6 +610,69 @@ func (s *Scraper) parseNonCompliantEmployersPage() ([]scraper_types.NonCompliant
 	var tableDataJSON string
 	err := chromedp.Run(s.ctx,
 		chromedp.Evaluate(`(function() {
+			// Function to clean and parse addresses
+			function cleanAddress(rawAddress) {
+				if (!rawAddress) return rawAddress;
+				
+				// Canadian provinces/territories (both English and French)
+				const provinces = [
+					'Alberta', 'AB', 'Colombie-Britannique', 'British Columbia', 'BC',
+					'Manitoba', 'MB', 'Nouveau-Brunswick', 'New Brunswick', 'NB',
+					'Terre-Neuve-et-Labrador', 'Newfoundland and Labrador', 'NL',
+					'Territoires du Nord-Ouest', 'Northwest Territories', 'NT',
+					'Nouvelle-Écosse', 'Nova Scotia', 'NS', 'Nunavut', 'NU',
+					'Ontario', 'ON', 'Île-du-Prince-Édouard', 'Prince Edward Island', 'PE',
+					'Québec', 'Quebec', 'QC', 'Saskatchewan', 'SK', 'Yukon', 'YT'
+				];
+				
+				// Create regex pattern for provinces
+				const provincePattern = '(' + provinces.join('|') + ')';
+				const regex = new RegExp(provincePattern + '\\s*$', 'i');
+				
+				// Check if address ends with a province
+				const provinceMatch = rawAddress.match(regex);
+				if (!provinceMatch) return rawAddress; // No province found, return as-is
+				
+				const province = provinceMatch[1];
+				const addressWithoutProvince = rawAddress.replace(regex, '').trim();
+				
+				// Look for common patterns where city runs into street address
+				// Pattern 1: Street name directly followed by city name (no comma)
+				// Look for patterns like "rue SomethingCityName" or "Street NameCityName"
+				const streetPatterns = [
+					/^(.+(?:rue|street|ave|avenue|blvd|boulevard|rd|road|dr|drive|place|pl|way)\s+\w+)([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s*,?\s*$/i,
+					/^(.+\s+)([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s*,?\s*$/
+				];
+				
+				for (let pattern of streetPatterns) {
+					const match = addressWithoutProvince.match(pattern);
+					if (match && match[2]) {
+						const streetAddress = match[1].trim();
+						const cityName = match[2].trim();
+						
+						// Additional validation: city name should be reasonable length (2+ chars, not all caps)
+						if (cityName.length > 1 && !cityName.match(/^[A-Z]+$/)) {
+							return streetAddress + ', ' + cityName + ', ' + province;
+						}
+					}
+				}
+				
+				// Fallback: if we have a province but couldn't parse the city, just add commas where needed
+				if (addressWithoutProvince.includes(',')) {
+					return rawAddress; // Already has commas, probably formatted correctly
+				} else {
+					// Try to add comma before last word before province (assuming it's the city)
+					const parts = addressWithoutProvince.trim().split(/\s+/);
+					if (parts.length > 1) {
+						const cityPart = parts[parts.length - 1];
+						const streetPart = parts.slice(0, -1).join(' ');
+						return streetPart + ', ' + cityPart + ', ' + province;
+					}
+				}
+				
+				return rawAddress; // Return original if can't parse
+			}
+			
 			const rows = document.querySelectorAll('table tbody tr');
 			let data = [];
 			
@@ -478,7 +682,15 @@ func (s *Scraper) parseNonCompliantEmployersPage() ([]scraper_types.NonCompliant
 					// Extract reason codes from the Reason(s) column
 					const reasonCell = cells[3];
 					const reasonLinks = reasonCell.querySelectorAll('a');
-					const reasonCodes = Array.from(reasonLinks).map(link => link.textContent.trim());
+					const reasonCodes = Array.from(reasonLinks).map(link => {
+						// Extract reason code from href attribute like "#list6" -> "6"
+						const href = link.getAttribute('href');
+						if (href && href.startsWith('#list')) {
+							return href.replace('#list', '');
+						}
+						// Fallback to text content if href doesn't match expected format
+						return link.textContent.trim();
+					}).filter(code => code && code !== '');
 					
 					// Parse penalty amount
 					const penaltyText = cells[5].textContent.trim();
@@ -488,7 +700,7 @@ func (s *Scraper) parseNonCompliantEmployersPage() ([]scraper_types.NonCompliant
 					data.push({
 						businessOperatingName: cells[0].textContent.trim(),
 						businessLegalName: cells[1].textContent.trim(),
-						address: cells[2].textContent.trim(),
+						address: cleanAddress(cells[2].textContent.trim()),
 						reasonCodes: reasonCodes,
 						dateOfFinalDecision: cells[4].textContent.trim(),
 						penaltyAmount: penaltyAmount,

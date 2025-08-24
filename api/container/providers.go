@@ -73,6 +73,10 @@ func registerProviders(c *dig.Container) error {
 		return err
 	}
 
+	if err := c.Provide(NewAddressGeocodingCacheRepository); err != nil {
+		return err
+	}
+
 	if err := c.Provide(NewNonCompliantRepository); err != nil {
 		return err
 	}
@@ -421,9 +425,14 @@ func NewPostalCodeRepository(database db.Database) repos.PostalCodeRepository {
 	return repos.NewPostalCodeRepository(database.GetDB())
 }
 
+// NewAddressGeocodingCacheRepository creates a new address geocoding cache repository
+func NewAddressGeocodingCacheRepository(database db.Database) repos.AddressGeocodingCacheRepository {
+	return repos.NewAddressGeocodingCacheRepository(database.GetDB())
+}
+
 // NewPostalCodeGeocodingService creates a new postal code geocoding service
-func NewPostalCodeGeocodingService(postalCodeRepo repos.PostalCodeRepository, postalCodeService services.PostalCodeService) services.PostalCodeGeocodingService {
-	return services.NewPostalCodeGeocodingService(postalCodeRepo, postalCodeService)
+func NewPostalCodeGeocodingService(postalCodeRepo repos.PostalCodeRepository, postalCodeService services.PostalCodeService, addressCacheRepo repos.AddressGeocodingCacheRepository) services.PostalCodeGeocodingService {
+	return services.NewPostalCodeGeocodingService(postalCodeRepo, postalCodeService, addressCacheRepo)
 }
 
 // NewNonCompliantRepository creates a new non-compliant repository

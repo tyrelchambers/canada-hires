@@ -8,7 +8,7 @@ export const Route = createFileRoute("/non-compliant-map")({
 
 function NonCompliantMapComponent() {
   return (
-    <div className="h-screen overflow-hidden">
+    <div className="lg:h-screen overflow-hidden">
       <AuthNav />
       <NonCompliantMapHeatmap />
     </div>
