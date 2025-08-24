@@ -107,9 +107,9 @@ export function LMIAMapHeatmap() {
   }, [data?.locations, handleMarkerClick]);
 
   return (
-    <div className="h-screen flex flex-col lg:flex-row">
+    <div className="h-full flex flex-col lg:flex-row">
       {/* Sidebar - Desktop only */}
-      <div className="hidden lg:flex w-80 bg-gray-50 border-r border-gray-200 flex-col overflow-hidden">
+      <div className="hidden lg:flex w-[400px] bg-gray-50 border-r border-gray-200 flex-col overflow-y-auto">
         <div className="p-4 border-b border-gray-200 bg-white">
           <h1 className="text-xl font-bold text-gray-900">LMIA Heatmap</h1>
           <p className="text-sm text-gray-600 mt-1">
@@ -117,7 +117,7 @@ export function LMIAMapHeatmap() {
           </p>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 p-4 space-y-4">
           {selectedPostalCode ? (
             /* Business Detail View */
             <>
@@ -309,6 +309,10 @@ export function LMIAMapHeatmap() {
               </div>
             </>
           )}
+        </div>
+        <div className="px-4 pb-2 text-xs text-gray-400">
+          Data sourced from Canadian government databases. Location accuracy may
+          vary.
         </div>
       </div>
 
@@ -544,6 +548,10 @@ export function LMIAMapHeatmap() {
               </div>
             </>
           )}
+        </div>
+        <div className="px-4 pb-2 text-xs text-gray-400">
+          Data sourced from Canadian government databases. Location accuracy may
+          vary.
         </div>
       </div>
     </div>

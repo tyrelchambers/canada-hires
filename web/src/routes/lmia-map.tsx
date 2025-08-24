@@ -8,7 +8,7 @@ export const Route = createFileRoute("/lmia-map")({
 
 function LMIAMapComponent() {
   return (
-    <div className="h-screen overflow-hidden">
+    <div className="lg:h-[calc(100vh-72px)]">
       <AuthNav />
       <LMIAMapHeatmap />
     </div>

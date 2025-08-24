@@ -503,6 +503,9 @@ export function NonCompliantMapHeatmap() {
             </>
           )}
         </div>
+        <div className="px-4 pb-2 text-xs text-gray-400">
+          Data sourced from Canadian government databases. Location accuracy may vary.
+        </div>
       </div>
 
       {/* Map */}
@@ -822,6 +825,9 @@ export function NonCompliantMapHeatmap() {
               </div>
             </>
           )}
+        </div>
+        <div className="px-4 pb-2 text-xs text-gray-400">
+          Data sourced from Canadian government databases. Location accuracy may vary.
         </div>
       </div>
 
