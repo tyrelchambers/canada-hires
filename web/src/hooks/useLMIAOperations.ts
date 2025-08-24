@@ -30,10 +30,18 @@ export function useLMIAOperations() {
     },
   });
 
+  const geocodingMutation = useMutation({
+    mutationFn: async (): Promise<ApiResponse> => {
+      const response = await apiClient.post('/admin/lmia/geocode');
+      return response.data as ApiResponse;
+    },
+  });
+
   return {
     fullUpdate: fullUpdateMutation,
     processor: processorMutation,
     backfill: backfillMutation,
+    geocoding: geocodingMutation,
   };
 }
 
@@ -57,5 +65,28 @@ export function useScraperOperations() {
   return {
     scraper: scraperMutation,
     statistics: statisticsMutation,
+  };
+}
+
+export function useNonCompliantOperations() {
+  const apiClient = useApiClient();
+
+  const scraperMutation = useMutation({
+    mutationFn: async (): Promise<ApiResponse> => {
+      const response = await apiClient.post('/admin/non-compliant/scrape');
+      return response.data as ApiResponse;
+    },
+  });
+
+  const statusMutation = useMutation({
+    mutationFn: async (): Promise<ApiResponse> => {
+      const response = await apiClient.get('/admin/non-compliant/status');
+      return response.data as ApiResponse;
+    },
+  });
+
+  return {
+    scraper: scraperMutation,
+    status: statusMutation,
   };
 }

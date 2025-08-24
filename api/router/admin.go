@@ -18,20 +18,22 @@ type AdminRouter interface {
 type adminRouter struct {
 	cn            *container.Container
 	jobController *controllers.JobController
+	lmiaController *controllers.LMIAController
 	authMW        func(http.Handler) http.Handler
 }
 
-func NewAdminRouter(cn *container.Container, jobController *controllers.JobController, authMW func(http.Handler) http.Handler) AdminRouter {
+func NewAdminRouter(cn *container.Container, jobController *controllers.JobController, lmiaController *controllers.LMIAController, authMW func(http.Handler) http.Handler) AdminRouter {
 	return &adminRouter{
 		cn:            cn,
 		jobController: jobController,
+		lmiaController: lmiaController,
 		authMW:        authMW,
 	}
 }
 
 func (ar *adminRouter) InjectAdminRoutes(r chi.Router) {
-	err := ar.cn.Invoke(func(jobController *controllers.JobController, authMW func(http.Handler) http.Handler) {
-		ar := NewAdminRouter(ar.cn, jobController, authMW)
+	err := ar.cn.Invoke(func(jobController *controllers.JobController, lmiaController *controllers.LMIAController, authMW func(http.Handler) http.Handler) {
+		ar := NewAdminRouter(ar.cn, jobController, lmiaController, authMW)
 		ar.Init(r)
 	})
 
@@ -68,6 +70,11 @@ func (ar *adminRouter) Init(r chi.Router) {
 		r.Route("/scraper", func(r chi.Router) {
 			r.Post("/run", ar.jobController.TriggerScraper)
 			r.Post("/statistics", ar.jobController.TriggerStatisticsAggregation)
+		})
+
+		// LMIA endpoints
+		r.Route("/lmia", func(r chi.Router) {
+			r.Post("/geocode", ar.lmiaController.TriggerGeocoding)
 		})
 	})
 }

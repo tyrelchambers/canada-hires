@@ -77,6 +77,17 @@ func main() {
 		log.Fatal("Failed to start scraper cron service", "error", err)
 	}
 
+	err = cn.Invoke(func(nonCompliantCronService *services.NonCompliantCronService) {
+		go func() {
+			if err := nonCompliantCronService.Start(ctx); err != nil {
+				log.Error("Non-compliant scraper cron service error", "error", err)
+			}
+		}()
+	})
+	if err != nil {
+		log.Fatal("Failed to start non-compliant scraper cron service", "error", err)
+	}
+
 	// Setup graceful shutdown
 	server := &http.Server{
 		Addr:    ":8000",

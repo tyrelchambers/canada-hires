@@ -18,12 +18,12 @@ func InitRoutes(cn *container.Container, r *chi.Mux) {
 	adr := &adminRouter{}
 
 	// Invoke the router initializers
-	err := cn.Invoke(func(authController controllers.AuthController, businessController controllers.BusinessController, reportController controllers.ReportController, userController controllers.UserController, jobController *controllers.JobController, authMW func(http.Handler) http.Handler, requireMW func(http.Handler) http.Handler) {
+	err := cn.Invoke(func(authController controllers.AuthController, businessController controllers.BusinessController, reportController controllers.ReportController, userController controllers.UserController, jobController *controllers.JobController, lmiaController *controllers.LMIAController, authMW func(http.Handler) http.Handler, requireMW func(http.Handler) http.Handler) {
 		*ar = *NewAuthRouter(cn, authController).(*authRouter)
 		*br = *NewBusinessRouter(cn, businessController).(*businessRouter)
 		*rr = *NewReportRouter(cn, reportController, authMW).(*reportRouter)
 		*ur = *NewUserRouter(cn, userController, authMW, requireMW).(*userRouter)
-		*adr = *NewAdminRouter(cn, jobController, authMW).(*adminRouter)
+		*adr = *NewAdminRouter(cn, jobController, lmiaController, authMW).(*adminRouter)
 		
 		// Initialize job routes
 		JobRoutes(r, jobController)
@@ -71,6 +71,14 @@ func InitRoutes(cn *container.Container, r *chi.Mux) {
 		})
 		if err != nil {
 			log.Error("Failed to initialize boycott routes", "error", err)
+		}
+		
+		// Add non-compliant employers routes
+		err = cn.Invoke(func(nonCompliantController *controllers.NonCompliantController, authMW func(http.Handler) http.Handler) {
+			NonCompliantRoutes(nonCompliantController, authMW)(r)
+		})
+		if err != nil {
+			log.Error("Failed to initialize non-compliant routes", "error", err)
 		}
 	})
 }

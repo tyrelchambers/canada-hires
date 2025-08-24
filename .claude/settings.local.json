@@ -6,7 +6,8 @@
       "Bash(go:*)",
       "Bash(find:*)",
       "Bash(grep:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(npm install:*)"
     ],
     "deny": []
   }

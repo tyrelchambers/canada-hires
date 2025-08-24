@@ -289,6 +289,61 @@ export interface LMIAEmployersByResourceResponse {
   count: number;
 }
 
+export interface LMIAEmployerGeoLocation {
+  id: string;
+  employer: string;
+  address?: string;
+  province_territory?: string;
+  approved_lmias?: number;
+  approved_positions?: number;
+  quarter: string;
+  year: number;
+  latitude?: number;
+  longitude?: number;
+  total_lmias: number;
+}
+
+export interface LMIAGeolocationResponse {
+  employers: LMIAEmployerGeoLocation[];
+  count: number;
+  year: number;
+  quarter?: string;
+  limit: number;
+}
+
+export interface PostalCodeBusiness {
+  employer: string;
+  occupation: string;
+  approved_lmias: number;
+  approved_positions: number;
+}
+
+export interface PostalCodeLocation {
+  postal_code: string;
+  latitude: number;
+  longitude: number;
+  businesses: PostalCodeBusiness[];
+  total_lmias: number;
+  business_count: number;
+}
+
+export interface PostalCodeLocationsResponse {
+  locations: PostalCodeLocation[];
+  count: number;
+  year: number;
+  quarter?: string;
+  limit: number;
+}
+
+export interface LMIAEmployersByPostalCodeResponse {
+  employers: LMIAEmployer[];
+  count: number;
+  postal_code: string;
+  year: number;
+  quarter?: string;
+  limit: number;
+}
+
 // Gemini content generation types
 export interface GeneratedRedditPost {
   job_id: string;
@@ -311,4 +366,56 @@ export interface RedditPreview {
   body: string;
   content_type: 'ai' | 'template';
   error?: string;
+}
+
+// Non-Compliant Employers Types
+export interface NonCompliantEmployer {
+  id: string;
+  business_operating_name: string;
+  business_legal_name?: string;
+  address?: string;
+  date_of_final_decision?: string;
+  penalty_amount?: number;
+  penalty_currency: string;
+  status?: string;
+  postal_code?: string;
+  latitude?: number;
+  longitude?: number;
+  geocoded_at?: string;
+  scraped_at: string;
+  created_at: string;
+  updated_at: string;
+  reason_codes: string[];
+  reasons?: NonCompliantReason[];
+}
+
+export interface NonCompliantReason {
+  id: number;
+  reason_code: string;
+  description?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NonCompliantPostalCodeLocation {
+  postal_code: string;
+  latitude: number;
+  longitude: number;
+  employer_count: number;
+  total_penalty_amount: number;
+  violation_count: number;
+  most_recent_violation?: string;
+}
+
+export interface NonCompliantLocationResponse {
+  locations: NonCompliantPostalCodeLocation[];
+  count: number;
+  limit: number;
+}
+
+export interface NonCompliantEmployersByPostalCodeResponse {
+  employers: NonCompliantEmployer[];
+  postal_code: string;
+  count: number;
+  total_penalty: number;
 }

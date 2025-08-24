@@ -69,6 +69,18 @@ func registerProviders(c *dig.Container) error {
 		return err
 	}
 
+	if err := c.Provide(NewPostalCodeRepository); err != nil {
+		return err
+	}
+
+	if err := c.Provide(NewAddressGeocodingCacheRepository); err != nil {
+		return err
+	}
+
+	if err := c.Provide(NewNonCompliantRepository); err != nil {
+		return err
+	}
+
 	// Service providers
 	if err := c.Provide(NewEmailService); err != nil {
 		return err
@@ -134,6 +146,22 @@ func registerProviders(c *dig.Container) error {
 		return err
 	}
 
+	if err := c.Provide(NewPostalCodeService); err != nil {
+		return err
+	}
+
+	if err := c.Provide(NewPostalCodeGeocodingService); err != nil {
+		return err
+	}
+
+	if err := c.Provide(NewNonCompliantService); err != nil {
+		return err
+	}
+
+	if err := c.Provide(NewNonCompliantCronService); err != nil {
+		return err
+	}
+
 	// Controller providers
 	if err := c.Provide(NewAuthController); err != nil {
 		return err
@@ -165,6 +193,10 @@ func registerProviders(c *dig.Container) error {
 	}
 
 	if err := c.Provide(NewBoycottController); err != nil {
+		return err
+	}
+
+	if err := c.Provide(NewNonCompliantController); err != nil {
 		return err
 	}
 
@@ -266,8 +298,8 @@ func NewLMIARepository(database db.Database) repos.LMIARepository {
 }
 
 // NewLMIAService creates a new LMIA service
-func NewLMIAService(repo repos.LMIARepository) services.LMIAService {
-	return services.NewLMIAService(repo)
+func NewLMIAService(repo repos.LMIARepository, geocodingService services.PostalCodeGeocodingService, postalCodeService services.PostalCodeService) services.LMIAService {
+	return services.NewLMIAService(repo, geocodingService, postalCodeService)
 }
 
 // NewCronService creates a new cron service
@@ -381,4 +413,47 @@ func NewBoycottService(repo repos.BoycottRepository) services.BoycottService {
 // NewBoycottController creates a new boycott controller
 func NewBoycottController(service services.BoycottService) controllers.BoycottController {
 	return controllers.NewBoycottController(service)
+}
+
+// NewPostalCodeService creates a new postal code service
+func NewPostalCodeService() services.PostalCodeService {
+	return services.NewPostalCodeService()
+}
+
+// NewPostalCodeRepository creates a new postal code repository
+func NewPostalCodeRepository(database db.Database) repos.PostalCodeRepository {
+	return repos.NewPostalCodeRepository(database.GetDB())
+}
+
+// NewAddressGeocodingCacheRepository creates a new address geocoding cache repository
+func NewAddressGeocodingCacheRepository(database db.Database) repos.AddressGeocodingCacheRepository {
+	return repos.NewAddressGeocodingCacheRepository(database.GetDB())
+}
+
+// NewPostalCodeGeocodingService creates a new postal code geocoding service
+func NewPostalCodeGeocodingService(postalCodeRepo repos.PostalCodeRepository, postalCodeService services.PostalCodeService, addressCacheRepo repos.AddressGeocodingCacheRepository) services.PostalCodeGeocodingService {
+	return services.NewPostalCodeGeocodingService(postalCodeRepo, postalCodeService, addressCacheRepo)
+}
+
+// NewNonCompliantRepository creates a new non-compliant repository
+func NewNonCompliantRepository(database db.Database) repos.NonCompliantRepository {
+	return repos.NewNonCompliantRepository(database.GetDB())
+}
+
+// NewNonCompliantService creates a new non-compliant service
+func NewNonCompliantService(repo repos.NonCompliantRepository, postalCodeService services.PostalCodeService, geocodingService services.PostalCodeGeocodingService) services.NonCompliantService {
+	logger := log.Default()
+	return services.NewNonCompliantService(repo, logger, postalCodeService, geocodingService)
+}
+
+// NewNonCompliantController creates a new non-compliant controller
+func NewNonCompliantController(service services.NonCompliantService) *controllers.NonCompliantController {
+	logger := log.Default()
+	return controllers.NewNonCompliantController(service, logger)
+}
+
+// NewNonCompliantCronService creates a new non-compliant cron service
+func NewNonCompliantCronService(nonCompliantService services.NonCompliantService, scraperJobRepo repos.ScraperJobRepository) *services.NonCompliantCronService {
+	logger := log.Default()
+	return services.NewNonCompliantCronService(logger, nonCompliantService, scraperJobRepo)
 }

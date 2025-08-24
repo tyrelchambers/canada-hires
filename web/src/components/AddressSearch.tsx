@@ -3,9 +3,57 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
-import mbxGeocoding, {
-  GeocodeFeature,
-} from "@mapbox/mapbox-sdk/services/geocoding";
+// Pelias geocoding response interfaces
+interface PeliasGeometry {
+  type: string;
+  coordinates: [number, number]; // [longitude, latitude]
+}
+
+interface PeliasProperties {
+  id: string;
+  gid: string;
+  layer: string;
+  source: string;
+  source_id: string;
+  country_code?: string;
+  name: string;
+  postalcode?: string;
+  confidence: number;
+  match_type?: string;
+  distance?: number;
+  accuracy?: string;
+  country?: string;
+  country_gid?: string;
+  country_a?: string;
+  region?: string;
+  region_gid?: string;
+  region_a?: string;
+  locality?: string;
+  locality_gid?: string;
+  label?: string;
+}
+
+interface PeliasFeature {
+  type: string;
+  geometry: PeliasGeometry;
+  properties: PeliasProperties;
+  bbox?: number[];
+}
+
+interface PeliasResponse {
+  geocoding: {
+    version: string;
+    attribution: string;
+    query: Record<string, any>;
+    warnings?: string[];
+    errors?: string[];
+    engine: Record<string, any>;
+    timestamp: number;
+  };
+  type: string;
+  features: PeliasFeature[];
+  bbox?: number[];
+}
 
 interface AddressSearchProps {
   value: string;
@@ -22,7 +70,7 @@ export function AddressSearch({
   id,
   required = false,
 }: AddressSearchProps) {
-  const [suggestions, setSuggestions] = useState<GeocodeFeature[]>([]);
+  const [suggestions, setSuggestions] = useState<PeliasFeature[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
@@ -33,16 +81,12 @@ export function AddressSearch({
   const containerRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Initialize Mapbox client
-  const mapboxToken =
-    "pk.eyJ1IjoidHlyZWxjaGFtYmVycyIsImEiOiJjbGRrdGczcXcwcWdyM29tc2o0ZDJiNnk3In0.HoN1yA76prPJwxBpDuaRLw";
-  const geocodingClient = mapboxToken
-    ? mbxGeocoding({ accessToken: mapboxToken })
-    : null;
+  // Get Pelias server URL from environment
+  const peliasServerURL = import.meta.env.VITE_PELIAS_SERVER_URL || "http://homeserver:4000";
 
   // Debounced search function
   const searchAddresses = async (query: string) => {
-    if (!geocodingClient || query.length < 3) {
+    if (query.length < 3) {
       setSuggestions([]);
       setShowDropdown(false);
       setHasSearched(false);
@@ -54,17 +98,16 @@ export function AddressSearch({
     setHasSearched(true);
 
     try {
-      const response = await geocodingClient
-        .forwardGeocode({
-          query,
-          countries: ["ca"], // Limit to Canada
-          limit: 5,
-          types: ["address", "poi"],
-        })
-        .send();
-
-      const features = response.body.features || [];
-      setSuggestions(features);
+      const response = await fetch(
+        `${peliasServerURL}/v1/search?text=${encodeURIComponent(query)}&size=5`
+      );
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      
+      const results: PeliasResponse = await response.json();
+      setSuggestions(results.features || []);
       setShowDropdown(true); // Show dropdown when search completes
       setSelectedIndex(-1);
     } catch (err) {
@@ -102,8 +145,8 @@ export function AddressSearch({
   };
 
   // Handle suggestion selection
-  const handleSuggestionSelect = (suggestion: GeocodeFeature) => {
-    onChange(suggestion.place_name);
+  const handleSuggestionSelect = (suggestion: PeliasFeature) => {
+    onChange(suggestion.properties.label || suggestion.properties.name);
     setShowDropdown(false);
     setSelectedIndex(-1);
     setSuggestions([]);
@@ -174,23 +217,6 @@ export function AddressSearch({
     };
   }, []);
 
-  // If no Mapbox token, fallback to regular input
-  if (!mapboxToken) {
-    return (
-      <div>
-        <Input
-          id={id}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          required={required}
-        />
-        <p className="text-sm text-yellow-600 mt-1">
-          Address search unavailable (missing Mapbox token)
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div ref={containerRef} className="relative">
@@ -231,7 +257,7 @@ export function AddressSearch({
           {suggestions.length > 0 ? (
             suggestions.map((suggestion, index) => (
               <button
-                key={`${suggestion.center[0]}-${suggestion.center[1]}`}
+                key={suggestion.properties.id}
                 type="button"
                 className={`w-full px-4 py-3 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none border-b border-gray-100 last:border-b-0 ${
                   index === selectedIndex ? "bg-blue-50" : ""
@@ -239,7 +265,7 @@ export function AddressSearch({
                 onClick={() => handleSuggestionSelect(suggestion)}
               >
                 <div className="text-sm font-medium text-gray-900">
-                  {suggestion.place_name}
+                  {suggestion.properties.label || suggestion.properties.name}
                 </div>
               </button>
             ))

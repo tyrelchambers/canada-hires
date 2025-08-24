@@ -12,6 +12,7 @@ Key features include:
 - Passwordless email authentication system
 - Business directory with location-based search
 - Community reporting system for TFW usage
+- Non-compliant employers directory with automated daily scraping
 - AI-powered content generation using Gemini 2.5 Flash for Reddit posts
 - Confidence scoring algorithm based on user verification tiers
 - Public business ratings (Green/Yellow/Red) based on TFW percentage
@@ -76,14 +77,15 @@ EMAIL_SMTP_USER=your_email@domain.com
 EMAIL_SMTP_PASSWORD=your_app_password
 JWT_SECRET=your_jwt_secret_key
 GOOGLE_API_KEY=your_gemini_api_key_here
+PELIAS_SERVER_URL=http://homeserver:4000
 ```
 
 #### Frontend Environment (.env in web/ directory)
 ```
-VITE_MAPBOX_ACCESS_TOKEN=your_mapbox_access_token_here
+VITE_PELIAS_SERVER_URL=http://homeserver:4000
 ```
 
-**Mapbox Setup**: Create a free account at [mapbox.com](https://mapbox.com) and get an access token for address search functionality. Without this token, the address search will fall back to a regular text input.
+**Pelias Geocoding Setup**: The application uses a local Pelias geocoding server for address search and location lookup. The default URL is `http://homeserver:4000` but can be configured via the `VITE_PELIAS_SERVER_URL` environment variable.
 
 **Gemini AI Setup**: Create a free Google AI Studio account at [aistudio.google.com](https://aistudio.google.com) and generate an API key for Gemini content generation. This enables automatic generation of sarcastic Reddit post content for job approvals. Without this key, job approvals will work but without AI-generated content.
 
@@ -106,6 +108,7 @@ VITE_MAPBOX_ACCESS_TOKEN=your_mapbox_access_token_here
 - **Database**: PostgreSQL with sqlx, automated migrations, repository pattern
 - **Email**: SMTP email service for authentication links
 - **Dependency Injection**: Uber Dig container for service management
+- **Automated Scraping**: Cron-based daily scrapers with robfig/cron for LMIA and non-compliant data
 - **Frontend**: React 18, TypeScript, Vite, TailwindCSS
 - **Routing**: TanStack Router with file-based routing and authentication guards
 - **State Management**: TanStack Query (React Query) with axios API client
@@ -168,6 +171,16 @@ VITE_MAPBOX_ACCESS_TOKEN=your_mapbox_access_token_here
 - Top 3 most boycotted companies displayed on homepage
 - Prominent boycott count display on business detail pages
 - Authentication-required boycott actions with proper validation
+
+✅ **Non-Compliant Employers System**
+- Automated daily scraping of government non-compliant employer data at midnight UTC
+- Complete non-compliant employer directory with violation details and penalty information
+- REST API endpoints for browsing and searching non-compliant employers
+- Duplicate prevention using database constraints on business name + address + violation date
+- Historical violation tracking (same business can have multiple violations over time)
+- UPSERT-based data updates to preserve existing records while preventing true duplicates
+- Automated cron service with missed execution detection and proper error handling
+- Violation reason codes tracking and management
 
 ### In Development
 🔄 **Business Directory**

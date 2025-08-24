@@ -41,12 +41,12 @@ func (p *lmiaParser) DownloadAndParseResource(resource *models.LMIAResource) ([]
 	// Download the file first to get the actual filename
 	fileName := fmt.Sprintf("%s.%s", resource.ResourceID, strings.ToLower(resource.Format))
 	filePath := filepath.Join(p.tempDir, fileName)
-	
+
 	// Use the year from the resource's Year field (parsed from filename)
 	year := resource.Year
-	
-	log.Info("Downloading and parsing LMIA resource", 
-		"resource_id", resource.ResourceID, 
+
+	log.Info("Downloading and parsing LMIA resource",
+		"resource_id", resource.ResourceID,
 		"resource_name", resource.Name,
 		"url", resource.URL,
 		"filename", fileName,
@@ -86,8 +86,8 @@ func (p *lmiaParser) DownloadAndParseResource(resource *models.LMIAResource) ([]
 		return nil, fmt.Errorf("failed to parse file: %w", err)
 	}
 
-	log.Info("Successfully parsed LMIA resource", 
-		"resource_id", resource.ResourceID, 
+	log.Info("Successfully parsed LMIA resource",
+		"resource_id", resource.ResourceID,
 		"year", year,
 		"employers_count", len(employers))
 	return employers, nil
@@ -114,11 +114,9 @@ func (p *lmiaParser) downloadFile(url, filePath string) error {
 	return err
 }
 
-
-
 func (p *lmiaParser) ParseCSV(filePath string, resourceID string, year int) ([]*models.LMIAEmployer, error) {
 	log.Info("Parsing CSV file", "file_path", filePath, "year", year)
-	
+
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
@@ -234,7 +232,7 @@ func (p *lmiaParser) ParseCSV(filePath string, resourceID string, year int) ([]*
 
 func (p *lmiaParser) ParseXLSX(filePath string, resourceID string, year int) ([]*models.LMIAEmployer, error) {
 	log.Info("Parsing XLSX file", "file_path", filePath, "year", year)
-	
+
 	wb, err := xlsx.OpenFile(filePath)
 	if err != nil {
 		return nil, err
@@ -404,6 +402,20 @@ func (p *lmiaParser) parseEmployerRecord(record []string, columnMap map[string]i
 	}
 	if val := getField("address"); val != "" {
 		employer.Address = &val
+
+		// Extract postal code from address (format: A1A 1A1)
+		// Pattern matches: Letter-Digit-Letter space Digit-Letter-Digit
+		postalCodeRegex := regexp.MustCompile(`[A-Za-z]\d[A-Za-z]\s+\d[A-Za-z]\d`)
+		if match := postalCodeRegex.FindString(val); match != "" {
+			// Clean and format postal code to A1A 1A1 format
+			cleaned := strings.ToUpper(strings.ReplaceAll(match, " ", ""))
+			if len(cleaned) == 6 {
+				formatted := cleaned[:3] + " " + cleaned[3:]
+				employer.PostalCode = &formatted
+
+				// Note: Geocoding will be done in a separate batch job later
+			}
+		}
 	}
 	if val := getField("occupation"); val != "" {
 		employer.Occupation = &val
@@ -423,33 +435,4 @@ func (p *lmiaParser) parseEmployerRecord(record []string, columnMap map[string]i
 	}
 
 	return employer, ""
-}
-
-func (p *lmiaParser) parseDate(dateStr string) *time.Time {
-	// Try common date formats
-	formats := []string{
-		"2006-01-02",
-		"01/02/2006",
-		"02/01/2006",
-		"2006/01/02",
-		"Jan 2, 2006",
-		"January 2, 2006",
-	}
-
-	for _, format := range formats {
-		if date, err := time.Parse(format, dateStr); err == nil {
-			return &date
-		}
-	}
-
-	// Try to extract year if it's just a 4-digit year
-	re := regexp.MustCompile(`\b(\d{4})\b`)
-	if matches := re.FindStringSubmatch(dateStr); len(matches) > 1 {
-		if year, err := strconv.Atoi(matches[1]); err == nil && year > 1900 && year < 2100 {
-			date := time.Date(year, 1, 1, 0, 0, 0, 0, time.UTC)
-			return &date
-		}
-	}
-
-	return nil
 }

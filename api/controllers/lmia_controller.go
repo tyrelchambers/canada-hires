@@ -69,10 +69,12 @@ func (c *LMIAController) SearchEmployers(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
+	quarter := r.URL.Query().Get("quarter")
+
 	var employers []*models.LMIAEmployer
 	if query != "*" {
 		var err error
-		employers, err = c.repo.SearchEmployersByName(query, limit)
+		employers, err = c.repo.SearchEmployersByNameAndPeriod(query, year, quarter, limit)
 		if err != nil {
 			log.Error("Failed to search employers", "error", err)
 			http.Error(w, "Failed to search employers", http.StatusInternalServerError)
@@ -80,7 +82,7 @@ func (c *LMIAController) SearchEmployers(w http.ResponseWriter, r *http.Request)
 		}
 	} else {
 		var err error
-		employers, err = c.repo.GetEmployersByYear(year, limit)
+		employers, err = c.repo.GetEmployersByYearAndQuarter(year, quarter, limit)
 		if err != nil {
 			log.Error("Failed to get all employers", "error", err)
 			http.Error(w, "Failed to get all employers", http.StatusInternalServerError)
@@ -93,6 +95,8 @@ func (c *LMIAController) SearchEmployers(w http.ResponseWriter, r *http.Request)
 		"employers": employers,
 		"count":     len(employers),
 		"query":     query,
+		"year":      year,
+		"quarter":   quarter,
 		"limit":     limit,
 	})
 }
@@ -319,5 +323,195 @@ func (c *LMIAController) ProcessUnprocessedResources(w http.ResponseWriter, r *h
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"message": "LMIA resource processing started",
 		"status":  "started",
+	})
+}
+
+// TriggerGeocoding triggers the batch geocoding process for unprocessed employers
+func (c *LMIAController) TriggerGeocoding(w http.ResponseWriter, r *http.Request) {
+	log.Info("Triggering batch geocoding process")
+
+	// Get some debug info before starting
+	postalCodeProvinces, err := c.repo.GetUngeocodedPostalCodes()
+	if err != nil {
+		log.Error("Failed to get ungeocoded postal codes for debug", "error", err)
+	} else {
+		log.Info("Debug: Found ungeocoded postal codes", "count", len(postalCodeProvinces))
+		if len(postalCodeProvinces) > 0 {
+			sampleSize := 3
+			if len(postalCodeProvinces) < sampleSize {
+				sampleSize = len(postalCodeProvinces)
+			}
+			
+			// Convert first few entries to slice for logging
+			var samplePostalCodes []string
+			i := 0
+			for postalCode := range postalCodeProvinces {
+				if i >= sampleSize {
+					break
+				}
+				samplePostalCodes = append(samplePostalCodes, postalCode)
+				i++
+			}
+			log.Info("Debug: Sample postal codes", "sample", samplePostalCodes)
+		}
+	}
+
+	// Run the geocoding in a goroutine so we can return immediately
+	go func() {
+		err := c.lmiaService.GeocodeUnprocessedEmployers()
+		if err != nil {
+			log.Error("Batch geocoding process failed", "error", err)
+		} else {
+			log.Info("Batch geocoding process completed successfully")
+		}
+	}()
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "Batch geocoding process started",
+		"status":  "started",
+	})
+}
+
+
+// GetEmployersWithGeolocation returns employers with lat/lng coordinates for heatmap visualization
+func (c *LMIAController) GetEmployersWithGeolocation(w http.ResponseWriter, r *http.Request) {
+	yearStr := r.URL.Query().Get("year")
+	var year int
+	if yearStr == "" {
+		now := time.Now()
+		year = time.Time.Year(now)
+	} else {
+		if parsedYear, err := strconv.Atoi(yearStr); err == nil && parsedYear >= 2000 && parsedYear <= time.Now().Year() {
+			year = parsedYear
+		} else {
+			http.Error(w, "Invalid year parameter", http.StatusBadRequest)
+			return
+		}
+	}
+
+	quarter := r.URL.Query().Get("quarter")
+
+	limitStr := r.URL.Query().Get("limit")
+	limit := 1000 // default limit for map visualization
+	if limitStr != "" {
+		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
+			limit = parsedLimit
+		}
+	}
+
+	log.Info("Getting employers with geolocation", "year", year, "quarter", quarter, "limit", limit)
+
+	employers, err := c.repo.GetEmployersWithGeolocation(year, quarter, limit)
+	if err != nil {
+		log.Error("Failed to get employers with geolocation", "error", err)
+		http.Error(w, "Failed to get employers with geolocation", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"employers": employers,
+		"count":     len(employers),
+		"year":      year,
+		"quarter":   quarter,
+		"limit":     limit,
+	})
+}
+
+// GetEmployersByPostalCode returns all employers for a specific postal code
+func (c *LMIAController) GetEmployersByPostalCode(w http.ResponseWriter, r *http.Request) {
+	postalCode := chi.URLParam(r, "postalCode")
+	if postalCode == "" {
+		http.Error(w, "Postal code is required", http.StatusBadRequest)
+		return
+	}
+
+	yearStr := r.URL.Query().Get("year")
+	var year int
+	if yearStr == "" {
+		now := time.Now()
+		year = time.Time.Year(now)
+	} else {
+		if parsedYear, err := strconv.Atoi(yearStr); err == nil && parsedYear >= 2000 && parsedYear <= time.Now().Year() {
+			year = parsedYear
+		} else {
+			http.Error(w, "Invalid year parameter", http.StatusBadRequest)
+			return
+		}
+	}
+
+	quarter := r.URL.Query().Get("quarter")
+
+	limitStr := r.URL.Query().Get("limit")
+	limit := 100 // default limit for business listing
+	if limitStr != "" {
+		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
+			limit = parsedLimit
+		}
+	}
+
+	log.Info("Getting employers by postal code", "postal_code", postalCode, "year", year, "quarter", quarter, "limit", limit)
+
+	employers, err := c.repo.GetEmployersByPostalCode(postalCode, year, quarter, limit)
+	if err != nil {
+		log.Error("Failed to get employers by postal code", "error", err)
+		http.Error(w, "Failed to get employers by postal code", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"employers":   employers,
+		"count":       len(employers),
+		"postal_code": postalCode,
+		"year":        year,
+		"quarter":     quarter,
+		"limit":       limit,
+	})
+}
+
+// GetPostalCodeLocations returns LMIA employers grouped by postal code for heatmap visualization
+func (c *LMIAController) GetPostalCodeLocations(w http.ResponseWriter, r *http.Request) {
+	yearStr := r.URL.Query().Get("year")
+	var year int
+	if yearStr == "" {
+		now := time.Now()
+		year = time.Time.Year(now)
+	} else {
+		if parsedYear, err := strconv.Atoi(yearStr); err == nil && parsedYear >= 2000 && parsedYear <= time.Now().Year() {
+			year = parsedYear
+		} else {
+			http.Error(w, "Invalid year parameter", http.StatusBadRequest)
+			return
+		}
+	}
+
+	quarter := r.URL.Query().Get("quarter")
+
+	limitStr := r.URL.Query().Get("limit")
+	limit := 1000 // default limit for map visualization
+	if limitStr != "" {
+		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
+			limit = parsedLimit
+		}
+	}
+
+	log.Info("Getting postal code locations", "year", year, "quarter", quarter, "limit", limit)
+
+	locations, err := c.repo.GetPostalCodeLocations(year, quarter, limit)
+	if err != nil {
+		log.Error("Failed to get postal code locations", "error", err)
+		http.Error(w, "Failed to get postal code locations", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"locations": locations,
+		"count":     len(locations),
+		"year":      year,
+		"quarter":   quarter,
+		"limit":     limit,
 	})
 }

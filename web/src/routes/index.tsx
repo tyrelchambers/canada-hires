@@ -24,7 +24,6 @@ function RouteComponent() {
   const { data: statsData, isLoading: isJobStatsLoading } = useJobStats();
   const { data: reportStats, isLoading: isReportStatsLoading } =
     useReportStats();
-  console.log(reportStats);
   return (
     <div className="min-h-screen">
       <AuthNav />
