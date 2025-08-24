@@ -1,7 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
 import { Marker, Popup, Circle } from "react-leaflet";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faMapMarkerAlt } from "@fortawesome/free-solid-svg-icons";
 import {
   useLMIAPostalCodeLocations,
   useLMIAEmployersByPostalCode,
@@ -16,6 +14,9 @@ import { MapLoadingOverlay } from "./shared/MapLoadingOverlay";
 import { MapLoadingSpinner } from "./shared/MapLoadingSpinner";
 import type { PostalCodeLocation } from "@/types";
 import "leaflet/dist/leaflet.css";
+import { Icon } from "leaflet";
+import markerImg from "@/assets/marker-icon-2x.png";
+import markerShadowImg from "@/assets/marker-shadow.png";
 
 export function LMIAMapHeatmap() {
   const currentYear = new Date().getFullYear();
@@ -79,6 +80,15 @@ export function LMIAMapHeatmap() {
         700,
       );
 
+      const icon = new Icon({
+        iconUrl: markerImg,
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowUrl: markerShadowImg,
+        shadowSize: [41, 41],
+      });
+
       return (
         <div key={location.postal_code}>
           {/* Circle overlay showing postal code coverage area */}
@@ -100,6 +110,7 @@ export function LMIAMapHeatmap() {
             eventHandlers={{
               click: () => handleMarkerClick(location),
             }}
+            icon={icon}
           >
             <Popup>
               <div className="text-sm">
@@ -248,38 +259,6 @@ export function LMIAMapHeatmap() {
             </div>
           </div>
         ) : null}
-      </div>
-
-      {/* Legend */}
-      <div className="bg-white rounded-lg shadow p-4">
-        <h3 className="font-semibold mb-3">Legend</h3>
-        <div className="space-y-3 text-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center relative">
-              <FontAwesomeIcon
-                icon={faMapMarkerAlt}
-                className="text-white h-2 w-2"
-              />
-              <span className="absolute -top-1 -right-1 bg-yellow-500 text-black text-xs rounded-full w-3 h-3 flex items-center justify-center font-bold">
-                2
-              </span>
-            </div>
-            <span>Postal Code Area</span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 border-2 border-red-600 rounded-full opacity-30 bg-red-600"></div>
-            <span>Coverage Radius</span>
-          </div>
-
-          <div className="text-xs text-gray-500 space-y-1">
-            <p>• Markers show postal code locations with LMIA businesses</p>
-            <p>• Number badges indicate business count in that area</p>
-            <p>• Larger markers = more businesses</p>
-            <p>• Circles show approximate postal code coverage</p>
-            <p>• Click markers to see all businesses in that area</p>
-          </div>
-        </div>
       </div>
     </>
   );

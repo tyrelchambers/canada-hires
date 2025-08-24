@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Circle } from "react-leaflet";
-import { LatLngExpression } from "leaflet";
+import { Icon, LatLngExpression } from "leaflet";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faSpinner,
@@ -17,6 +17,8 @@ import { ReasonCodeTooltip } from "./ReasonCodeTooltip";
 import { ReasonCodeModal } from "./ReasonCodeModal";
 import type { NonCompliantPostalCodeLocation } from "@/types";
 import "leaflet/dist/leaflet.css";
+import markerImg from "@/assets/marker-icon-2x.png";
+import markerShadowImg from "@/assets/marker-shadow.png";
 
 export function NonCompliantMapHeatmap() {
   const [selectedLocation, setSelectedLocation] =
@@ -148,6 +150,14 @@ export function NonCompliantMapHeatmap() {
         Math.max(200, (location.total_penalty_amount || 0) / 1000 + 100),
         800,
       );
+      const icon = new Icon({
+        iconUrl: markerImg,
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowUrl: markerShadowImg,
+        shadowSize: [41, 41],
+      });
 
       return (
         <div key={location.postal_code}>
@@ -170,6 +180,7 @@ export function NonCompliantMapHeatmap() {
             eventHandlers={{
               click: () => handleMarkerClick(location),
             }}
+            icon={icon}
           >
             <Popup>
               <div className="text-sm">
@@ -504,7 +515,8 @@ export function NonCompliantMapHeatmap() {
           )}
         </div>
         <div className="px-4 pb-2 text-xs text-gray-400">
-          Data sourced from Canadian government databases. Location accuracy may vary.
+          Data sourced from Canadian government databases. Location accuracy may
+          vary.
         </div>
       </div>
 
@@ -827,7 +839,8 @@ export function NonCompliantMapHeatmap() {
           )}
         </div>
         <div className="px-4 pb-2 text-xs text-gray-400">
-          Data sourced from Canadian government databases. Location accuracy may vary.
+          Data sourced from Canadian government databases. Location accuracy may
+          vary.
         </div>
       </div>
 
