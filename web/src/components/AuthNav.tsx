@@ -98,7 +98,7 @@ export function AuthNav() {
                   "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
               }}
             >
-              LMIA Heatmap
+              LMIA Map
             </Link>
             <Link
               to="/non-compliant-map"
