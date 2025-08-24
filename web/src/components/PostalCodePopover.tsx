@@ -1,13 +1,3 @@
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faMapMarkerAlt,
-  faBuilding,
-  faUsers,
-  faTimes,
-  faFileText,
-  faSpinner,
-} from "@fortawesome/free-solid-svg-icons";
-import { Button } from "@/components/ui/button";
 import { useLMIAEmployersByPostalCode } from "@/hooks/useLMIA";
 import type { PostalCodeLocation } from "@/types";
 
