@@ -9,7 +9,7 @@ interface Report {
   business_address: string;
   report_source: string;
   confidence_level?: number; // Deprecated: use tfw_ratio
-  tfw_ratio?: 'few' | 'many' | 'most' | 'all';
+  tfw_ratio?: "few" | "many" | "most" | "all";
   additional_notes?: string;
   ip_address?: string;
   created_at: string;
@@ -41,7 +41,7 @@ interface CreateReportRequest {
   business_address: string;
   report_source: string;
   confidence_level?: number; // Deprecated: use tfw_ratio
-  tfw_ratio?: 'few' | 'many' | 'most' | 'all';
+  tfw_ratio?: "few" | "many" | "most" | "all";
   additional_notes?: string;
 }
 
@@ -50,7 +50,7 @@ interface UpdateReportRequest {
   business_address: string;
   report_source: string;
   confidence_level?: number; // Deprecated: use tfw_ratio
-  tfw_ratio?: 'few' | 'many' | 'most' | 'all';
+  tfw_ratio?: "few" | "many" | "most" | "all";
   additional_notes?: string;
 }
 
@@ -96,7 +96,7 @@ export function useCreateReport() {
       await queryClient.invalidateQueries({
         queryKey: ["reportsGroupedByAddress"],
       });
-      
+
       // Invalidate the specific business address query if we have an address
       if (variables.business_address) {
         await queryClient.invalidateQueries({
@@ -151,21 +151,28 @@ export function useAddressReports(address: string) {
   });
 }
 
-
 // Admin hooks for report management
 export function useUpdateReport() {
   const apiClient = useApiClient();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: UpdateReportRequest }): Promise<Report> => {
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: UpdateReportRequest;
+    }): Promise<Report> => {
       const response = await apiClient.put<Report>(`/reports/${id}`, data);
       return response.data;
     },
     onSuccess: async () => {
       // Invalidate all report queries to refetch data
       await queryClient.invalidateQueries({ queryKey: ["reports"] });
-      await queryClient.invalidateQueries({ queryKey: ["reportsGroupedByAddress"] });
+      await queryClient.invalidateQueries({
+        queryKey: ["reportsGroupedByAddress"],
+      });
       await queryClient.invalidateQueries({ queryKey: ["addressReports"] });
     },
   });
@@ -182,7 +189,9 @@ export function useDeleteReport() {
     onSuccess: async () => {
       // Invalidate all report queries to refetch data
       await queryClient.invalidateQueries({ queryKey: ["reports"] });
-      await queryClient.invalidateQueries({ queryKey: ["reportsGroupedByAddress"] });
+      await queryClient.invalidateQueries({
+        queryKey: ["reportsGroupedByAddress"],
+      });
       await queryClient.invalidateQueries({ queryKey: ["addressReports"] });
     },
   });
@@ -195,7 +204,7 @@ export function useReportStats() {
     queryKey: ["reports", "stats"],
     queryFn: async (): Promise<{ total_reports: number }> => {
       // Get reports with minimal data to get total count
-      const response = await apiClient.get<ReportsResponse>("/reports?limit=1");
+      const response = await apiClient.get<ReportsResponse>("/reports");
       return {
         total_reports: response.data.reports.length || 0,
       };

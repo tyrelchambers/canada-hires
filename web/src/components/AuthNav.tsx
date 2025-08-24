@@ -22,8 +22,6 @@ import {
 
 const navigationLinks = [
   { to: "/lmia", label: "LMIA Search" },
-  { to: "/lmia-map", label: "LMIA Heatmap" },
-  { to: "/non-compliant-map", label: "Violations Map" },
   { to: "/trends", label: "Trends" },
   { to: "/research", label: "Research" },
   { to: "/feedback", label: "Feedback" },
@@ -51,7 +49,10 @@ export function AuthNav() {
   };
 
   const handleCreateReport = () => {
-    void navigate({ to: "/reports/create", search: { businessName: undefined, businessAddress: undefined } });
+    void navigate({
+      to: "/reports/create",
+      search: { businessName: undefined, businessAddress: undefined },
+    });
   };
 
   // Generate initials from email for avatar fallback
@@ -68,7 +69,7 @@ export function AuthNav() {
 
         <div className="flex gap-4">
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex gap-4">
+          <nav className="hidden md:flex">
             <Link
               to="/jobs"
               className="text-sm hover:text-primary px-4 py-2 rounded-full transition-colors"
@@ -89,6 +90,26 @@ export function AuthNav() {
             >
               Reports
             </Link>
+            <Link
+              to="/lmia-map"
+              className="text-sm hover:text-primary px-4 py-2 rounded-full transition-colors"
+              activeProps={{
+                className:
+                  "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
+              }}
+            >
+              LMIA Heatmap
+            </Link>
+            <Link
+              to="/non-compliant-map"
+              className="text-sm hover:text-primary px-4 py-2 rounded-full transition-colors"
+              activeProps={{
+                className:
+                  "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
+              }}
+            >
+              Non-Compliance Map
+            </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center gap-1">
@@ -96,7 +117,7 @@ export function AuthNav() {
                   <FontAwesomeIcon icon={faChevronDown} className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent>
+              <DropdownMenuContent className="w-full max-w-[400px]">
                 {navigationLinks.map((link) => (
                   <DropdownMenuItem key={link.to} asChild>
                     <Link to={link.to} className="flex items-center">
@@ -229,6 +250,28 @@ export function AuthNav() {
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Reports
+            </Link>
+            <Link
+              to="/lmia-map"
+              className="text-sm hover:text-primary px-4 py-2 rounded-full transition-colors"
+              activeProps={{
+                className:
+                  "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
+              }}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              LMIA Heatmap
+            </Link>
+            <Link
+              to="/non-compliant-map"
+              className="text-sm hover:text-primary px-4 py-2 rounded-full transition-colors"
+              activeProps={{
+                className:
+                  "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
+              }}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Non-Compliance Map
             </Link>
             {navigationLinks.map((link) => (
               <Link
