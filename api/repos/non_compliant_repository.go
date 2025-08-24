@@ -488,54 +488,29 @@ func (r *nonCompliantRepository) GetEmployersByPostalCode(postalCode string, lim
 		ORDER BY epc.date_of_final_decision DESC, epc.business_operating_name
 		LIMIT $2 OFFSET $3`
 
-	rows, err := r.db.Query(query, postalCode, limit, offset)
+	var employers []models.NonCompliantEmployerWithReasons
+	err := r.db.Select(&employers, query, postalCode, limit, offset)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	var employers []models.NonCompliantEmployerWithReasons
-	for rows.Next() {
-		var employer models.NonCompliantEmployerWithReasons
-		var reasonCodesArray interface{}
-
-		err := rows.Scan(
-			&employer.ID, &employer.BusinessOperatingName, &employer.BusinessLegalName,
-			&employer.Address, &employer.DateOfFinalDecision, &employer.PenaltyAmount,
-			&employer.PenaltyCurrency, &employer.Status, &reasonCodesArray, &employer.PostalCode,
-			&employer.ScrapedAt, &employer.CreatedAt, &employer.UpdatedAt,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		// Convert PostgreSQL array to string slice
-		if reasonCodesArray != nil {
-			if codes, ok := reasonCodesArray.([]interface{}); ok {
-				employer.ReasonCodes = make([]string, len(codes))
-				for i, code := range codes {
-					if codeStr, ok := code.(string); ok {
-						employer.ReasonCodes[i] = codeStr
-					}
-				}
-			}
-		}
+	for _, e := range employers {
 
 		// Get full reason objects with descriptions for the reason codes
-		if len(employer.ReasonCodes) > 0 {
+		if len(e.ReasonCodes) > 0 {
 			var reasons []models.NonCompliantReason
-			for _, code := range employer.ReasonCodes {
+			for _, code := range e.ReasonCodes {
 				if reason, err := r.GetReasonByCode(code); err == nil {
 					reasons = append(reasons, *reason)
 				}
 			}
-			employer.Reasons = reasons
+			e.Reasons = reasons
 		}
 
-		employers = append(employers, employer)
+		employers = append(employers, e)
 	}
 
-	return employers, rows.Err()
+	return employers, err
 }
 
 // GetEmployersWithoutExtractablePostalCodes returns employers that don't have extractable
@@ -578,19 +553,12 @@ func (r *nonCompliantRepository) GetEmployersByCoordinates(lat, lng float64, lim
 
 	for _, e := range employers {
 		for _, rc := range e.ReasonCodes {
-			q := `
-				SELECT *
-				FROM non_compliant_reasons
-				WHERE reason_code = $1`
-
-			var reason models.NonCompliantReason
-			err := r.db.Get(&reason, q, rc)
+			c, err := r.GetReasonByCode(rc)
 			if err != nil {
 				return nil, err
 			}
-			fmt.Println(reason)
 
-			e.Reasons = append(e.Reasons, reason)
+			e.Reasons = append(e.Reasons, *c)
 		}
 	}
 
