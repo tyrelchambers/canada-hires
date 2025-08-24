@@ -73,6 +73,10 @@ func registerProviders(c *dig.Container) error {
 		return err
 	}
 
+	if err := c.Provide(NewNonCompliantRepository); err != nil {
+		return err
+	}
+
 	// Service providers
 	if err := c.Provide(NewEmailService); err != nil {
 		return err
@@ -146,6 +150,14 @@ func registerProviders(c *dig.Container) error {
 		return err
 	}
 
+	if err := c.Provide(NewNonCompliantService); err != nil {
+		return err
+	}
+
+	if err := c.Provide(NewNonCompliantCronService); err != nil {
+		return err
+	}
+
 	// Controller providers
 	if err := c.Provide(NewAuthController); err != nil {
 		return err
@@ -177,6 +189,10 @@ func registerProviders(c *dig.Container) error {
 	}
 
 	if err := c.Provide(NewBoycottController); err != nil {
+		return err
+	}
+
+	if err := c.Provide(NewNonCompliantController); err != nil {
 		return err
 	}
 
@@ -408,4 +424,27 @@ func NewPostalCodeRepository(database db.Database) repos.PostalCodeRepository {
 // NewPostalCodeGeocodingService creates a new postal code geocoding service
 func NewPostalCodeGeocodingService(postalCodeRepo repos.PostalCodeRepository, postalCodeService services.PostalCodeService) services.PostalCodeGeocodingService {
 	return services.NewPostalCodeGeocodingService(postalCodeRepo, postalCodeService)
+}
+
+// NewNonCompliantRepository creates a new non-compliant repository
+func NewNonCompliantRepository(database db.Database) repos.NonCompliantRepository {
+	return repos.NewNonCompliantRepository(database.GetDB())
+}
+
+// NewNonCompliantService creates a new non-compliant service
+func NewNonCompliantService(repo repos.NonCompliantRepository, postalCodeService services.PostalCodeService, geocodingService services.PostalCodeGeocodingService) services.NonCompliantService {
+	logger := log.Default()
+	return services.NewNonCompliantService(repo, logger, postalCodeService, geocodingService)
+}
+
+// NewNonCompliantController creates a new non-compliant controller
+func NewNonCompliantController(service services.NonCompliantService) *controllers.NonCompliantController {
+	logger := log.Default()
+	return controllers.NewNonCompliantController(service, logger)
+}
+
+// NewNonCompliantCronService creates a new non-compliant cron service
+func NewNonCompliantCronService(nonCompliantService services.NonCompliantService, scraperJobRepo repos.ScraperJobRepository) *services.NonCompliantCronService {
+	logger := log.Default()
+	return services.NewNonCompliantCronService(logger, nonCompliantService, scraperJobRepo)
 }

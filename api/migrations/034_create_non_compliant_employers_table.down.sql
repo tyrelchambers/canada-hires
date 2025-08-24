@@ -1,0 +1,10 @@
+DROP TRIGGER IF EXISTS trigger_update_non_compliant_employers_updated_at ON non_compliant_employers;
+DROP FUNCTION IF EXISTS update_non_compliant_employers_updated_at();
+DROP INDEX IF EXISTS idx_non_compliant_employer_reasons_reason_id;
+DROP INDEX IF EXISTS idx_non_compliant_employer_reasons_employer_id;
+DROP INDEX IF EXISTS idx_non_compliant_employers_scraped_at;
+DROP INDEX IF EXISTS idx_non_compliant_employers_status;
+DROP INDEX IF EXISTS idx_non_compliant_employers_decision_date;
+DROP INDEX IF EXISTS idx_non_compliant_employers_business_name;
+DROP TABLE IF EXISTS non_compliant_employer_reasons;
+DROP TABLE IF EXISTS non_compliant_employers;

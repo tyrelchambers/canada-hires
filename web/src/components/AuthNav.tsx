@@ -23,6 +23,7 @@ import {
 const navigationLinks = [
   { to: "/lmia", label: "LMIA Search" },
   { to: "/lmia-map", label: "LMIA Heatmap" },
+  { to: "/non-compliant-map", label: "Violations Map" },
   { to: "/trends", label: "Trends" },
   { to: "/research", label: "Research" },
   { to: "/feedback", label: "Feedback" },

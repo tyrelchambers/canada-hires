@@ -367,3 +367,55 @@ export interface RedditPreview {
   content_type: 'ai' | 'template';
   error?: string;
 }
+
+// Non-Compliant Employers Types
+export interface NonCompliantEmployer {
+  id: string;
+  business_operating_name: string;
+  business_legal_name?: string;
+  address?: string;
+  date_of_final_decision?: string;
+  penalty_amount?: number;
+  penalty_currency: string;
+  status?: string;
+  postal_code?: string;
+  latitude?: number;
+  longitude?: number;
+  geocoded_at?: string;
+  scraped_at: string;
+  created_at: string;
+  updated_at: string;
+  reason_codes: string[];
+  reasons?: NonCompliantReason[];
+}
+
+export interface NonCompliantReason {
+  id: number;
+  reason_code: string;
+  description?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NonCompliantPostalCodeLocation {
+  postal_code: string;
+  latitude: number;
+  longitude: number;
+  employer_count: number;
+  total_penalty_amount: number;
+  violation_count: number;
+  most_recent_violation?: string;
+}
+
+export interface NonCompliantLocationResponse {
+  locations: NonCompliantPostalCodeLocation[];
+  count: number;
+  limit: number;
+}
+
+export interface NonCompliantEmployersByPostalCodeResponse {
+  employers: NonCompliantEmployer[];
+  postal_code: string;
+  count: number;
+  total_penalty: number;
+}

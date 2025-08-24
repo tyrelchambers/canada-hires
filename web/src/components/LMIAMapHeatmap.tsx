@@ -1,30 +1,16 @@
 import { useState, useCallback, useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Circle } from "react-leaflet";
-import { Icon, LatLngExpression } from "leaflet";
+import { LatLngExpression } from "leaflet";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMapMarkerAlt, faSpinner } from "@fortawesome/free-solid-svg-icons";
-import { useLMIAPostalCodeLocations, useLMIAEmployersByPostalCode } from "@/hooks/useLMIA";
-import { PostalCodePopover } from "./PostalCodePopover";
+import {
+  useLMIAPostalCodeLocations,
+  useLMIAEmployersByPostalCode,
+} from "@/hooks/useLMIA";
 import { MapSearch } from "./MapSearch";
 import { QuarterSelector } from "./QuarterSelector";
 import type { PostalCodeLocation } from "@/types";
 import "leaflet/dist/leaflet.css";
-
-// Custom marker icon for postal code locations
-const createMarkerIcon = (size: number, count: number) => {
-  return new Icon({
-    iconUrl: `data:image/svg+xml;base64,${btoa(`
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${size}" height="${size}">
-        <circle cx="12" cy="12" r="10" fill="#dc2626" stroke="white" stroke-width="2"/>
-        <path d="M12 2L15.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z" fill="white" transform="scale(0.6) translate(4,4)"/>
-        ${count > 1 ? `<circle cx="20" cy="6" r="6" fill="#eab308" stroke="black" stroke-width="1"/><text x="20" y="9" text-anchor="middle" font-size="8" font-weight="bold" fill="black">${count > 9 ? '9+' : count}</text>` : ''}
-      </svg>
-    `)}`,
-    iconSize: [size, size],
-    iconAnchor: [size/2, size/2],
-    popupAnchor: [0, -size/2]
-  });
-};
 
 export function LMIAMapHeatmap() {
   const currentYear = new Date().getFullYear();
@@ -47,22 +33,16 @@ export function LMIAMapHeatmap() {
   );
 
   // Fetch businesses for selected postal code
-  const { 
-    data: businessesData, 
-    isLoading: businessesLoading, 
-    error: businessesError 
+  const {
+    data: businessesData,
+    isLoading: businessesLoading,
+    error: businessesError,
   } = useLMIAEmployersByPostalCode(selectedPostalCode, year, quarter, 100);
 
   // Handle marker click
   const handleMarkerClick = useCallback((location: PostalCodeLocation) => {
     setSelectedLocation(location);
     setSelectedPostalCode(location.postal_code);
-  }, []);
-
-  // Handle popover close
-  const handlePopoverClose = useCallback(() => {
-    setSelectedLocation(null);
-    setSelectedPostalCode("");
   }, []);
 
   // Handle location search
@@ -85,16 +65,10 @@ export function LMIAMapHeatmap() {
     if (!data?.locations) return [];
 
     return data.locations.map((location) => {
-      // Calculate marker size based on business count (min 20px, max 40px)
-      const markerSize = Math.min(
-        Math.max(20, 15 + location.business_count * 2),
-        40,
-      );
-
       // Calculate circle radius based on total LMIAs (min 50m, max 500m)
       const circleRadius = Math.min(
-        Math.max(50, location.total_lmias * 10),
-        500,
+        Math.max(300, location.total_lmias * 10),
+        700,
       );
 
       return (
@@ -106,7 +80,7 @@ export function LMIAMapHeatmap() {
             pathOptions={{
               color: "#dc2626",
               fillColor: "#dc2626",
-              fillOpacity: 0.1,
+              fillOpacity: 0.3,
               weight: 2,
               opacity: 0.3,
             }}
@@ -115,7 +89,6 @@ export function LMIAMapHeatmap() {
           {/* Postal code marker */}
           <Marker
             position={[location.latitude, location.longitude]}
-            icon={createMarkerIcon(markerSize, location.business_count)}
             eventHandlers={{
               click: () => handleMarkerClick(location),
             }}
@@ -132,7 +105,6 @@ export function LMIAMapHeatmap() {
       );
     });
   }, [data?.locations, handleMarkerClick]);
-
 
   return (
     <div className="h-screen flex">
@@ -170,11 +142,15 @@ export function LMIAMapHeatmap() {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <div className="text-gray-600">Businesses</div>
-                    <div className="font-semibold text-lg">{selectedLocation?.business_count || 0}</div>
+                    <div className="font-semibold text-lg">
+                      {selectedLocation?.business_count || 0}
+                    </div>
                   </div>
                   <div>
                     <div className="text-gray-600">Total LMIAs</div>
-                    <div className="font-semibold text-lg text-red-600">{selectedLocation?.total_lmias || 0}</div>
+                    <div className="font-semibold text-lg text-red-600">
+                      {selectedLocation?.total_lmias || 0}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -184,7 +160,10 @@ export function LMIAMapHeatmap() {
                 <h3 className="font-semibold mb-3">Businesses with LMIAs</h3>
                 {businessesLoading ? (
                   <div className="flex items-center gap-2 text-gray-500 text-sm">
-                    <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+                    <FontAwesomeIcon
+                      icon={faSpinner}
+                      className="animate-spin"
+                    />
                     <span>Loading businesses...</span>
                   </div>
                 ) : businessesError ? (
@@ -194,15 +173,19 @@ export function LMIAMapHeatmap() {
                 ) : businessesData && businessesData.employers.length > 0 ? (
                   <div className="space-y-3">
                     {businessesData.employers.map((employer) => (
-                      <div key={employer.id} className="bg-gray-50 rounded p-3 border-l-4 border-red-500">
+                      <div
+                        key={employer.id}
+                        className="bg-gray-50 rounded p-3 border-l-4 border-red-500"
+                      >
                         <div className="font-medium text-gray-900 mb-2">
                           {employer.employer}
                         </div>
                         <div className="text-gray-600 mb-2 text-sm">
-                          {employer.address || 'Address not available'}
+                          {employer.address || "Address not available"}
                         </div>
                         <div className="text-sm text-gray-700 mb-2">
-                          <strong>Occupation:</strong> {employer.occupation || 'Not specified'}
+                          <strong>Occupation:</strong>{" "}
+                          {employer.occupation || "Not specified"}
                         </div>
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-red-600 font-semibold">
@@ -216,7 +199,8 @@ export function LMIAMapHeatmap() {
                     ))}
                     {businessesData.count > businessesData.employers.length && (
                       <div className="text-sm text-gray-500 text-center py-3 border-t">
-                        Showing {businessesData.employers.length} of {businessesData.count} businesses
+                        Showing {businessesData.employers.length} of{" "}
+                        {businessesData.count} businesses
                       </div>
                     )}
                   </div>
@@ -246,7 +230,10 @@ export function LMIAMapHeatmap() {
                 <h3 className="font-semibold mb-3">Current Data</h3>
                 {isLoading ? (
                   <div className="flex items-center gap-2 text-gray-500">
-                    <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+                    <FontAwesomeIcon
+                      icon={faSpinner}
+                      className="animate-spin"
+                    />
                     <span>Loading...</span>
                   </div>
                 ) : error ? (
@@ -310,7 +297,9 @@ export function LMIAMapHeatmap() {
                   </div>
 
                   <div className="text-xs text-gray-500 space-y-1">
-                    <p>• Markers show postal code locations with LMIA businesses</p>
+                    <p>
+                      • Markers show postal code locations with LMIA businesses
+                    </p>
                     <p>• Number badges indicate business count in that area</p>
                     <p>• Larger markers = more businesses</p>
                     <p>• Circles show approximate postal code coverage</p>
@@ -339,8 +328,6 @@ export function LMIAMapHeatmap() {
           {/* Postal Code Markers and Circles */}
           {markersAndCircles}
         </MapContainer>
-
-        {/* Postal Code Popover - Removed: Using sidebar display instead */}
 
         {/* Loading Overlay */}
         {isLoading && (

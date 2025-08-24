@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -14,8 +15,9 @@ import (
 )
 
 const (
-	baseURL = "https://www.jobbank.gc.ca"
-	lmiaURL = "https://www.jobbank.gc.ca/jobsearch/jobsearch?fsrc=32"
+	baseURL             = "https://www.jobbank.gc.ca"
+	lmiaURL             = "https://www.jobbank.gc.ca/jobsearch/jobsearch?fsrc=32"
+	nonCompliantURL     = "https://www.canada.ca/en/immigration-refugees-citizenship/services/work-canada/employers-non-compliant.html"
 )
 
 type Scraper struct {
@@ -347,4 +349,268 @@ func removeTabsAndNewLines(str string) string {
 	}
 
 	return strings.TrimSpace(str)
+}
+
+// ScrapeNonCompliantEmployers scrapes the non-compliant employers page with pagination
+func (s *Scraper) ScrapeNonCompliantEmployers() ([]scraper_types.NonCompliantEmployerData, error) {
+	fmt.Println("🎯 Navigating to non-compliant employers page...")
+
+	err := chromedp.Run(s.ctx,
+		chromedp.Navigate(nonCompliantURL),
+		chromedp.WaitVisible("table tbody tr", chromedp.ByQuery),
+		chromedp.Sleep(2*time.Second), // Wait for page to fully load
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to navigate to non-compliant page: %v", err)
+	}
+
+	var allEmployers []scraper_types.NonCompliantEmployerData
+	pageNumber := 1
+
+	for {
+		fmt.Printf("📄 Scraping page %d...\n", pageNumber)
+		
+		// Wait for table to be ready
+		err = chromedp.Run(s.ctx,
+			chromedp.WaitVisible("table tbody tr", chromedp.ByQuery),
+			chromedp.Sleep(1*time.Second),
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to wait for table on page %d: %v", pageNumber, err)
+		}
+
+		// Scrape current page
+		employers, err := s.parseNonCompliantEmployersPage()
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse page %d: %v", pageNumber, err)
+		}
+
+		allEmployers = append(allEmployers, employers...)
+		fmt.Printf("✅ Scraped %d employers from page %d (total: %d)\n", len(employers), pageNumber, len(allEmployers))
+
+		// Check if next button exists and is enabled
+		var nextButtonDisabled bool
+		err = chromedp.Run(s.ctx,
+			chromedp.Evaluate(`(function() {
+				// Try multiple selectors for the next button
+				const selectors = [
+					'#wb-auto-4_next',
+					'a[aria-label="Next"]',
+					'.paginate_button.next',
+					'[id*="_next"]'
+				];
+				
+				for (let selector of selectors) {
+					const nextButton = document.querySelector(selector);
+					if (nextButton) {
+						const isDisabled = nextButton.classList.contains('disabled') || 
+						                  nextButton.parentElement.classList.contains('disabled') ||
+						                  nextButton.hasAttribute('disabled') ||
+						                  nextButton.getAttribute('aria-disabled') === 'true';
+						if (!isDisabled) {
+							return false; // Found enabled next button
+						}
+					}
+				}
+				
+				return true; // No enabled next button found
+			})()`, &nextButtonDisabled),
+		)
+		if err != nil {
+			fmt.Printf("⚠️  Could not check next button status: %v\n", err)
+			break
+		}
+
+		if nextButtonDisabled {
+			fmt.Println("🏁 Reached last page or no next button found, stopping pagination")
+			break
+		}
+
+		// Click next button using multiple selectors
+		fmt.Printf("➡️  Navigating to page %d...\n", pageNumber+1)
+		var clickSuccess bool
+		err = chromedp.Run(s.ctx,
+			chromedp.Evaluate(`(function() {
+				// Try multiple selectors for the next button
+				const selectors = [
+					'#wb-auto-4_next',
+					'a[aria-label="Next"]',
+					'.paginate_button.next:not(.disabled)',
+					'[id*="_next"]:not(.disabled)'
+				];
+				
+				for (let selector of selectors) {
+					const nextButton = document.querySelector(selector);
+					if (nextButton && !nextButton.classList.contains('disabled')) {
+						nextButton.click();
+						return true;
+					}
+				}
+				
+				return false;
+			})()`, &clickSuccess),
+			chromedp.Sleep(2*time.Second), // Wait for page to load
+		)
+		if err != nil || !clickSuccess {
+			fmt.Printf("⚠️  Could not click next button: %v, success: %v\n", err, clickSuccess)
+			break
+		}
+
+		pageNumber++
+	}
+
+	fmt.Printf("🎉 Scraping completed! Total employers scraped: %d\n", len(allEmployers))
+	return allEmployers, nil
+}
+
+// parseNonCompliantEmployersPage parses the current page of the non-compliant employers table
+func (s *Scraper) parseNonCompliantEmployersPage() ([]scraper_types.NonCompliantEmployerData, error) {
+	// Extract table data using JavaScript
+	var tableDataJSON string
+	err := chromedp.Run(s.ctx,
+		chromedp.Evaluate(`(function() {
+			const rows = document.querySelectorAll('table tbody tr');
+			let data = [];
+			
+			for (let row of rows) {
+				const cells = row.querySelectorAll('td');
+				if (cells.length >= 7) {
+					// Extract reason codes from the Reason(s) column
+					const reasonCell = cells[3];
+					const reasonLinks = reasonCell.querySelectorAll('a');
+					const reasonCodes = Array.from(reasonLinks).map(link => link.textContent.trim());
+					
+					// Parse penalty amount
+					const penaltyText = cells[5].textContent.trim();
+					const penaltyMatch = penaltyText.match(/\$?([\d,]+)/);
+					const penaltyAmount = penaltyMatch ? parseInt(penaltyMatch[1].replace(/,/g, '')) : 0;
+					
+					data.push({
+						businessOperatingName: cells[0].textContent.trim(),
+						businessLegalName: cells[1].textContent.trim(),
+						address: cells[2].textContent.trim(),
+						reasonCodes: reasonCodes,
+						dateOfFinalDecision: cells[4].textContent.trim(),
+						penaltyAmount: penaltyAmount,
+						penaltyCurrency: 'CAD',
+						status: cells[6].textContent.trim()
+					});
+				}
+			}
+			
+			return JSON.stringify(data);
+		})()`, &tableDataJSON),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract table data: %v", err)
+	}
+
+	// Parse JSON data
+	var employers []scraper_types.NonCompliantEmployerData
+	err = json.Unmarshal([]byte(tableDataJSON), &employers)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse table JSON: %v", err)
+	}
+
+	// Clean and validate the data
+	var cleanedEmployers []scraper_types.NonCompliantEmployerData
+	for _, employer := range employers {
+		// Skip empty rows
+		if employer.BusinessOperatingName == "" {
+			continue
+		}
+
+		// Clean date format (expecting YYYY-MM-DD)
+		if employer.DateOfFinalDecision != "" {
+			employer.DateOfFinalDecision = s.cleanDate(employer.DateOfFinalDecision)
+		}
+
+		// Ensure reason codes are not empty
+		var validReasons []string
+		for _, reason := range employer.ReasonCodes {
+			if reason != "" {
+				validReasons = append(validReasons, reason)
+			}
+		}
+		employer.ReasonCodes = validReasons
+
+		cleanedEmployers = append(cleanedEmployers, employer)
+	}
+
+	return cleanedEmployers, nil
+}
+
+// cleanDate attempts to parse and normalize various date formats to YYYY-MM-DD
+func (s *Scraper) cleanDate(dateStr string) string {
+	dateStr = strings.TrimSpace(dateStr)
+	if dateStr == "" {
+		return ""
+	}
+
+	// Try different date formats that might appear on the page
+	formats := []string{
+		"2006-01-02", // YYYY-MM-DD (already correct)
+		"2006/01/02", // YYYY/MM/DD
+		"01/02/2006", // MM/DD/YYYY
+		"02/01/2006", // DD/MM/YYYY
+		"January 2, 2006",
+		"Jan 2, 2006",
+		"2 January 2006",
+		"2 Jan 2006",
+	}
+
+	for _, format := range formats {
+		if parsedTime, err := time.Parse(format, dateStr); err == nil {
+			return parsedTime.Format("2006-01-02")
+		}
+	}
+
+	// Handle special case of invalid dates like "2019-02-29"
+	if matched := regexp.MustCompile(`(\d{4})-(\d{2})-(\d{2})`).FindStringSubmatch(dateStr); matched != nil {
+		year := matched[1]
+		month := matched[2]
+		day := matched[3]
+		
+		// Try to fix common invalid dates
+		fixedDateStr := s.fixInvalidDate(year, month, day)
+		if fixedDateStr != dateStr {
+			fmt.Printf("🔧 Fixed invalid date %s -> %s\n", dateStr, fixedDateStr)
+			return fixedDateStr
+		}
+	}
+
+	// If no format matches, return empty string instead of invalid date
+	fmt.Printf("⚠️  Could not parse date: %s, skipping\n", dateStr)
+	return ""
+}
+
+// fixInvalidDate attempts to fix common invalid dates like Feb 29 in non-leap years
+func (s *Scraper) fixInvalidDate(year, month, day string) string {
+	yearInt, _ := strconv.Atoi(year)
+	monthInt, _ := strconv.Atoi(month)
+	dayInt, _ := strconv.Atoi(day)
+	
+	// Fix February 29 in non-leap years
+	if monthInt == 2 && dayInt == 29 && !isLeapYear(yearInt) {
+		return fmt.Sprintf("%s-02-28", year) // Change to Feb 28
+	}
+	
+	// Fix other impossible dates
+	daysInMonth := []int{31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}
+	if isLeapYear(yearInt) {
+		daysInMonth[1] = 29 // February in leap year
+	}
+	
+	if monthInt >= 1 && monthInt <= 12 && dayInt > daysInMonth[monthInt-1] {
+		// Day exceeds maximum for the month, set to last day of month
+		return fmt.Sprintf("%04d-%02d-%02d", yearInt, monthInt, daysInMonth[monthInt-1])
+	}
+	
+	// Return original if no fix needed
+	return fmt.Sprintf("%s-%s-%s", year, month, day)
+}
+
+// isLeapYear checks if a year is a leap year
+func isLeapYear(year int) bool {
+	return year%4 == 0 && (year%100 != 0 || year%400 == 0)
 }

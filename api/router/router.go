@@ -72,5 +72,13 @@ func InitRoutes(cn *container.Container, r *chi.Mux) {
 		if err != nil {
 			log.Error("Failed to initialize boycott routes", "error", err)
 		}
+		
+		// Add non-compliant employers routes
+		err = cn.Invoke(func(nonCompliantController *controllers.NonCompliantController, authMW func(http.Handler) http.Handler) {
+			NonCompliantRoutes(nonCompliantController, authMW)(r)
+		})
+		if err != nil {
+			log.Error("Failed to initialize non-compliant routes", "error", err)
+		}
 	})
 }

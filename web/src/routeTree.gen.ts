@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TrendsRouteImport } from './routes/trends'
+import { Route as NonCompliantMapRouteImport } from './routes/non-compliant-map'
 import { Route as LmiaMapRouteImport } from './routes/lmia-map'
 import { Route as LmiaRouteImport } from './routes/lmia'
 import { Route as JobsRouteImport } from './routes/jobs'
@@ -27,6 +28,11 @@ import { Route as AuthLoginRouteImport } from './routes/auth/login'
 const TrendsRoute = TrendsRouteImport.update({
   id: '/trends',
   path: '/trends',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NonCompliantMapRoute = NonCompliantMapRouteImport.update({
+  id: '/non-compliant-map',
+  path: '/non-compliant-map',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LmiaMapRoute = LmiaMapRouteImport.update({
@@ -104,6 +110,7 @@ export interface FileRoutesByFullPath {
   '/jobs': typeof JobsRoute
   '/lmia': typeof LmiaRoute
   '/lmia-map': typeof LmiaMapRoute
+  '/non-compliant-map': typeof NonCompliantMapRoute
   '/trends': typeof TrendsRoute
   '/auth/login': typeof AuthLoginRoute
   '/business/$address': typeof BusinessAddressRoute
@@ -120,6 +127,7 @@ export interface FileRoutesByTo {
   '/jobs': typeof JobsRoute
   '/lmia': typeof LmiaRoute
   '/lmia-map': typeof LmiaMapRoute
+  '/non-compliant-map': typeof NonCompliantMapRoute
   '/trends': typeof TrendsRoute
   '/auth/login': typeof AuthLoginRoute
   '/business/$address': typeof BusinessAddressRoute
@@ -137,6 +145,7 @@ export interface FileRoutesById {
   '/jobs': typeof JobsRoute
   '/lmia': typeof LmiaRoute
   '/lmia-map': typeof LmiaMapRoute
+  '/non-compliant-map': typeof NonCompliantMapRoute
   '/trends': typeof TrendsRoute
   '/auth/login': typeof AuthLoginRoute
   '/business/$address': typeof BusinessAddressRoute
@@ -155,6 +164,7 @@ export interface FileRouteTypes {
     | '/jobs'
     | '/lmia'
     | '/lmia-map'
+    | '/non-compliant-map'
     | '/trends'
     | '/auth/login'
     | '/business/$address'
@@ -171,6 +181,7 @@ export interface FileRouteTypes {
     | '/jobs'
     | '/lmia'
     | '/lmia-map'
+    | '/non-compliant-map'
     | '/trends'
     | '/auth/login'
     | '/business/$address'
@@ -187,6 +198,7 @@ export interface FileRouteTypes {
     | '/jobs'
     | '/lmia'
     | '/lmia-map'
+    | '/non-compliant-map'
     | '/trends'
     | '/auth/login'
     | '/business/$address'
@@ -204,6 +216,7 @@ export interface RootRouteChildren {
   JobsRoute: typeof JobsRoute
   LmiaRoute: typeof LmiaRoute
   LmiaMapRoute: typeof LmiaMapRoute
+  NonCompliantMapRoute: typeof NonCompliantMapRoute
   TrendsRoute: typeof TrendsRoute
   AuthLoginRoute: typeof AuthLoginRoute
   BusinessAddressRoute: typeof BusinessAddressRoute
@@ -220,6 +233,13 @@ declare module '@tanstack/react-router' {
       path: '/trends'
       fullPath: '/trends'
       preLoaderRoute: typeof TrendsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/non-compliant-map': {
+      id: '/non-compliant-map'
+      path: '/non-compliant-map'
+      fullPath: '/non-compliant-map'
+      preLoaderRoute: typeof NonCompliantMapRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lmia-map': {
@@ -324,6 +344,7 @@ const rootRouteChildren: RootRouteChildren = {
   JobsRoute: JobsRoute,
   LmiaRoute: LmiaRoute,
   LmiaMapRoute: LmiaMapRoute,
+  NonCompliantMapRoute: NonCompliantMapRoute,
   TrendsRoute: TrendsRoute,
   AuthLoginRoute: AuthLoginRoute,
   BusinessAddressRoute: BusinessAddressRoute,

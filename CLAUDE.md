@@ -12,6 +12,7 @@ Key features include:
 - Passwordless email authentication system
 - Business directory with location-based search
 - Community reporting system for TFW usage
+- Non-compliant employers directory with automated daily scraping
 - AI-powered content generation using Gemini 2.5 Flash for Reddit posts
 - Confidence scoring algorithm based on user verification tiers
 - Public business ratings (Green/Yellow/Red) based on TFW percentage
@@ -107,6 +108,7 @@ VITE_PELIAS_SERVER_URL=http://homeserver:4000
 - **Database**: PostgreSQL with sqlx, automated migrations, repository pattern
 - **Email**: SMTP email service for authentication links
 - **Dependency Injection**: Uber Dig container for service management
+- **Automated Scraping**: Cron-based daily scrapers with robfig/cron for LMIA and non-compliant data
 - **Frontend**: React 18, TypeScript, Vite, TailwindCSS
 - **Routing**: TanStack Router with file-based routing and authentication guards
 - **State Management**: TanStack Query (React Query) with axios API client
@@ -169,6 +171,16 @@ VITE_PELIAS_SERVER_URL=http://homeserver:4000
 - Top 3 most boycotted companies displayed on homepage
 - Prominent boycott count display on business detail pages
 - Authentication-required boycott actions with proper validation
+
+✅ **Non-Compliant Employers System**
+- Automated daily scraping of government non-compliant employer data at midnight UTC
+- Complete non-compliant employer directory with violation details and penalty information
+- REST API endpoints for browsing and searching non-compliant employers
+- Duplicate prevention using database constraints on business name + address + violation date
+- Historical violation tracking (same business can have multiple violations over time)
+- UPSERT-based data updates to preserve existing records while preventing true duplicates
+- Automated cron service with missed execution detection and proper error handling
+- Violation reason codes tracking and management
 
 ### In Development
 🔄 **Business Directory**

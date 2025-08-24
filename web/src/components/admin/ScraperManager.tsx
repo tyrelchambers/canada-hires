@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   useLMIAOperations,
   useScraperOperations,
+  useNonCompliantOperations,
 } from "@/hooks/useLMIAOperations";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -13,11 +14,13 @@ import {
   faDownload,
   faCogs,
   faMapMarkerAlt,
+  faExclamationTriangle,
 } from "@fortawesome/free-solid-svg-icons";
 
 export function ScraperManager() {
   const lmiaOperations = useLMIAOperations();
   const scraperOperations = useScraperOperations();
+  const nonCompliantOperations = useNonCompliantOperations();
   const [scraperStatus, setScraperStatus] = useState<string | null>(null);
   const [statisticsStatus, setStatisticsStatus] = useState<string | null>(null);
   const [lmiaScraperStatus, setLmiaScraperStatus] = useState<string | null>(
@@ -27,6 +30,7 @@ export function ScraperManager() {
     null,
   );
   const [geocodingStatus, setGeocodingStatus] = useState<string | null>(null);
+  const [nonCompliantStatus, setNonCompliantStatus] = useState<string | null>(null);
 
   const handleTriggerScraper = () => {
     setScraperStatus(null);
@@ -122,6 +126,22 @@ export function ScraperManager() {
           error instanceof Error ? error.message : "Unknown error";
         setGeocodingStatus(`Error: ${errorMessage}`);
         console.error("LMIA geocoding error:", error);
+      },
+    });
+  };
+
+  const handleTriggerNonCompliantScraper = () => {
+    setNonCompliantStatus(null);
+    nonCompliantOperations.scraper.mutate(undefined, {
+      onSuccess: (data) => {
+        setNonCompliantStatus("Non-compliant employers scraper started successfully!");
+        console.log("Non-compliant scraper triggered:", data);
+      },
+      onError: (error: unknown) => {
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        setNonCompliantStatus(`Error: ${errorMessage}`);
+        console.error("Non-compliant scraper error:", error);
       },
     });
   };
@@ -449,6 +469,62 @@ export function ScraperManager() {
                 </>
               )}
             </Button>
+          </CardContent>
+        </Card>
+
+        {/* Non-Compliant Employers Scraper */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FontAwesomeIcon
+                icon={faExclamationTriangle}
+                className="h-5 w-5 text-red-600"
+              />
+              Non-Compliant Employers
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Scrapes the official non-compliant employers list from IRCC. 
+              Extracts business names, addresses, violation reasons, penalties, and decision dates.
+            </p>
+
+            <Button
+              onClick={handleTriggerNonCompliantScraper}
+              disabled={nonCompliantOperations.scraper.isPending}
+              variant="outline"
+              className="w-full border-red-200 text-red-700 hover:bg-red-50"
+            >
+              {nonCompliantOperations.scraper.isPending ? (
+                <>
+                  <FontAwesomeIcon
+                    icon={faSpinner}
+                    className="mr-2 h-4 w-4 animate-spin"
+                  />
+                  Scraping Non-Compliant Data...
+                </>
+              ) : (
+                <>
+                  <FontAwesomeIcon
+                    icon={faExclamationTriangle}
+                    className="mr-2 h-4 w-4"
+                  />
+                  Scrape Non-Compliant Employers
+                </>
+              )}
+            </Button>
+
+            {nonCompliantStatus && (
+              <div
+                className={`p-3 rounded-md text-sm ${
+                  nonCompliantStatus.startsWith("Error")
+                    ? "bg-red-50 text-red-700 border border-red-200"
+                    : "bg-green-50 text-green-700 border border-green-200"
+                }`}
+              >
+                {nonCompliantStatus}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
