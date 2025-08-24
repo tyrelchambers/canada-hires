@@ -7,6 +7,8 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
+  DialogOverlay,
+  DialogPortal,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -35,7 +37,13 @@ export function ReasonCodeModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh]" showCloseButton={false}>
+      <DialogPortal>
+        <DialogOverlay className="z-[9998]" />
+        <DialogContent 
+          className="max-w-2xl max-h-[90vh] z-[9999]" 
+          showCloseButton={false}
+          style={{ zIndex: 9999 }}
+        >
         <DialogHeader className="bg-orange-600 text-white p-4 -m-6 mb-4 rounded-t-lg">
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-white">
@@ -117,7 +125,8 @@ export function ReasonCodeModal({
             </Button>
           </div>
         </DialogFooter>
-      </DialogContent>
+        </DialogContent>
+      </DialogPortal>
     </Dialog>
   );
 }
