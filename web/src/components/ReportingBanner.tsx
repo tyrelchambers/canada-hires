@@ -12,7 +12,7 @@ import img1 from "@/assets/reports-screen.png";
 export function ReportingBanner() {
   return (
     <section className="py-16 bg-white border-b border-border">
-      <div className="max-w-screen-2xl mx-auto px-4 flex flex-col gap-6 md:gap-20 items-center">
+      <div className="max-w-screen-2xl mx-auto px-4 flex flex-col lg:flex-row gap-6 md:gap-20 items-center">
         {/* Left side - Call to Action */}
         <div className="space-y-6 flex-1">
           <div className="flex items-center gap-3">

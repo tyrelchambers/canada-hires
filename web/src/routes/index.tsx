@@ -122,7 +122,7 @@ function RouteComponent() {
       </section>
 
       <section className="py-20">
-        <section className="max-w-screen-2xl mx-auto w-full  flex-col flex gap-6 md:gap-20 items-center">
+        <section className="max-w-screen-2xl mx-auto w-full  flex-col flex lg:flex-row gap-6 md:gap-20 items-center">
           <div className="flex flex-col gap-2 max-w-2xl p-4">
             <Badge>LMIA Map</Badge>
             <h2 className="font-bold text-3xl mb-4 -tracking-wide text-space-cadet mt-2">
