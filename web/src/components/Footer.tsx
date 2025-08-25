@@ -106,7 +106,16 @@ export function Footer() {
             </div>
           </div>
         </div>
-        <img src={bmac} className="mx-auto max-w-20 my-8" />
+        <div className="flex justify-center flex-col items-center my-8">
+          <img src={bmac} className="mx-auto max-w-20 mb-4" />
+
+          <a
+            href="https://buymeacoffee.com/jobwatchcanada"
+            className="mx-auto bg-secondary px-4 py-2 rounded-md text-secondary-foreground/50 underline"
+          >
+            https://buymeacoffee.com/jobwatchcanada
+          </a>
+        </div>
 
         {/* Copyright */}
         <div className="border-t border-border mt-8 pt-8 text-center">
