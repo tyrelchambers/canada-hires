@@ -27,9 +27,9 @@ export default function Hero() {
 
   return (
     <section className="bg-white border-b border-border relative  h-full lg:h-[800px] flex justify-center">
-      <div className="max-w-screen-2xl mx-auto w-full border-x  border-border z-10 relative p-4 lg:p-20 h-full flex gap-6 lg:gap-20 items-center ">
+      <div className="max-w-screen-2xl mx-auto w-full my-10 md:my-0 border-x  border-border z-10 relative p-4 lg:p-20 h-full flex gap-6 lg:gap-20 items-center ">
         <div className="flex flex-col">
-          <h1 className="text-3xl lg:text-6xl -tracking-[0.015em] font-bold mb-6 text-raising-black">
+          <h1 className="text-4xl lg:text-6xl -tracking-[0.015em] font-bold mb-6 text-space-cadet">
             Selling Out Canadian Jobs
           </h1>
           <p className="md:text-xl text-gray-500 font-light  max-w-3xl">
@@ -60,6 +60,7 @@ export default function Hero() {
                     className={clsx(
                       sendLoginLinkMutation.isPending && "opacity-50",
                     )}
+                    variant="secondary"
                   >
                     {sendLoginLinkMutation.isPending
                       ? "Sending..."

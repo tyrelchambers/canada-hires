@@ -171,7 +171,7 @@ export function JobApprovalDashboard({
         onValueChange={handleTabChange}
         className="space-y-4"
       >
-        <TabsList>
+        <TabsList className="w-full overflow-x-auto">
           <TabsTrigger value="pending">Pending Jobs</TabsTrigger>
           <TabsTrigger value="posted">Posted Jobs</TabsTrigger>
           <TabsTrigger value="scraper">Scraper</TabsTrigger>

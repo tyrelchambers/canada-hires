@@ -5,8 +5,8 @@ export function StripedBackground({ className }: { className?: string }) {
       style={{
         backgroundImage: `repeating-linear-gradient(
           45deg,
-          #aaa 0px,
-          #aaa 20px,
+          #4a4e68 0px,
+          #4a4e68 20px,
           transparent 20px,
           transparent 40px
         )`,

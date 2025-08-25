@@ -7,28 +7,22 @@ import {
   faUsers,
   faArrowRight,
 } from "@fortawesome/free-solid-svg-icons";
+import img1 from "@/assets/reports-screen.png";
+
 export function ReportingBanner() {
   return (
     <section className="py-16 bg-white border-b border-border">
-      <div className="max-w-3xl mx-auto px-4">
+      <div className="max-w-screen-2xl mx-auto px-4 flex gap-20 items-center">
         {/* Left side - Call to Action */}
-        <div className="space-y-6">
+        <div className="space-y-6 flex-1">
           <div className="flex items-center gap-3">
-            <FontAwesomeIcon
-              icon={faFlag}
-              className="text-3xl text-indigo-600"
-            />
-            <Badge
-              variant="secondary"
-              className="bg-indigo-100 text-indigo-800"
-            >
-              Community Reporting
-            </Badge>
+            <Badge variant="secondary">Community Reporting</Badge>
           </div>
 
           <div>
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-              Help Build Our Community Database
+            <h2 className="text-3xl lg:text-4xl font-bold text-space-cadet mb-4">
+              Help Build Our{" "}
+              <span className="text-pale-dogwood">Community</span> Database
             </h2>
             <p className="text-lg text-gray-600 leading-relaxed">
               Share your knowledge about local businesses' hiring practices.
@@ -38,7 +32,10 @@ export function ReportingBanner() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4">
-            <Link to="/reports/create" search={{ businessName: undefined, businessAddress: undefined }}>
+            <Link
+              to="/reports/create"
+              search={{ businessName: undefined, businessAddress: undefined }}
+            >
               <Button size="lg" className="w-full sm:w-auto">
                 <FontAwesomeIcon icon={faFlag} className="mr-2" />
                 Submit a Report
@@ -58,6 +55,13 @@ export function ReportingBanner() {
             <FontAwesomeIcon icon={faUsers} />
             <span>Join thousands of Canadians building transparency</span>
           </div>
+        </div>
+
+        <div className="relative h-[400px]  aspect-video overflow-hidden bg-gradient-to-tl from-raising-black to-ultra-violet rounded-3xl shadow-lg">
+          <img
+            src={img1}
+            className="absolute w-full h-full  top-[15%] left-[9%] rounded-xl"
+          />
         </div>
       </div>
     </section>

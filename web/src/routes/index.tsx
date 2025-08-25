@@ -1,8 +1,7 @@
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AuthNav } from "@/components/AuthNav";
 import { StripedBackground } from "@/components/StripedBackground";
-import { TodaysJobs } from "@/components/TodaysJobs";
 import { Footer } from "@/components/Footer";
 import { ReportingBanner } from "@/components/ReportingBanner";
 import clsx from "clsx";
@@ -15,6 +14,7 @@ import { useJobStats } from "@/hooks/useJobPostings";
 import { useReportStats } from "@/hooks/useReports";
 import { TopBoycottedSection } from "@/components/TopBoycottedSection";
 import Hero from "@/components/index/Hero";
+import lmiaMap from "@/assets/lmia-map.png";
 
 export const Route = createFileRoute("/")({
   component: RouteComponent,
@@ -94,24 +94,20 @@ function RouteComponent() {
         </div>
       </section>
 
-      <section className="max-w-5xl mx-auto w-full my-20 px-4 ">
-        <TodaysJobs />
-      </section>
-
       <section className="grid grid-cols-1 lg:grid-cols-2 border-y border-border">
         <div className="flex flex-col gap-2 p-6 lg:p-20 max-w-3xl ml-auto border-r border-border">
           <Badge className="w-fit">Exploitation</Badge>
-          <h2 className="font-bold text-3xl mb-4 -tracking-wide">
+          <h2 className="font-bold text-3xl mb-4 -tracking-wide text-space-cadet">
             How Companies Exploit the LMIA Program
           </h2>
-          <p className=" text-lg text-muted-foreground">
+          <p className=" text-lg text-space-cadet">
             The Labour Market Impact Assessment (LMIA) program was designed to
             protect Canadian jobs by requiring employers to prove no qualified
             Canadian workers are available before hiring temporary foreign
             workers. However, many companies have found ways to circumvent this
             system's intent.
           </p>
-          <p className=" text-lg text-muted-foreground">
+          <p className=" text-lg text-space-cadet">
             Common exploitation tactics include posting job requirements with
             unrealistic qualifications, offering below-market wages that
             discourage Canadian applicants, advertising positions in obscure
@@ -125,14 +121,37 @@ function RouteComponent() {
         </div>
       </section>
 
-      <section className="max-w-5xl mx-auto w-full my-20">
-        <p className="lg:text-2xl p-4 font-light leading-relaxed text-center">
-          Some employers use the LMIA process as a pathway to secure cheaper
-          labor, posting positions they never intend to fill with Canadian
-          workers. Others exploit the system's bureaucratic delays, using the
-          application period to justify their "inability" to find local talent
-          while their preferred temporary foreign worker waits in the wings.
-        </p>
+      <section className="py-20">
+        <section className="max-w-screen-2xl mx-auto w-full  flex gap-20 items-center">
+          <div className="flex flex-col gap-2 max-w-2xl">
+            <Badge>LMIA Map</Badge>
+            <h2 className="font-bold text-3xl mb-4 -tracking-wide text-space-cadet mt-2">
+              See where LMIA exploitation is happening
+            </h2>
+            <p className=" text-lg text-space-cadet">
+              Our LMIA visualization platform transforms complex government
+              employment data into an accessible interactive map, showing
+              Temporary Foreign Worker program usage patterns across Canada.
+              Users can explore real-time statistics on employer hiring
+              practices, approved positions, and historical trends dating back
+              to 2015.
+            </p>
+            <p className="text-lg text-space-cadet">
+              Perfect for job seekers, researchers, and community advocates, the
+              tool provides geographic insights and detailed employer
+              information to help Canadians make informed decisions about local
+              job markets and understand how immigration policies affect
+              employment opportunities in their communities.
+            </p>
+            <Button asChild className="mt-8 w-fit">
+              <Link to="/lmia-map">Go to full map</Link>
+            </Button>
+          </div>
+
+          <div className="aspect-video h-[400px] rounded-3xl shadow-xl overflow-hidden border-4 border-rose-quartz ">
+            <img src={lmiaMap} className="object-cover w-full h-full" />
+          </div>
+        </section>
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-2 border-y border-border">
@@ -142,10 +161,10 @@ function RouteComponent() {
         <div className="flex flex-col gap-2 p-6 lg:p-20 max-w-3xl mr-auto border-l border-border">
           <Badge className="w-fit">Harming Canadians</Badge>
 
-          <h2 className="font-bold text-3xl mb-4 -tracking-wide">
+          <h2 className="font-bold text-3xl mb-4 -tracking-wide text-space-cadet">
             LMIA exploitation is harming Canadians
           </h2>
-          <p className=" text-lg text-muted-foreground">
+          <p className=" text-lg text-space-cadet">
             This exploitation undermines wage standards for all workers,
             displaces qualified Canadians from employment opportunities, and
             defeats the program's core purpose of protecting the domestic labor
@@ -156,7 +175,7 @@ function RouteComponent() {
       </section>
 
       <section className="max-w-5xl mx-auto w-full my-20 p-4">
-        <h2 className="text-3xl lg:text-4xl -tracking-wide text-center mb-6 font-medium">
+        <h2 className="text-3xl lg:text-4xl -tracking-wide text-center mb-6 font-medium text-space-cadet">
           The goal of JobWatch Canada
         </h2>
         <p className="lg:text-2xl font-light leading-relaxed text-center">

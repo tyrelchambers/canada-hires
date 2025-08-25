@@ -127,7 +127,7 @@ func (r *lmiaRepository) UpdateResourceProcessed(id string) error {
 
 func (r *lmiaRepository) GetUnprocessedResources() ([]*models.LMIAResource, error) {
 	var resources []*models.LMIAResource
-	query := `SELECT * FROM lmia_resources ORDER BY year DESC, quarter DESC`
+	query := `SELECT * FROM lmia_resources WHERE processed_at IS NULL ORDER BY year DESC, quarter DESC`
 
 	err := r.db.Select(&resources, query)
 	if err != nil {
@@ -172,6 +172,22 @@ func (r *lmiaRepository) CreateEmployer(employer *models.LMIAEmployer) error {
 func (r *lmiaRepository) CreateEmployersBatch(employers []*models.LMIAEmployer) error {
 	if len(employers) == 0 {
 		return nil
+	}
+
+	// Check if employers already exist for this resource
+	if len(employers) > 0 {
+		resourceID := employers[0].ResourceID
+		var count int
+		checkQuery := `SELECT COUNT(*) FROM lmia_employers WHERE resource_id = $1`
+		err := r.db.Get(&count, checkQuery, resourceID)
+		if err != nil {
+			return fmt.Errorf("failed to check existing employers: %w", err)
+		}
+		
+		if count > 0 {
+			log.Info("Employers already exist for resource, skipping batch insert", "resource_id", resourceID, "existing_count", count)
+			return nil
+		}
 	}
 
 	tx, err := r.db.Beginx()
