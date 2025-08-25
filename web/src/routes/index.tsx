@@ -14,6 +14,7 @@ import { faArrowRight, faFlask } from "@fortawesome/free-solid-svg-icons";
 import { useJobStats } from "@/hooks/useJobPostings";
 import { useReportStats } from "@/hooks/useReports";
 import { TopBoycottedSection } from "@/components/TopBoycottedSection";
+import Hero from "@/components/index/Hero";
 
 export const Route = createFileRoute("/")({
   component: RouteComponent,
@@ -25,44 +26,10 @@ function RouteComponent() {
   const { data: reportStats, isLoading: isReportStatsLoading } =
     useReportStats();
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen h-full">
       <AuthNav />
 
-      <section className="bg-secondary border-b border-border relative h-[550px]">
-        <StripedBackground />
-
-        <div className="max-w-5xl mx-auto border-x border-border bg-white z-10 relative p-4 lg:p-20 h-full flex flex-col items-center justify-center">
-          <h1 className="text-3xl lg:text-5xl -tracking-[0.015em] font-medium mb-6 text-center">
-            Selling Out Canadian Jobs
-          </h1>
-          <p className="md:text-xl text-gray-500 font-light  text-center mb-10 max-w-3xl">
-            The Temporary Foreign Worker (TFW) program is meant to fill labour
-            shortages, but some companies exploit it to hire cheaper foreign
-            labour instead of Canadians. We track the data so you can see which
-            companies are abusing the system and choose where you spend your
-            money.
-          </p>
-
-          <div className="flex md:flex-row flex-col gap-6 justify-center">
-            <Link
-              to="/lmia"
-              className={clsx(
-                buttonVariants({ variant: "outline", size: "lg" }),
-              )}
-            >
-              Search LMIA records
-            </Link>
-            <Link
-              to="/jobs"
-              className={clsx(
-                buttonVariants({ variant: "default", size: "lg" }),
-              )}
-            >
-              Browse Job Postings
-            </Link>
-          </div>
-        </div>
-      </section>
+      <Hero />
 
       <ReportingBanner />
 
