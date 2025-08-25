@@ -27,6 +27,13 @@ const navigationLinks = [
   { to: "/feedback", label: "Feedback" },
 ];
 
+const topLevelRoutes = [
+  { to: "/jobs", label: "Job Postings" },
+  { to: "/reports", label: "Reports" },
+  { to: "/lmia-map", label: "LMIA Map" },
+  { to: "/non-compliant-map", label: "Non-Compliance Map" },
+];
+
 export function AuthNav() {
   const { data: user } = useCurrentUser();
   const logoutMutation = useLogout();
@@ -70,46 +77,19 @@ export function AuthNav() {
         <div className="flex gap-4">
           {/* Desktop Navigation */}
           <nav className="hidden md:flex">
-            <Link
-              to="/jobs"
-              className="text-sm hover:text-primary px-4 py-2 rounded-full transition-colors"
-              activeProps={{
-                className:
-                  "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
-              }}
-            >
-              Job Postings
-            </Link>
-            <Link
-              to="/reports"
-              className="text-sm hover:text-primary px-4 py-2 rounded-full transition-colors"
-              activeProps={{
-                className:
-                  "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
-              }}
-            >
-              Reports
-            </Link>
-            <Link
-              to="/lmia-map"
-              className="text-sm hover:text-primary px-4 py-2 rounded-full transition-colors"
-              activeProps={{
-                className:
-                  "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
-              }}
-            >
-              LMIA Map
-            </Link>
-            <Link
-              to="/non-compliant-map"
-              className="text-sm hover:text-primary px-4 py-2 rounded-full transition-colors"
-              activeProps={{
-                className:
-                  "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
-              }}
-            >
-              Non-Compliance Map
-            </Link>
+            {topLevelRoutes.map((route) => (
+              <Link
+                key={route.to}
+                to={route.to}
+                className="text-sm hover:bg-isabelline hover:text-space-cadet px-4 py-2 rounded-sm transition-colors"
+                activeProps={{
+                  className:
+                    "bg-space-cadet text-primary-foreground hover:bg-space-cadet/80  hover:text-whiteX",
+                }}
+              >
+                {route.label}
+              </Link>
+            ))}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center gap-1">
@@ -229,50 +209,20 @@ export function AuthNav() {
       {isMobileMenuOpen && (
         <div className="md:hidden border-t bg-white">
           <nav className="flex flex-col p-4 space-y-3">
-            <Link
-              to="/jobs"
-              className="text-sm hover:text-primary px-4 py-2 rounded-full transition-colors"
-              activeProps={{
-                className:
-                  "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
-              }}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Job Postings
-            </Link>
-            <Link
-              to="/reports"
-              className="text-sm hover:text-primary px-4 py-2 rounded-full transition-colors"
-              activeProps={{
-                className:
-                  "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
-              }}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Reports
-            </Link>
-            <Link
-              to="/lmia-map"
-              className="text-sm hover:text-primary px-4 py-2 rounded-full transition-colors"
-              activeProps={{
-                className:
-                  "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
-              }}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              LMIA Heatmap
-            </Link>
-            <Link
-              to="/non-compliant-map"
-              className="text-sm hover:text-primary px-4 py-2 rounded-full transition-colors"
-              activeProps={{
-                className:
-                  "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
-              }}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Non-Compliance Map
-            </Link>
+            {topLevelRoutes.map((route) => (
+              <Link
+                key={route.to}
+                to={route.to}
+                className="text-sm hover:text-primary px-4 py-2 rounded-full transition-colors"
+                activeProps={{
+                  className:
+                    "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
+                }}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                {route.label}
+              </Link>
+            ))}
             {navigationLinks.map((link) => (
               <Link
                 key={link.to}
