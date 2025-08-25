@@ -122,8 +122,8 @@ function RouteComponent() {
       </section>
 
       <section className="py-20">
-        <section className="max-w-screen-2xl mx-auto w-full  flex gap-20 items-center">
-          <div className="flex flex-col gap-2 max-w-2xl">
+        <section className="max-w-screen-2xl mx-auto w-full  flex-col flex gap-6 md:gap-20 items-center">
+          <div className="flex flex-col gap-2 max-w-2xl p-4">
             <Badge>LMIA Map</Badge>
             <h2 className="font-bold text-3xl mb-4 -tracking-wide text-space-cadet mt-2">
               See where LMIA exploitation is happening
@@ -148,7 +148,7 @@ function RouteComponent() {
             </Button>
           </div>
 
-          <div className="aspect-video h-[400px] rounded-3xl shadow-xl overflow-hidden border-4 border-rose-quartz ">
+          <div className="aspect-video md:h-[400px]  m-4 rounded-3xl shadow-xl overflow-hidden border-4 border-rose-quartz ">
             <img src={lmiaMap} className="object-cover w-full h-full" />
           </div>
         </section>

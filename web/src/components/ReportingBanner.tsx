@@ -12,7 +12,7 @@ import img1 from "@/assets/reports-screen.png";
 export function ReportingBanner() {
   return (
     <section className="py-16 bg-white border-b border-border">
-      <div className="max-w-screen-2xl mx-auto px-4 flex gap-20 items-center">
+      <div className="max-w-screen-2xl mx-auto px-4 flex flex-col gap-6 md:gap-20 items-center">
         {/* Left side - Call to Action */}
         <div className="space-y-6 flex-1">
           <div className="flex items-center gap-3">
@@ -57,7 +57,7 @@ export function ReportingBanner() {
           </div>
         </div>
 
-        <div className="relative h-[400px]  aspect-video overflow-hidden bg-gradient-to-tl from-raising-black to-ultra-violet rounded-3xl shadow-lg">
+        <div className="relative hidden md:block md:h-[400px]  aspect-video overflow-hidden bg-gradient-to-tl from-raising-black to-ultra-violet rounded-3xl shadow-lg">
           <img
             src={img1}
             className="absolute w-full h-full  top-[15%] left-[9%] rounded-xl"

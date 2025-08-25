@@ -111,7 +111,7 @@ export function Footer() {
 
           <a
             href="https://buymeacoffee.com/jobwatchcanada"
-            className="mx-auto bg-secondary px-4 py-2 rounded-md text-secondary-foreground/50 underline"
+            className="mx-auto bg-secondary px-4 py-2 rounded-md text-secondary-foreground/50 underline break-all"
           >
             https://buymeacoffee.com/jobwatchcanada
           </a>
