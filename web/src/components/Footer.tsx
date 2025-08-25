@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faReddit } from "@fortawesome/free-brands-svg-icons";
+import bmac from "@/assets/bmc_qr.png";
+
 export function Footer() {
   return (
     <footer className="border-t border-border bg-gray-50">
@@ -104,6 +106,7 @@ export function Footer() {
             </div>
           </div>
         </div>
+        <img src={bmac} className="mx-auto max-w-20 my-8" />
 
         {/* Copyright */}
         <div className="border-t border-border mt-8 pt-8 text-center">
