@@ -279,7 +279,6 @@ export function LMIAMapHeatmap() {
           {/* Postal Code Markers and Circles */}
           {markersAndCircles}
         </MapContainer>
-
         {/* Loading Overlay */}
         <MapLoadingOverlay
           isLoading={isLoading}

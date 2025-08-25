@@ -10,19 +10,19 @@ interface MapContainerProps {
   className?: string;
 }
 
-export function MapContainer({ 
-  children, 
-  mapRef, 
-  center = [61.0666922, -95.712891], 
+export function MapContainer({
+  children,
+  mapRef,
+  center = [61.0666922, -95.712891],
   zoom = 4,
-  className = "h-[300px] md:h-[400px] lg:h-full lg:flex-1 z-0"
+  className = "h-[300px] md:h-[400px] lg:h-full lg:flex-1 z-0",
 }: MapContainerProps) {
   return (
     <div className={className}>
       <LeafletMapContainer
         center={center}
         zoom={zoom}
-        style={{ height: "100%", width: "100%" }}
+        style={{ height: "100%", width: "100%", zIndex: 0 }}
         ref={mapRef}
       >
         <TileLayer
